@@ -1,0 +1,22 @@
+{
+  "name": "@cxnext/desktop",
+  "version": "1.0.3",
+  "private": true,
+  "main": "dist/main.js",
+  "scripts": {
+    "dev": "concurrently \"tsc -w -p tsconfig.json\" \"wait-on dist/main.js && electron dist/main.js\"",
+    "build": "tsc -p tsconfig.json",
+    "start": "electron dist/main.js",
+    "lint": "eslint . --config ../../eslint.config.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "electron": "42.0.0-alpha.5"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "concurrently": "^9.2.1",
+    "typescript": "^6.0.3",
+    "wait-on": "^9.0.5"
+  }
+}
