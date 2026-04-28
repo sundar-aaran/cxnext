@@ -1,12 +1,12 @@
 # TASK
 
-Active reference: `#5`
+Active reference: `#6`
 
 ## Current Batch
 
-- Status: Frontend layouts and desk dashboard
-- Package version: `1.0.5`
-- Release tag: `v-1.0.5`
+- Status: Portal desk registry and form wiring
+- Package version: `1.0.6`
+- Release tag: `v-1.0.6`
 
 ## Notes
 

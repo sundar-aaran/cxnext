@@ -1,5 +1,6 @@
 import { Activity, Boxes, CheckCircle2, LayoutDashboard, Workflow } from "lucide-react";
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@cxnext/ui";
+import type { DeskPortalDefinition } from "../../features/desk/desk-registry";
 
 const cards = [
   { title: "Module Readiness", value: "Foundation", detail: "No business domains installed" },
@@ -7,15 +8,15 @@ const cards = [
   { title: "Workspace", value: "desk", detail: "Application dashboard route" },
 ] as const;
 
-export function DeskDashboard() {
+export function DeskDashboard({ portal }: { readonly portal: DeskPortalDefinition }) {
   return (
     <section className="space-y-6 p-5 md:p-8">
       <div className="flex flex-col gap-4 border-b border-border pb-6 md:flex-row md:items-center md:justify-between">
         <div>
-          <Badge variant="outline">desk</Badge>
-          <h1 className="mt-3 text-2xl font-semibold tracking-normal">Application Dashboard</h1>
+          <Badge variant="outline">{portal.badge}</Badge>
+          <h1 className="mt-3 text-2xl font-semibold tracking-normal">{portal.label}</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            A clean workspace shell for future bounded contexts without installing business features.
+            {portal.summary}
           </p>
         </div>
         <div className="flex gap-2 text-muted-foreground">
@@ -46,7 +47,9 @@ export function DeskDashboard() {
         <CardContent className="grid gap-3 text-sm text-muted-foreground md:grid-cols-3">
           <p className="rounded-md border border-border bg-muted/40 p-4">Bounded contexts mount through module contracts.</p>
           <p className="rounded-md border border-border bg-muted/40 p-4">Application actions publish domain events.</p>
-          <p className="rounded-md border border-border bg-muted/40 p-4">Dashboard pages stay feature-scoped under desk.</p>
+          <p className="rounded-md border border-border bg-muted/40 p-4">
+            {portal.label} menu items are isolated through the desk registry.
+          </p>
         </CardContent>
       </Card>
       <div className="flex items-center gap-2 text-sm text-muted-foreground">

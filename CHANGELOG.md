@@ -2,11 +2,19 @@
 
 ## Version State
 
-- Current package version: `1.0.5`
-- Current release tag: `v-1.0.5`
+- Current package version: `1.0.6`
+- Current release tag: `v-1.0.6`
 - Versioned changelog label format: `v 1.0.<reference>`
 - Version section format: `## v-1.0.<reference>`
 - Entry format: `### [v 1.0.<reference>] YYYY-MM-DD - Title`
+
+## v-1.0.6
+
+### [v 1.0.6] 2026-04-28 - Add Portal Desk Registry
+
+- Added customer, vendor, admin, and super-admin desk entries through a frontend portal registry.
+- Added an app selector dropdown in the desk breadcrumb and isolated side menu entries per portal.
+- Added TanStack Form and Zod validation wiring to the auth form shells.
 
 ## v-1.0.5
 

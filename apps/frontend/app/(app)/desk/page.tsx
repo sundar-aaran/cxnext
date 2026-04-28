@@ -1,5 +1,5 @@
-import { DeskDashboard } from "../../../components/dashboard/desk-dashboard";
+import { redirect } from "next/navigation";
 
 export default function DeskPage() {
-  return <DeskDashboard />;
+  redirect("/desk/customer");
 }

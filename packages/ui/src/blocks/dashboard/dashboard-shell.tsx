@@ -15,6 +15,7 @@ export interface DashboardShellProps {
   readonly workspace: string;
   readonly navItems: readonly DashboardNavItem[];
   readonly children: ReactNode;
+  readonly header?: ReactNode;
   readonly className?: string;
 }
 
@@ -23,6 +24,7 @@ export function DashboardShell({
   workspace,
   navItems,
   children,
+  header,
   className,
 }: DashboardShellProps) {
   return (
@@ -52,7 +54,10 @@ export function DashboardShell({
           ))}
         </nav>
       </aside>
-      <main className="min-w-0">{children}</main>
+      <main className="min-w-0">
+        {header ? <div className="border-b border-border bg-background px-5 py-3">{header}</div> : null}
+        {children}
+      </main>
     </div>
   );
 }
