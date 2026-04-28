@@ -64,6 +64,7 @@ Each module must expose only deliberate public contracts. Do not import another 
 - Publish events through the event bus instead of directly invoking unrelated modules.
 - Keep source files under 700 lines. Review files at 500 lines and split them unless cohesion clearly requires keeping them together.
 - Follow `assist/rules/coding-style.md`, `assist/rules/versioning-and-releases.md`, `assist/rules/branching-and-commits.md`, and `assist/rules/strict-module-structure.md` for all generated work.
+- Follow `assist/rules/sidebar-navigation.md` before changing desk sidebar navigation or Organisation accordion behavior.
 - Follow `assist/rules/execution-tracking.md` before every meaningful execution batch.
 
 ## Event-Driven Approach

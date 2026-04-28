@@ -38,8 +38,16 @@ export function listTenantRecords({
   return readTenants().filter((tenant) => includeDeleted || !tenant.deletedAt);
 }
 
-export function getTenantRecord(tenantId: number) {
-  return readTenants().find((tenant) => tenant.id === tenantId && !tenant.deletedAt) ?? null;
+export function listSeedTenantRecords({
+  includeDeleted = false,
+}: { readonly includeDeleted?: boolean } = {}) {
+  return [...seedTenants].filter((tenant) => includeDeleted || !tenant.deletedAt);
+}
+
+export function getTenantRecord(tenantId: number, options?: { readonly source?: "seed" }) {
+  const tenants = options?.source === "seed" ? listSeedTenantRecords() : readTenants();
+
+  return tenants.find((tenant) => tenant.id === tenantId && !tenant.deletedAt) ?? null;
 }
 
 export function saveTenantRecord(input: TenantUpsertInput, tenantId?: number) {

@@ -9,10 +9,10 @@ import {
   Building2,
   Check,
   ChevronDown,
+  ChevronRight,
   ChevronsUpDown,
   CreditCard,
   Database,
-  Factory,
   FlaskConical,
   Globe,
   Home,
@@ -28,6 +28,7 @@ import {
   Sparkles,
   SunMedium,
   Users,
+  Warehouse,
 } from "lucide-react";
 import { Button } from "../../components/button";
 import {
@@ -52,6 +53,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../../
 import { cn } from "../../lib";
 
 export interface DashboardNavItem {
+  readonly id: string;
   readonly href: string;
   readonly label: string;
   readonly icon?: ReactNode;
@@ -107,30 +109,6 @@ const teams = [
     plan: "Audit",
     shortcut: "Cmd+3",
     icon: ShieldCheck,
-  },
-] as const;
-
-const utilityGroups = [
-  {
-    id: "tenant",
-    label: "Tenant",
-    helper: "Tenant workspace, ownership, and operating context",
-    href: "/desk/tenant",
-    icon: Users,
-  },
-  {
-    id: "industry",
-    label: "Industry",
-    helper: "Industry setup, categories, and business classification",
-    href: "/desk/industry",
-    icon: Factory,
-  },
-  {
-    id: "company",
-    label: "Company",
-    helper: "Company profile, legal entity, and organization details",
-    href: "/desk/company",
-    icon: Building2,
   },
 ] as const;
 
@@ -257,6 +235,7 @@ function toInitials(name: string) {
 export function DashboardShell({
   brand,
   workspace,
+  navItems,
   children,
   className,
   shellTechnicalName,
@@ -264,6 +243,7 @@ export function DashboardShell({
 }: DashboardShellProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [organisationOpen, setOrganisationOpen] = useState(true);
   const [themeMode, setThemeMode] = useState<ThemeMode>("system");
   const [accentTheme, setAccentTheme] = useState<AccentTheme>("neutral");
   const [readNotificationIds, setReadNotificationIds] = useState<Set<NotificationId>>(
@@ -422,22 +402,15 @@ export function DashboardShell({
             labelsHidden ? "px-2" : "px-3",
           )}
         >
-          <div
-            className={cn(
-              "text-[11px] font-semibold uppercase tracking-[0.32em] text-muted-foreground transition-[opacity,max-height,padding] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
-              labelsHidden ? "max-h-0 overflow-hidden p-0 opacity-0" : "max-h-8 px-1 pb-4",
-            )}
-          >
-            Organisation
-          </div>
-          {utilityGroups.map((item) => {
-            const menuItem = (
+          <Tooltip>
+            <TooltipTrigger asChild>
               <a
-                key={item.id}
-                href={item.href}
-                aria-label={`${item.label}: ${item.helper}`}
+                href="/desk"
+                aria-current={workspace === "Application Desk" ? "page" : undefined}
+                aria-label="Overview"
                 className={cn(
-                  "group flex min-h-11 cursor-pointer items-center rounded-md text-sm font-semibold text-foreground transition-[background-color,padding,gap,justify-content,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-sidebar-accent",
+                  "group mb-1.5 flex min-h-11 w-full cursor-pointer items-center rounded-md text-sm font-semibold text-foreground transition-[background-color,padding,gap,justify-content,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-sidebar-accent",
+                  workspace === "Application Desk" && "bg-sidebar-accent",
                   labelsHidden ? "justify-center px-0" : "gap-3 px-1 py-2",
                 )}
                 onClick={() => {
@@ -448,42 +421,174 @@ export function DashboardShell({
               >
                 <span
                   className={cn(
-                    "flex shrink-0 items-center justify-center rounded-md border border-border bg-background text-foreground shadow-sm transition-[width,height] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
-                    labelsHidden ? "size-8" : "size-9",
+                    "flex shrink-0 items-center justify-center text-foreground transition-[width,height] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                    labelsHidden ? "size-8" : "size-7",
                   )}
                   aria-hidden="true"
                 >
-                  <item.icon className="size-4" />
+                  <Home className="size-4" />
                 </span>
-                <span className={cn("flex-1", sidebarLabelClass(labelsHidden))}>
-                  <span className="block truncate">{item.label}</span>
+                <span className={cn("flex-1 text-left", sidebarLabelClass(labelsHidden))}>
+                  <span className="block truncate">Overview</span>
                 </span>
               </a>
-            );
+            </TooltipTrigger>
+            {labelsHidden ? (
+              <TooltipContent
+                side="right"
+                align="center"
+                sideOffset={12}
+                className="max-w-56 rounded-md bg-foreground px-3 py-2 text-background shadow-lg"
+              >
+                <span className="block text-xs font-semibold">Overview</span>
+              </TooltipContent>
+            ) : null}
+          </Tooltip>
 
-            if (!labelsHidden) {
-              return <div key={item.id}>{menuItem}</div>;
-            }
-
-            return (
-              <div key={item.id}>
-                <Tooltip>
-                  <TooltipTrigger asChild>{menuItem}</TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    align="center"
-                    sideOffset={12}
-                    className="max-w-56 rounded-md bg-foreground px-3 py-2 text-background shadow-lg"
+          <div className="space-y-1.5">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  aria-expanded={!labelsHidden ? organisationOpen : undefined}
+                  aria-label="Organisation"
+                  className={cn(
+                    "group flex min-h-11 w-full cursor-pointer items-center rounded-md text-sm font-semibold text-foreground transition-[background-color,padding,gap,justify-content,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-sidebar-accent",
+                    labelsHidden ? "justify-center px-0" : "gap-3 px-1 py-2",
+                  )}
+                  onClick={() => setOrganisationOpen((open) => !open)}
+                >
+                  <span
+                    className={cn(
+                      "flex shrink-0 items-center justify-center text-foreground transition-[width,height] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                      labelsHidden ? "size-8" : "size-7",
+                    )}
+                    aria-hidden="true"
                   >
-                    <span className="block text-xs font-semibold">{item.label}</span>
-                    <span className="mt-0.5 block text-[11px] leading-4 opacity-75">
-                      {item.helper}
-                    </span>
-                  </TooltipContent>
-                </Tooltip>
+                    <Building2 className="size-4" />
+                  </span>
+                  <span className={cn("flex-1 text-left", sidebarLabelClass(labelsHidden))}>
+                    <span className="block truncate">Organisation</span>
+                  </span>
+                  <span
+                    className={cn(
+                      "flex size-4 shrink-0 items-center justify-center text-muted-foreground transition-[opacity,transform,width] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                      organisationOpen ? "rotate-90" : "rotate-0",
+                      labelsHidden
+                        ? "w-0 translate-x-1 opacity-0"
+                        : "w-4 translate-x-0 opacity-100 delay-75",
+                    )}
+                    aria-hidden="true"
+                  >
+                    <ChevronRight className="size-4" />
+                  </span>
+                </button>
+              </TooltipTrigger>
+              {labelsHidden ? (
+                <TooltipContent
+                  side="right"
+                  align="center"
+                  sideOffset={12}
+                  className="max-w-56 rounded-md bg-foreground px-3 py-2 text-background shadow-lg"
+                >
+                  <span className="block text-xs font-semibold">Organisation</span>
+                </TooltipContent>
+              ) : null}
+            </Tooltip>
+
+            <div
+              className={cn(
+                "grid overflow-hidden transition-[grid-template-rows,opacity,transform,margin] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
+                labelsHidden || !organisationOpen
+                  ? "mt-0 grid-rows-[0fr] -translate-y-2 opacity-0"
+                  : "mt-1 grid-rows-[1fr] translate-y-0 opacity-100",
+              )}
+            >
+              <div className="min-h-0">
+                <div className="ml-3 space-y-1 border-l border-sidebar-border pl-5">
+                  {navItems.map((item, index) => (
+                    <a
+                      key={item.id}
+                      href={item.href}
+                      aria-current={item.active ? "page" : undefined}
+                      aria-label={item.label}
+                      style={{
+                        transitionDelay: organisationOpen ? `${index * 45}ms` : "0ms",
+                      }}
+                      className={cn(
+                        "group flex min-h-9 w-full cursor-pointer items-center gap-2.5 rounded-md px-1 py-1.5 text-sm font-medium text-muted-foreground transition-[background-color,color,gap,padding,opacity,transform] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-sidebar-accent hover:text-foreground",
+                        organisationOpen ? "translate-x-0 opacity-100" : "-translate-x-2 opacity-0",
+                        item.active && "bg-sidebar-accent text-foreground",
+                      )}
+                      onClick={() => {
+                        if (drawer) {
+                          setMobileSidebarOpen(false);
+                        }
+                      }}
+                    >
+                      <span
+                        className="flex size-5 shrink-0 items-center justify-center"
+                        aria-hidden="true"
+                      >
+                        {item.icon}
+                      </span>
+                      <span
+                        className={cn(
+                          "min-w-0 flex-1 overflow-hidden truncate whitespace-nowrap transition-[max-width,opacity,transform] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
+                          "max-w-[12rem] translate-x-0 opacity-100",
+                        )}
+                      >
+                        {item.label}
+                      </span>
+                    </a>
+                  ))}
+                </div>
               </div>
-            );
-          })}
+            </div>
+          </div>
+          {labelsHidden
+            ? navItems.map((item) => {
+                const menuItem = (
+                  <a
+                    href={item.href}
+                    aria-current={item.active ? "page" : undefined}
+                    aria-label={item.label}
+                    className={cn(
+                      "group mt-1.5 flex min-h-11 cursor-pointer items-center justify-center rounded-md px-0 text-sm font-semibold text-foreground transition-[background-color,padding,gap,justify-content,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-sidebar-accent",
+                      item.active && "bg-sidebar-accent",
+                    )}
+                    onClick={() => {
+                      if (drawer) {
+                        setMobileSidebarOpen(false);
+                      }
+                    }}
+                  >
+                    <span
+                      className="flex size-8 shrink-0 items-center justify-center text-foreground"
+                      aria-hidden="true"
+                    >
+                      {item.icon}
+                    </span>
+                  </a>
+                );
+
+                return (
+                  <div key={item.id}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>{menuItem}</TooltipTrigger>
+                      <TooltipContent
+                        side="right"
+                        align="center"
+                        sideOffset={12}
+                        className="max-w-56 rounded-md bg-foreground px-3 py-2 text-background shadow-lg"
+                      >
+                        <span className="block text-xs font-semibold">{item.label}</span>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                );
+              })
+            : null}
         </nav>
 
         <div className="shrink-0 border-t border-sidebar-border bg-sidebar">

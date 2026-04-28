@@ -73,7 +73,7 @@ type TenantSortDirection = "asc" | "desc";
 
 export function TenantListPage() {
   const router = useRouter();
-  const [tenants, setTenants] = useState(() => listTenants());
+  const [tenants, setTenants] = useState(() => listTenants({ source: "seed" }));
   const [searchValue, setSearchValue] = useState("");
   const [statusFilter, setStatusFilter] = useState<TenantStatusFilter>("all");
   const [currentPage, setCurrentPage] = useState(1);
@@ -102,6 +102,10 @@ export function TenantListPage() {
   }, [searchValue, sortState.direction, sortState.key, statusFilter, tenants]);
 
   const totalPages = Math.max(1, Math.ceil(filteredTenants.length / rowsPerPage));
+
+  useEffect(() => {
+    setTenants(listTenants());
+  }, []);
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -332,7 +336,11 @@ export function TenantListPage() {
 
 export function TenantShowPage({ tenantId }: { readonly tenantId: number }) {
   const router = useRouter();
-  const [tenant, setTenant] = useState(() => getTenant(tenantId));
+  const [tenant, setTenant] = useState(() => getTenant(tenantId, { source: "seed" }));
+
+  useEffect(() => {
+    setTenant(getTenant(tenantId));
+  }, [tenantId]);
 
   if (!tenant) {
     return (

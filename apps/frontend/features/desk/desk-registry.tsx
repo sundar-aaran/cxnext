@@ -3,6 +3,7 @@ import {
   Building2,
   ClipboardList,
   Crown,
+  Factory,
   Inbox,
   LayoutDashboard,
   Settings,
@@ -13,7 +14,15 @@ import {
   Workflow,
 } from "lucide-react";
 
-export type DeskPortalId = "cxsun" | "customer" | "vendor" | "admin" | "super-admin" | "tenant";
+export type DeskPortalId =
+  | "cxsun"
+  | "customer"
+  | "vendor"
+  | "admin"
+  | "super-admin"
+  | "tenant"
+  | "industry"
+  | "company";
 
 export interface DeskMenuItem {
   readonly id: string;
@@ -170,6 +179,36 @@ export const deskPortals: readonly DeskPortalDefinition[] = [
         label: "New tenant",
         href: "/desk/tenant/new",
         icon: <Settings className="h-4 w-4" />,
+      },
+    ],
+  },
+  {
+    id: "industry",
+    label: "Industry",
+    href: "/desk/industry",
+    badge: "Organisation",
+    summary: "Organisation industry master workspace for business classification records.",
+    menuItems: [
+      {
+        id: "industry-list",
+        label: "Industries",
+        href: "/desk/industry",
+        icon: <Factory className="h-4 w-4" />,
+      },
+    ],
+  },
+  {
+    id: "company",
+    label: "Company",
+    href: "/desk/company",
+    badge: "Organisation",
+    summary: "Organisation company master workspace for legal entity and profile records.",
+    menuItems: [
+      {
+        id: "company-list",
+        label: "Companies",
+        href: "/desk/company",
+        icon: <Building2 className="h-4 w-4" />,
       },
     ],
   },

@@ -8,6 +8,7 @@ import { tenantColumnCatalog } from "../domain/tenant";
 import {
   getTenantRecord,
   listTenantRecords,
+  listSeedTenantRecords,
   saveTenantRecord,
   softDeleteTenantRecord,
 } from "../infrastructure/tenant-local-store";
@@ -31,12 +32,12 @@ export function formatTenantDate(value: string | null) {
   }).format(new Date(value));
 }
 
-export function listTenants() {
-  return listTenantRecords();
+export function listTenants(options?: { readonly source?: "seed" }) {
+  return options?.source === "seed" ? listSeedTenantRecords() : listTenantRecords();
 }
 
-export function getTenant(tenantId: number) {
-  return getTenantRecord(tenantId);
+export function getTenant(tenantId: number, options?: { readonly source?: "seed" }) {
+  return getTenantRecord(tenantId, options);
 }
 
 export function upsertTenant(input: TenantUpsertInput, tenantId?: number) {

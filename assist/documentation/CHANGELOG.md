@@ -2,11 +2,19 @@
 
 ## Version State
 
-- Current package version: `1.0.34`
-- Current release tag: `v-1.0.34`
+- Current package version: `1.0.35`
+- Current release tag: `v-1.0.35`
 - Versioned changelog label format: `v 1.0.<reference>`
 - Version section format: `## v-1.0.<reference>`
 - Entry format: `### [v 1.0.<reference>] YYYY-MM-DD - Title`
+
+## v-1.0.35
+
+### [v 1.0.35] 2026-04-29 - Lock Organisation Sidebar Accordion
+
+- Locked the desk sidebar rule that `Overview` remains a standalone top-level row without a chevron.
+- Locked `Organisation` as an accordion parent for Tenant, Industry, and Company, with active highlight only on the selected child row.
+- Preserved the smooth accordion animation and plain unboxed sidebar icons as the required sidebar behavior.
 
 ## v-1.0.34
 
