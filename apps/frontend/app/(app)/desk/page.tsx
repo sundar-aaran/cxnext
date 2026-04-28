@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { ApplicationDesk } from "../../../components/dashboard/application-desk";
 
 export default function DeskPage() {
-  redirect("/desk/customer");
+  return <ApplicationDesk />;
 }

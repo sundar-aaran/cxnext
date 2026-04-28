@@ -1,6 +1,6 @@
 {
   "name": "@cxnext/core",
-  "version": "1.0.7",
+  "version": "1.0.27",
   "private": true,
   "exports": {
     ".": {

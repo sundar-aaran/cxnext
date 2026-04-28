@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, Menu } from "electron";
 import path from "node:path";
 import { registerIpcHandlers } from "./ipc";
 
@@ -34,6 +34,7 @@ async function createWindow(): Promise<void> {
     height: 800,
     minWidth: 960,
     minHeight: 640,
+    autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
@@ -64,6 +65,7 @@ async function createWindow(): Promise<void> {
 }
 
 void app.whenReady().then(() => {
+  Menu.setApplicationMenu(null);
   registerIpcHandlers();
   void createWindow();
 });

@@ -1,11 +1,11 @@
 {
   "name": "@cxnext/frontend",
-  "version": "1.0.7",
+  "version": "1.0.27",
   "private": true,
   "scripts": {
-    "dev": "next dev --port 3000",
+    "dev": "node scripts/next-listen.mjs dev --port 3000",
     "build": "next build",
-    "start": "next start --port 3000",
+    "start": "node scripts/next-listen.mjs start --port 3000",
     "lint": "eslint . --config ../../eslint.config.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

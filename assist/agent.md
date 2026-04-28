@@ -34,6 +34,7 @@ Act as a senior engineer preserving a DDD-aligned modular monolith. Generate cod
 9. Keep source files below 700 lines, and treat 500 lines as the review point for splitting.
 10. Keep code clean, neat, readable, and formatted according to repository tooling.
 11. Follow repository version, changelog, branch, and commit rules from `assist/rules`.
+12. Before every meaningful execution batch, create or refresh `assist/execution/task.md` and `assist/execution/planning.md` according to `assist/rules/execution-tracking.md`.
 
 ## Boundary Rules
 

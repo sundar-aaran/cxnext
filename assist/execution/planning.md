@@ -1,0 +1,454 @@
+# Planning
+
+Active reference: `#27`
+
+## Active
+
+- `#27` Fix helper documentation paths
+  - Goal:
+    - fix the GitHub helper failure after moving `CHANGELOG.md` and `ARCHITECTURE.md` under `assist/documentation`.
+  - Scope:
+    - update CLI changelog reader to use `assist/documentation/CHANGELOG.md`.
+    - update helper/rule text that still points to old root documentation paths.
+    - validate changelog parsing without running commit or push.
+  - Constraints:
+    - do not run `github:now` through a push workflow.
+    - preserve moved documentation files and dirty worktree changes.
+    - do not revert unrelated changes.
+  - Planned validation:
+    - run focused CLI changelog parser check.
+    - run CLI lint if available through package filters.
+    - run Prettier checks for edited files.
+  - Implemented:
+    - changed the CLI changelog reader to load `assist/documentation/CHANGELOG.md`.
+    - updated GitHub helper help text to mention the moved changelog path.
+    - updated assist README/rules to point to `assist/documentation/CHANGELOG.md` and `assist/documentation/ARCHITECTURE.md`.
+    - synchronized workspace package versions to `1.0.27` and added a changelog entry.
+  - Validation:
+    - parsed the latest changelog entry from the moved changelog as `#27 Fix Helper Documentation Paths`.
+    - passed `corepack pnpm --filter @cxnext/cli typecheck`.
+    - passed `corepack pnpm --filter @cxnext/cli lint`.
+    - passed `corepack pnpm --filter @cxnext/cli build`.
+    - passed Prettier checks for edited CLI, assist docs, execution notes, changelog, and manifests.
+  - Residual risk:
+    - did not run `github:now` because that would stage, commit, and push; validated the failing changelog read path directly instead.
+
+- `#26` Add sidebar team switcher
+  - Goal:
+    - add a team switcher to the sidebar header matching the provided shadcn sidebar reference.
+  - Scope:
+    - replace the expanded sidebar brand link with a current team dropdown trigger.
+    - add Teams menu rows with icons, shortcuts, and Add team action.
+    - keep collapsed sidebar compact while preserving access to the same switcher menu.
+    - synchronize the workspace to the next package version after validation.
+  - Constraints:
+    - preserve existing sidebar collapse, mobile drawer, tooltip, and navigation behavior.
+    - use existing shared dropdown primitives and Lucide icons.
+    - do not revert unrelated dirty worktree changes.
+  - Planned validation:
+    - run UI typecheck and lint.
+    - run frontend typecheck and lint.
+    - verify `/desk` responds.
+  - Implemented:
+    - replaced the expanded sidebar brand link with a current team switcher trigger.
+    - added Teams dropdown rows for Acme Inc, Acme Corp., and Evil Corp. with icons and shortcut labels.
+    - added an Add team row matching the referenced dropdown structure.
+    - kept collapsed and drawer sidebar behavior intact, with the compact trigger still opening the team menu.
+    - synchronized workspace package versions to `1.0.26` and added a changelog entry.
+  - Validation:
+    - passed `corepack pnpm --filter @cxnext/ui typecheck`.
+    - passed `corepack pnpm --filter @cxnext/ui lint`.
+    - passed `corepack pnpm --filter @cxnext/frontend typecheck`.
+    - passed `corepack pnpm --filter @cxnext/frontend lint`.
+    - passed Prettier checks for edited shell, execution notes, changelog, and package manifests.
+    - verified `http://localhost:3000/desk` returns `200`.
+  - Residual risk:
+    - no browser screenshot was captured in this pass; validation covered typecheck, lint, formatting, and route health.
+
+- `#25` Add collapsed sidebar tooltips
+  - Goal:
+    - show clear shadcn-style tooltips for side menu icons when the desktop sidebar is collapsed.
+  - Scope:
+    - reuse the existing shared tooltip primitive.
+    - wrap collapsed sidebar utility items with right-side tooltip content.
+    - keep expanded sidebar and mobile drawer behavior unchanged.
+    - synchronize the workspace to the next package version after validation.
+  - Constraints:
+    - preserve existing sidebar spacing, icons, helper labels, and collapse animation.
+    - avoid adding new dependencies.
+    - do not revert unrelated dirty worktree changes.
+  - Planned validation:
+    - run UI typecheck and lint.
+    - run frontend typecheck and lint.
+    - verify `/desk` responds.
+  - Implemented:
+    - wrapped the dashboard shell in the shared tooltip provider.
+    - added right-side tooltips for collapsed desktop sidebar utility icons.
+    - included both the side menu label and helper text in each collapsed tooltip.
+    - kept expanded sidebar labels and mobile drawer rendering unchanged.
+    - synchronized workspace package versions to `1.0.25` and added a changelog entry.
+  - Validation:
+    - passed `corepack pnpm --filter @cxnext/ui typecheck`.
+    - passed `corepack pnpm --filter @cxnext/ui lint`.
+    - passed `corepack pnpm --filter @cxnext/frontend typecheck`.
+    - passed `corepack pnpm --filter @cxnext/frontend lint`.
+    - passed Prettier checks for edited shell, execution notes, changelog, and package manifests.
+    - verified `http://localhost:3000/desk` returns `200`.
+  - Residual risk:
+    - no browser screenshot was captured in this pass; validation covered typecheck, lint, formatting, and route health.
+
+- `#24` Apply theme orientation to full page
+  - Goal:
+    - make light, dark, and system theme mode apply to the entire desk page orientation instead of only component-level tokens.
+  - Scope:
+    - replace hardcoded dashboard shell page backgrounds with theme-aware surface classes.
+    - add full-document color-scheme and theme-aware scrollbar/background behavior.
+    - keep the existing theme dropdown, accent selector, drawer, and sidebar behavior intact.
+    - synchronize the workspace to the next package version after validation.
+  - Constraints:
+    - preserve current layout dimensions, spacing, and responsive behavior.
+    - avoid introducing a new theme system; use the existing `dark` class and CSS variables.
+    - do not revert unrelated dirty worktree changes.
+  - Planned validation:
+    - run UI typecheck and lint.
+    - run frontend typecheck and lint.
+    - verify `/desk` responds.
+  - Implemented:
+    - replaced the hardcoded dashboard shell gray background with the shared `theme-shell` surface.
+    - made the main desk viewport use the same theme-aware shell surface.
+    - added full-document `color-scheme` support for light, dark, and system-driven dark mode.
+    - changed body and scrollbar colors to follow active theme variables instead of fixed colors.
+    - synchronized workspace package versions to `1.0.24` and added a changelog entry.
+  - Validation:
+    - passed `corepack pnpm --filter @cxnext/ui typecheck`.
+    - passed `corepack pnpm --filter @cxnext/ui lint`.
+    - passed `corepack pnpm --filter @cxnext/frontend typecheck`.
+    - passed `corepack pnpm --filter @cxnext/frontend lint`.
+    - passed Prettier checks for edited shell, globals, execution notes, changelog, and package manifests.
+    - started the frontend dev server and verified `http://localhost:3000/desk` returns `200`.
+  - Residual risk:
+    - no browser screenshot was captured in this pass; validation covered typecheck, lint, formatting, and route health.
+
+- `#23` Smooth mobile menu and pointer controls
+  - Goal:
+    - make the mobile sidebar drawer animate smoothly and ensure top/side navigation controls show pointer cursors.
+  - Scope:
+    - update shared button/dropdown/sheet primitives where the cursor or animation behavior should be standard.
+    - tune the shared dashboard shell sidebar and topbar transition classes.
+    - synchronize the workspace to the next package version after validation.
+  - Constraints:
+    - preserve the current desktop collapse, mobile drawer, theme, notification, app switch, and user menu behavior.
+    - keep changes scoped to interaction polish.
+    - do not revert unrelated dirty worktree changes.
+  - Planned validation:
+    - run UI typecheck and lint.
+    - run frontend typecheck and lint.
+    - verify `/desk` responds.
+  - Implemented:
+    - added pointer cursor styling to the shared button primitive and dropdown menu rows.
+    - added pointer cursors to sidebar brand links, sidebar rows, app switch rows, notification rows, and the user menu trigger.
+    - smoothed mobile sheet overlay/content animation with transform/opacity timing and a softer easing curve.
+    - tuned desktop sidebar expand/collapse movement across shell grid, sidebar header, labels, rows, footer, and user control.
+    - synchronized workspace package versions to `1.0.23` and added a changelog entry.
+  - Validation:
+    - passed `corepack pnpm --filter @cxnext/ui typecheck`.
+    - passed `corepack pnpm --filter @cxnext/ui lint`.
+    - passed `corepack pnpm --filter @cxnext/frontend typecheck`.
+    - passed `corepack pnpm --filter @cxnext/frontend lint`.
+    - passed Prettier checks for edited shared primitives, dashboard shell, execution notes, changelog, and package manifests.
+    - verified `http://localhost:3000/desk` returns `200`.
+  - Residual risk:
+    - no browser screenshot was captured in this pass; validation covered typecheck, lint, formatting, and route health.
+
+- `#22` Fix theme accents and real sidebar version
+  - Goal:
+    - make the sidebar version label use the real workspace package version and make the theme accent selector apply the temp palette.
+  - Scope:
+    - update the shared dashboard shell version display.
+    - pass the root package version from the frontend desk shell.
+    - copy temp `data-accent` token values into the active frontend globals.
+    - synchronize the workspace to the next version after validation.
+  - Constraints:
+    - preserve the current sidebar, drawer, dropdown, and responsive behavior.
+    - use the exact orange, green, blue, and purple values from `temp/apps/ui/src/assets/css/index.css`.
+    - do not revert unrelated dirty worktree changes.
+  - Planned validation:
+    - run UI typecheck and lint.
+    - run frontend typecheck and lint.
+    - verify `/desk` responds.
+  - Implemented:
+    - added a `version` prop to the shared dashboard shell and passed the root `package.json` version from the frontend desk shell.
+    - replaced the stale sidebar `v 1.0.284` label with the real synchronized workspace version.
+    - copied the temp light and dark `data-accent` token sets for neutral, orange, blue, green, and purple into the active frontend globals.
+    - synchronized workspace package versions to `1.0.22` and added a changelog entry.
+  - Validation:
+    - passed `corepack pnpm --filter @cxnext/ui typecheck`.
+    - passed `corepack pnpm --filter @cxnext/ui lint`.
+    - passed `corepack pnpm --filter @cxnext/frontend typecheck`.
+    - passed `corepack pnpm --filter @cxnext/frontend lint`.
+    - passed Prettier checks for edited shell, frontend CSS, execution notes, changelog, and package manifests.
+    - verified `http://localhost:3000/desk` returns `200`.
+  - Residual risk:
+    - no browser screenshot was captured in this pass; validation covered typecheck, lint, formatting, manifest sync, and route health.
+
+- `#21` Polish sidebar logo and header buttons
+  - Goal:
+    - refine the shell visuals requested for logo treatment, button radius/icons, and notification badge shape.
+  - Scope:
+    - update shared `@cxnext/ui` dashboard shell only.
+    - keep mobile drawer, desktop collapse, and menu behavior intact.
+  - Constraints:
+    - remove sidebar logo outer border/background.
+    - use medium rounded corners for shell/header buttons.
+    - keep notification badge fully round.
+  - Planned validation:
+    - run UI typecheck and lint.
+    - run frontend typecheck and lint.
+    - verify `/desk` responds.
+  - Implemented:
+    - removed the sidebar logo outer border/background and kept the mark transparent.
+    - enlarged the `cx` logo mark.
+    - changed mobile and desktop sidebar toggles to medium rounded corners.
+    - changed header action buttons to medium rounded corners and kept compact icons for Home/Logout.
+    - made the notification count badge a fixed-size full circle.
+    - synchronized workspace package versions to `1.0.21` and added a changelog entry.
+  - Validation:
+    - passed `corepack pnpm --filter @cxnext/ui typecheck`.
+    - passed `corepack pnpm --filter @cxnext/ui lint`.
+    - passed `corepack pnpm --filter @cxnext/frontend typecheck`.
+    - passed `corepack pnpm --filter @cxnext/frontend lint`.
+    - verified `http://localhost:3000/desk` returns `200`.
+  - Residual risk:
+    - no automated browser screenshot was captured in this pass; validation covered typecheck, lint, formatting, and route health.
+
+- `#20` Smooth sidebar expand and collapse animation
+  - Goal:
+    - make desktop sidebar expand/collapse feel smooth while keeping mobile drawer behavior unchanged.
+  - Scope:
+    - update shared `@cxnext/ui` dashboard shell classes.
+    - add grid width transition, sidebar surface transition, and label/icon easing.
+    - keep routes, content, and mobile drawer behavior intact.
+  - Constraints:
+    - avoid layout jitter during collapse.
+    - keep collapsed sidebar readable as an icon rail.
+    - use CSS transitions only; do not add animation dependencies.
+  - Planned validation:
+    - run UI typecheck and lint.
+    - run frontend typecheck and lint.
+    - verify `/desk` responds.
+  - Implemented:
+    - added a reusable sidebar label transition helper.
+    - added desktop grid-column transition for the shell layout.
+    - added easing for sidebar padding, gaps, chevrons, brand text, and user text.
+    - preserved the mobile drawer path without adding animation dependencies.
+    - synchronized workspace package versions to `1.0.20` and added a changelog entry.
+  - Validation:
+    - passed `corepack pnpm --filter @cxnext/ui typecheck`.
+    - passed `corepack pnpm --filter @cxnext/ui lint`.
+    - passed `corepack pnpm --filter @cxnext/frontend typecheck`.
+    - passed `corepack pnpm --filter @cxnext/frontend lint`.
+    - verified `http://localhost:3000/desk` returns `200`.
+  - Residual risk:
+    - no automated browser screenshot was captured in this pass; validation covered typecheck, lint, formatting, and route health.
+
+- `#19` Reinstall side menu with shadcn sidebar drawer behavior
+  - Goal:
+    - remove the mobile side menu rail and use a left drawer sidebar on mobile, following shadcn `sidebar-07` behavior.
+  - Scope:
+    - fetch/install shadcn `sidebar-07` reference into the frontend workspace.
+    - adapt the shared `@cxnext/ui` dashboard shell to use drawer behavior on mobile.
+    - keep desktop sidebar expand/collapse, header dropdowns, theme selector, and desk content intact.
+  - Constraints:
+    - no visible side rail on mobile.
+    - mobile menu opens from the left via the header menu button.
+    - preserve the current side menu visual content/version/user controls.
+  - Planned validation:
+    - run UI typecheck and lint.
+    - run frontend typecheck and lint.
+    - verify `/desk` responds.
+  - Implemented:
+    - ran `npx shadcn@latest add sidebar-07 --yes` from the frontend workspace.
+    - removed the fixed mobile side rail from the shared shell.
+    - added a mobile-only left `Sheet` drawer triggered by the header menu button.
+    - reused the current side menu content, version label, and user menu in the drawer.
+    - preserved desktop sidebar expand/collapse behavior.
+    - synchronized workspace package versions to `1.0.19` and added a changelog entry.
+  - Validation:
+    - passed `corepack pnpm --filter @cxnext/ui typecheck`.
+    - passed `corepack pnpm --filter @cxnext/ui lint`.
+    - passed `corepack pnpm --filter @cxnext/frontend typecheck`.
+    - passed `corepack pnpm --filter @cxnext/frontend lint`.
+    - verified `http://localhost:3000/desk` returns `200`.
+  - Residual risk:
+    - no automated browser screenshot was captured in this pass; validation covered typecheck, lint, formatting, and route health.
+
+- `#18` Make Application Desk responsive across breakpoints
+  - Goal:
+    - make the Application Desk and shared shell responsive from desktop to mobile while preserving the current side-menu version.
+  - Scope:
+    - update shared shell grid/sidebar/header breakpoints.
+    - update Application Desk wrapper, card spacing, quick actions, and app grid breakpoints.
+    - keep existing routes, dropdown behavior, theme selector, and slim scrollbars intact.
+  - Constraints:
+    - side menu should stay a usable icon rail on small screens.
+    - expanded label sidebar should remain a desktop behavior.
+    - avoid horizontal overflow in header actions and application cards.
+  - Planned validation:
+    - run UI typecheck and lint.
+    - run frontend typecheck and lint.
+    - verify `/desk` responds.
+  - Implemented:
+    - changed the shared shell to use an icon side rail on mobile and tablet.
+    - preserved desktop sidebar expand/collapse behavior while aligning the compact rail with the current side-menu version.
+    - made header controls responsive with compact icons and bounded dropdown widths.
+    - tuned Application Desk workspace width, vertical spacing, card padding, and grid breakpoints from mobile to large desktop.
+    - synchronized workspace package versions to `1.0.18` and added a changelog entry.
+  - Validation:
+    - passed `corepack pnpm --filter @cxnext/ui typecheck`.
+    - passed `corepack pnpm --filter @cxnext/ui lint`.
+    - passed `corepack pnpm --filter @cxnext/frontend typecheck`.
+    - passed `corepack pnpm --filter @cxnext/frontend lint`.
+    - verified `http://localhost:3000/desk` returns `200`.
+  - Residual risk:
+    - no automated browser screenshot was captured in this pass; validation covered typecheck, lint, formatting, and route health.
+
+- `#17` Match temp 90 percent workspace width
+  - Goal:
+    - adjust the Application Desk workspace to use 90% of the available shell workspace, leaving 5% gutter on each side.
+  - Scope:
+    - update the Application Desk outer container width only.
+    - keep the fixed shell, slim scrollbars, cards, and routes intact.
+  - Constraints:
+    - preserve centered layout with equal side gutters.
+    - avoid additional horizontal padding that would make the gutters exceed the requested 5%.
+  - Planned validation:
+    - run frontend typecheck and lint.
+    - verify `/desk` responds.
+  - Implemented:
+    - changed the Application Desk outer wrapper to `w-[90%]`.
+    - removed the extra horizontal page padding from the wrapper so gutters remain 5% each side.
+    - synchronized workspace package versions to `1.0.17` and added a changelog entry.
+  - Validation:
+    - passed `corepack pnpm --filter @cxnext/frontend typecheck`.
+    - passed `corepack pnpm --filter @cxnext/frontend lint`.
+    - verified `http://localhost:3000/desk` returns `200`.
+  - Residual risk:
+    - no automated browser screenshot was captured in this pass; validation covered frontend typecheck, lint, formatting, and route health.
+
+- `#16` Standardize Application Desk width and slim scrollbars
+  - Goal:
+    - make the Application Desk content use the standard 9/12 workspace width and make scrollbars as slim as practical.
+  - Scope:
+    - update the Application Desk page container width.
+    - add reusable slim scrollbar styling and apply it to shell scroll containers.
+    - keep header, sidebar, dropdowns, and routing intact.
+  - Constraints:
+    - preserve full-width behavior on smaller screens.
+    - keep scroll behavior inside the fixed shell.
+    - avoid changing card internals beyond the outer workspace size.
+  - Planned validation:
+    - run UI typecheck and lint.
+    - run frontend typecheck and lint.
+    - verify `/desk` responds.
+  - Implemented:
+    - changed the Application Desk outer workspace to `xl:w-9/12`.
+    - added reusable slim scrollbar styling in frontend globals.
+    - applied slim scrollbars to the sidebar nav scroller and inner workspace scroller.
+    - synchronized workspace package versions to `1.0.16` and added a changelog entry.
+  - Validation:
+    - passed `corepack pnpm --filter @cxnext/ui typecheck`.
+    - passed `corepack pnpm --filter @cxnext/ui lint`.
+    - passed `corepack pnpm --filter @cxnext/frontend typecheck`.
+    - passed `corepack pnpm --filter @cxnext/frontend lint`.
+    - verified `http://localhost:3000/desk` returns `200`.
+  - Residual risk:
+    - no automated browser screenshot was captured in this pass; validation covered typecheck, lint, formatting, and route health.
+
+- `#15` Match temp theme selector
+  - Goal:
+    - make the Application Desk theme selector match the temp selector exactly, including Appearance and Accent sections.
+  - Scope:
+    - update the shared `@cxnext/ui` dashboard shell theme dropdown only.
+    - keep current header layout, sidebar layout, and routes intact.
+  - Constraints:
+    - use the existing dropdown-menu and button primitives.
+    - match temp labels, rounded menu shape, spacing, check icons, and section order.
+  - Planned validation:
+    - run UI typecheck and lint.
+    - run frontend typecheck and lint.
+    - verify `/desk` responds.
+  - Implemented:
+    - matched the temp theme selector layout with Appearance and Accent sections.
+    - added selected-state check icons and rounded menu styling.
+    - persisted `codexsun-theme-mode` and `codexsun-theme-accent` choices.
+    - synchronized workspace package versions to `1.0.15` and added a changelog entry.
+  - Validation:
+    - passed `corepack pnpm --filter @cxnext/ui typecheck`.
+    - passed `corepack pnpm --filter @cxnext/ui lint`.
+    - passed `corepack pnpm --filter @cxnext/frontend typecheck`.
+    - passed `corepack pnpm --filter @cxnext/frontend lint`.
+    - verified `http://localhost:3000/desk` returns `200`.
+  - Residual risk:
+    - no automated browser screenshot was captured in this pass; validation covered typecheck, lint, and route health.
+
+- `#14` Match Application Desk header dropdowns and fixed side rail
+  - Goal:
+    - make the Application Desk shell match the temp interaction model for app switching, header menus, fixed side navigation, and scrollable workspace content.
+  - Scope:
+    - update the shared `@cxnext/ui` dashboard shell.
+    - read temp dashboard/navigation references before changing UI.
+    - keep the current Application Desk content and Cxsun routes intact.
+  - Constraints:
+    - preserve the temp visual language and compact enterprise spacing.
+    - keep the left rail and bottom user area fixed while the desk content scrolls.
+    - use existing dropdown-menu, button, separator, and Lucide icon primitives.
+  - Planned validation:
+    - run UI typecheck and lint.
+    - run frontend typecheck and lint.
+    - verify `/desk` responds.
+  - Implemented:
+    - added the temp-style app switch dropdown with Dashboard first and app rows with icons.
+    - added notification dropdown with unread count, mark-all-read, and notification row links.
+    - wired Home as a redirect button to `/`.
+    - added a compact theme dropdown with Light, Dark, and System choices.
+    - added the fixed bottom user dropdown and kept the version label above it.
+    - made the sidebar/footer fixed while the inner workspace content scrolls.
+    - synchronized workspace package versions to `1.0.14` and added a changelog entry.
+  - Validation:
+    - passed `corepack pnpm --filter @cxnext/ui typecheck`.
+    - passed `corepack pnpm --filter @cxnext/ui lint`.
+    - passed `corepack pnpm --filter @cxnext/frontend typecheck`.
+    - passed `corepack pnpm --filter @cxnext/frontend lint`.
+    - verified `http://localhost:3000/desk` returns `200`.
+  - Residual risk:
+    - no automated browser screenshot was captured in this pass; validation covered typecheck, lint, and route health.
+
+- `#13` Add Application Desk sidebar collapse toggle
+  - Goal:
+    - make the top-left menu button toggle the left Application Desk sidebar between expanded and collapsed states.
+  - Scope:
+    - update the shared `@cxnext/ui` dashboard shell.
+    - preserve the current temp-matched expanded sidebar look.
+    - keep icon-only navigation and user/version affordances visible in collapsed mode.
+  - Constraints:
+    - keep state local to the shell.
+    - do not change workspace routes or Cxsun screens.
+    - keep the layout stable and usable on desktop.
+  - Planned validation:
+    - run UI typecheck and lint.
+    - run frontend typecheck and lint.
+    - verify `/desk` responds.
+  - Implemented:
+    - converted the shared dashboard shell to a client component for local collapse state.
+    - wired the header menu button with pressed state and expand/collapse labels.
+    - added compact sidebar rendering for brand, navigation, version, and user controls.
+    - synchronized workspace package versions to `1.0.13` and added a changelog entry.
+  - Validation:
+    - passed `corepack pnpm --filter @cxnext/ui typecheck`.
+    - passed `corepack pnpm --filter @cxnext/ui lint`.
+    - passed `corepack pnpm --filter @cxnext/frontend typecheck`.
+    - passed `corepack pnpm --filter @cxnext/frontend lint`.
+    - verified `http://localhost:3000/desk` returns `200`.
+    - passed Prettier checks for the edited shell, execution notes, changelog, and package manifests.
+  - Residual risk:
+    - browser visual click-through was not captured in this pass because the repo does not expose a local Playwright binary through `pnpm exec`; implementation is covered by typecheck, lint, formatting, and route health.

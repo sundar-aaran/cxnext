@@ -1,17 +1,30 @@
 import { notFound } from "next/navigation";
 import { DeskDashboard } from "../../../../components/dashboard/desk-dashboard";
-import { deskPortals, getDeskPortal, type DeskPortalId } from "../../../../features/desk/desk-registry";
+import { CxsunOverviewPage } from "../../../../features/cxsun/cxsun-workspace";
+import {
+  deskPortals,
+  getDeskPortal,
+  type DeskPortalId,
+} from "../../../../features/desk/desk-registry";
 
 export function generateStaticParams() {
   return deskPortals.map((portal) => ({ portal: portal.id }));
 }
 
-export default async function DeskPortalPage({ params }: { readonly params: Promise<{ portal: DeskPortalId }> }) {
+export default async function DeskPortalPage({
+  params,
+}: {
+  readonly params: Promise<{ portal: DeskPortalId }>;
+}) {
   const { portal: portalId } = await params;
   const portal = getDeskPortal(portalId);
 
   if (portal.id !== portalId) {
     notFound();
+  }
+
+  if (portal.id === "cxsun") {
+    return <CxsunOverviewPage />;
   }
 
   return <DeskDashboard portal={portal} />;

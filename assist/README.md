@@ -12,6 +12,17 @@ The repo is organized around three layers of intent:
 - `packages/`: shared platform primitives and infrastructure abstractions.
 - `assist/`: AI-native memory, rules, and standards that govern future generation.
 
+## Required Start Sequence
+
+Before every meaningful execution batch, AI agents must read this file, `assist/agent.md`, and the task-relevant files under `assist/rules` and `assist/standards`. Do not begin implementation from partial assist context.
+
+Execution tracking is mandatory for every meaningful change. Before writing code, changing repository files, or running validation for a batch, create or refresh:
+
+- `assist/execution/task.md`
+- `assist/execution/planning.md`
+
+The active reference in those files must match package version `1.0.<reference>`, release tag `v-1.0.<reference>`, and the matching `assist/documentation/CHANGELOG.md` section when release tracking is active.
+
 ## Architecture Philosophy
 
 The backend is a modular monolith. It is deployed as one NestJS application, but each future bounded context must be isolated, independently testable, and accessed through public contracts, application ports, or events.
@@ -53,6 +64,7 @@ Each module must expose only deliberate public contracts. Do not import another 
 - Publish events through the event bus instead of directly invoking unrelated modules.
 - Keep source files under 700 lines. Review files at 500 lines and split them unless cohesion clearly requires keeping them together.
 - Follow `assist/rules/coding-style.md`, `assist/rules/versioning-and-releases.md`, and `assist/rules/branching-and-commits.md` for all generated work.
+- Follow `assist/rules/execution-tracking.md` before every meaningful execution batch.
 
 ## Event-Driven Approach
 

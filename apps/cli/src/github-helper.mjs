@@ -5,7 +5,11 @@ import { promisify } from "node:util";
 import { pathToFileURL } from "node:url";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { formatChangelogCommitSubject, readLatestChangelogEntry } from "./changelog.mjs";
+import {
+  CHANGELOG_PATH,
+  formatChangelogCommitSubject,
+  readLatestChangelogEntry,
+} from "./changelog.mjs";
 
 const execFileAsync = promisify(execFile);
 
@@ -84,9 +88,16 @@ async function inspectRepository(cwd) {
   );
   const remoteResult = await runGit(["remote"], rootDir, true);
   const status = parseGitStatusPorcelain((await runGit(["status", "--porcelain"], rootDir)).stdout);
-  const remotes = remoteResult.stdout.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const remotes = remoteResult.stdout
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
   const upstream = upstreamResult.ok ? trim(upstreamResult.stdout) : null;
-  const remote = upstream ? upstream.split("/")[0] : remotes.includes("origin") ? "origin" : remotes[0];
+  const remote = upstream
+    ? upstream.split("/")[0]
+    : remotes.includes("origin")
+      ? "origin"
+      : remotes[0];
   const operation = detectGitOperation(gitDir);
   let aheadBehind = { ahead: 0, behind: 0 };
 
@@ -195,7 +206,7 @@ function printHelp() {
       "  1. inspect repository state",
       "  2. fetch and pull/merge upstream updates when behind",
       "  3. stage all changes",
-      "  4. commit using the latest CHANGELOG.md entry title and reference",
+      `  4. commit using the latest ${CHANGELOG_PATH} entry title and reference`,
       "  5. push the current branch",
       "",
     ].join("\n"),
@@ -241,14 +252,17 @@ export async function runGitHubHelper(cwd = process.cwd(), options = { yes: fals
     output.write("GitHub helper finished successfully.\n");
     return 0;
   } catch (error) {
-    output.write(`GitHub helper failed: ${error instanceof Error ? error.message : String(error)}\n`);
+    output.write(
+      `GitHub helper failed: ${error instanceof Error ? error.message : String(error)}\n`,
+    );
     return 1;
   } finally {
     rl.close();
   }
 }
 
-const isDirectExecution = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+const isDirectExecution =
+  process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
 
 if (isDirectExecution) {
   process.exitCode = await runGitHubHelper(process.cwd(), parseCliOptions(process.argv.slice(2)));

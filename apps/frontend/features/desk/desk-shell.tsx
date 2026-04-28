@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { DashboardShell } from "@cxnext/ui";
-import { DeskBreadcrumb } from "./desk-breadcrumb";
+import rootPackage from "../../../../package.json";
 import { getDeskPortal } from "./desk-registry";
 
 function getPortalIdFromPath(pathname: string) {
@@ -13,6 +13,7 @@ function getPortalIdFromPath(pathname: string) {
 
 export function DeskShell({ children }: { readonly children: ReactNode }) {
   const pathname = usePathname();
+  const isDeskRoot = pathname === "/desk";
   const activePortal = getDeskPortal(getPortalIdFromPath(pathname));
   const navItems = activePortal.menuItems.map((item) => ({
     ...item,
@@ -21,10 +22,11 @@ export function DeskShell({ children }: { readonly children: ReactNode }) {
 
   return (
     <DashboardShell
-      brand="cxnext"
-      workspace={activePortal.badge}
+      brand="CODEXSUN COMME..."
+      workspace={isDeskRoot ? "Application Desk" : activePortal.badge}
       navItems={navItems}
-      header={<DeskBreadcrumb activePortal={activePortal} />}
+      shellTechnicalName={isDeskRoot ? "shell.application-desk" : `shell.${activePortal.id}`}
+      version={rootPackage.version}
     >
       {children}
     </DashboardShell>

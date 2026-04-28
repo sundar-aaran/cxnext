@@ -10,14 +10,14 @@
 ## Reference Policy
 
 1. Every meaningful batch uses a reference number such as `#10`.
-2. When execution tracking is active, the batch reference in `TASK.md` must match the current batch reference in `PLANNING.md`.
+2. When execution tracking is active, the batch reference in `assist/execution/task.md` must match the current batch reference in `assist/execution/planning.md`.
 3. Installed app version `1.0.<reference>` must be derived directly from the same batch reference number.
 4. Changelog entries must use the same reference number in the form `### [v 1.0.10] YYYY-MM-DD - Title`.
 5. Commit subjects must start with the same reference number.
 
 ## Changelog Policy
 
-1. `CHANGELOG.md` must contain a `Version State` block.
+1. `assist/documentation/CHANGELOG.md` must contain a `Version State` block.
 2. `Version State` must record the current numeric package version and current `v-` release tag.
 3. `Version State` must document the versioned changelog label format.
 4. The changelog must contain a matching version section such as `## v-1.0.172`.
