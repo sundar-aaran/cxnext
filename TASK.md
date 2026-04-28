@@ -1,12 +1,12 @@
 # TASK
 
-Active reference: `#4`
+Active reference: `#5`
 
 ## Current Batch
 
-- Status: GitHub helper CLI
-- Package version: `1.0.4`
-- Release tag: `v-1.0.4`
+- Status: Frontend layouts and desk dashboard
+- Package version: `1.0.5`
+- Release tag: `v-1.0.5`
 
 ## Notes
 

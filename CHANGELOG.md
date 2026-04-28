@@ -2,11 +2,19 @@
 
 ## Version State
 
-- Current package version: `1.0.4`
-- Current release tag: `v-1.0.4`
+- Current package version: `1.0.5`
+- Current release tag: `v-1.0.5`
 - Versioned changelog label format: `v 1.0.<reference>`
 - Version section format: `## v-1.0.<reference>`
 - Entry format: `### [v 1.0.<reference>] YYYY-MM-DD - Title`
+
+## v-1.0.5
+
+### [v 1.0.5] 2026-04-28 - Add Frontend Layouts And Desk Dashboard
+
+- Added shared UI package Tailwind sources, shadcn primitives, and a reusable dashboard shell.
+- Added public web, auth, and app route-group layouts with sample home, about, contact, login, register, password reset, and desk pages.
+- Wired the `desk` workspace dashboard to the application shell and documented the current shadcn registry mismatch for `dashboard-07`.
 
 ## v-1.0.4
 

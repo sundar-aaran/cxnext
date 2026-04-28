@@ -14,7 +14,7 @@
     "utils": "@/lib/utils",
     "ui": "@cxnext/ui/components",
     "lib": "@/lib",
-    "hooks": "@cxnext/hooks"
+    "hooks": "@/hooks"
   },
   "iconLibrary": "lucide"
 }
