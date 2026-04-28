@@ -8,3 +8,6 @@
 - Avoid shared mutable state.
 - Keep package code domain-neutral.
 - A module should be removable without rewriting unrelated modules.
+- Backend bounded contexts must live under `apps/server/src/modules/<module-name>`.
+- Frontend bounded contexts must live under `apps/frontend/features/<module-name>`.
+- Module-local database migrations and seeders must stay inside the backend module's own `database/` folder.

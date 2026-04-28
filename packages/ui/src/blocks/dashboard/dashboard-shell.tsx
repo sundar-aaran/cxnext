@@ -12,27 +12,22 @@ import {
   ChevronsUpDown,
   CreditCard,
   Database,
+  Factory,
   FlaskConical,
   Globe,
   Home,
-  Images,
-  KeyRound,
   LogOut,
-  Mail,
   Menu,
   MoonStar,
   PackageCheck,
   Plus,
   ReceiptText,
-  RefreshCcw,
   Server,
   ShieldCheck,
   SlidersHorizontal,
   Sparkles,
   SunMedium,
   Users,
-  Warehouse,
-  Wrench,
 } from "lucide-react";
 import { Button } from "../../components/button";
 import {
@@ -96,102 +91,46 @@ const teams = [
     id: "acme-inc",
     name: "Acme Inc",
     plan: "Enterprise",
-    shortcut: "⌘1",
+    shortcut: "Cmd+1",
     icon: Building2,
   },
   {
     id: "acme-corp",
     name: "Acme Corp.",
     plan: "Growth",
-    shortcut: "⌘2",
+    shortcut: "Cmd+2",
     icon: SlidersHorizontal,
   },
   {
     id: "evil-corp",
     name: "Evil Corp.",
     plan: "Audit",
-    shortcut: "⌘3",
+    shortcut: "Cmd+3",
     icon: ShieldCheck,
   },
 ] as const;
 
 const utilityGroups = [
   {
-    id: "media",
-    label: "Media",
-    helper: "Assets, files, and media manager",
-    href: "/desk",
-    icon: Images,
-  },
-  {
-    id: "mail",
-    label: "Mail",
-    helper: "Mail service and delivery settings",
-    href: "/desk",
-    icon: Mail,
-  },
-  {
-    id: "users",
-    label: "Users",
-    helper: "Users, roles, and permissions",
-    href: "/desk",
+    id: "tenant",
+    label: "Tenant",
+    helper: "Tenant workspace, ownership, and operating context",
+    href: "/desk/tenant",
     icon: Users,
   },
   {
-    id: "framework",
-    label: "Framework",
-    helper: "Companies, tenants, and core settings",
-    href: "/desk",
+    id: "industry",
+    label: "Industry",
+    helper: "Industry setup, categories, and business classification",
+    href: "/desk/industry",
+    icon: Factory,
+  },
+  {
+    id: "company",
+    label: "Company",
+    helper: "Company profile, legal entity, and organization details",
+    href: "/desk/company",
     icon: Building2,
-  },
-  {
-    id: "server-client",
-    label: "Server / Client",
-    helper: "Live servers and client keys",
-    href: "/desk",
-    icon: Server,
-  },
-  {
-    id: "developer",
-    label: "Developer",
-    helper: "Audit, queues, backups, and updates",
-    href: "/desk",
-    icon: Wrench,
-  },
-  {
-    id: "security",
-    label: "Security",
-    helper: "Review access and protections",
-    href: "/desk",
-    icon: ShieldCheck,
-  },
-  {
-    id: "keys",
-    label: "Keys",
-    helper: "Generate and rotate access keys",
-    href: "/desk",
-    icon: KeyRound,
-  },
-  {
-    id: "alerts",
-    label: "Alerts",
-    helper: "Operational notices and queues",
-    href: "/desk/cxsun/queue",
-    icon: Bell,
-  },
-  {
-    id: "backup",
-    label: "Backup",
-    helper: "Database backup and restore",
-    href: "/desk",
-    icon: Database,
-  },
-  {
-    id: "updates",
-    label: "Updates",
-    helper: "System update workflow",
-    href: "/desk",
-    icon: RefreshCcw,
   },
 ] as const;
 
@@ -479,10 +418,18 @@ export function DashboardShell({
 
         <nav
           className={cn(
-            "slim-scrollbar min-h-0 flex-1 space-y-2 overflow-y-auto py-8 transition-[padding] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+            "slim-scrollbar min-h-0 flex-1 overflow-y-auto py-8 transition-[padding] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
             labelsHidden ? "px-2" : "px-3",
           )}
         >
+          <div
+            className={cn(
+              "text-[11px] font-semibold uppercase tracking-[0.32em] text-muted-foreground transition-[opacity,max-height,padding] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+              labelsHidden ? "max-h-0 overflow-hidden p-0 opacity-0" : "max-h-8 px-1 pb-4",
+            )}
+          >
+            Organisation
+          </div>
           {utilityGroups.map((item) => {
             const menuItem = (
               <a
@@ -490,8 +437,8 @@ export function DashboardShell({
                 href={item.href}
                 aria-label={`${item.label}: ${item.helper}`}
                 className={cn(
-                  "group flex min-h-10 cursor-pointer items-center rounded-md text-sm font-semibold text-foreground transition-[background-color,padding,gap,justify-content,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-sidebar-accent",
-                  labelsHidden ? "justify-center px-0" : "gap-3 px-3 py-2",
+                  "group flex min-h-11 cursor-pointer items-center rounded-md text-sm font-semibold text-foreground transition-[background-color,padding,gap,justify-content,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-sidebar-accent",
+                  labelsHidden ? "justify-center px-0" : "gap-3 px-1 py-2",
                 )}
                 onClick={() => {
                   if (drawer) {
@@ -499,43 +446,42 @@ export function DashboardShell({
                   }
                 }}
               >
-                <item.icon className="size-4 shrink-0" />
+                <span
+                  className={cn(
+                    "flex shrink-0 items-center justify-center rounded-md border border-border bg-background text-foreground shadow-sm transition-[width,height] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                    labelsHidden ? "size-8" : "size-9",
+                  )}
+                  aria-hidden="true"
+                >
+                  <item.icon className="size-4" />
+                </span>
                 <span className={cn("flex-1", sidebarLabelClass(labelsHidden))}>
                   <span className="block truncate">{item.label}</span>
-                  <span className="mt-0.5 block truncate text-xs font-normal text-muted-foreground">
-                    {item.helper}
-                  </span>
                 </span>
-                <ChevronDown
-                  className={cn(
-                    "-rotate-90 size-4 text-muted-foreground transition-[opacity,transform,width] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
-                    labelsHidden
-                      ? "w-0 translate-x-1 opacity-0"
-                      : "w-4 translate-x-0 opacity-100 delay-75",
-                  )}
-                />
               </a>
             );
 
             if (!labelsHidden) {
-              return menuItem;
+              return <div key={item.id}>{menuItem}</div>;
             }
 
             return (
-              <Tooltip key={item.id}>
-                <TooltipTrigger asChild>{menuItem}</TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  align="center"
-                  sideOffset={12}
-                  className="max-w-56 rounded-md bg-foreground px-3 py-2 text-background shadow-lg"
-                >
-                  <span className="block text-xs font-semibold">{item.label}</span>
-                  <span className="mt-0.5 block text-[11px] leading-4 opacity-75">
-                    {item.helper}
-                  </span>
-                </TooltipContent>
-              </Tooltip>
+              <div key={item.id}>
+                <Tooltip>
+                  <TooltipTrigger asChild>{menuItem}</TooltipTrigger>
+                  <TooltipContent
+                    side="right"
+                    align="center"
+                    sideOffset={12}
+                    className="max-w-56 rounded-md bg-foreground px-3 py-2 text-background shadow-lg"
+                  >
+                    <span className="block text-xs font-semibold">{item.label}</span>
+                    <span className="mt-0.5 block text-[11px] leading-4 opacity-75">
+                      {item.helper}
+                    </span>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
             );
           })}
         </nav>

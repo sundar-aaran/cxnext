@@ -4,6 +4,9 @@ import path from "node:path";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const pnpmCommand = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
+const frontendUrl = process.env.FRONTEND_URL ?? "http://localhost:3000";
+const backendUrl = process.env.BACKEND_URL ?? "http://localhost:4000";
+const backendHealthUrl = process.env.BACKEND_HEALTH_URL ?? "http://localhost:4000/health";
 
 function resolvePnpmInvocation() {
   const npmExecPath = process.env.npm_execpath;
@@ -42,6 +45,17 @@ async function releasePorts() {
 
 function runTurbo() {
   const pnpm = resolvePnpmInvocation();
+
+  process.stdout.write(
+    [
+      "",
+      `cxnext frontend listening on ${frontendUrl}`,
+      `cxnext server listening on ${backendUrl}`,
+      `cxnext server health on ${backendHealthUrl}`,
+      "",
+    ].join("\n"),
+  );
+
   const child = spawn(pnpm.command, pnpm.args, {
     cwd: root,
     stdio: "inherit",
@@ -49,9 +63,9 @@ function runTurbo() {
     windowsHide: true,
     env: {
       ...process.env,
-      FRONTEND_URL: process.env.FRONTEND_URL ?? "http://localhost:3000",
-      BACKEND_URL: process.env.BACKEND_URL ?? "http://localhost:4000",
-      BACKEND_HEALTH_URL: process.env.BACKEND_HEALTH_URL ?? "http://localhost:4000/health",
+      FRONTEND_URL: frontendUrl,
+      BACKEND_URL: backendUrl,
+      BACKEND_HEALTH_URL: backendHealthUrl,
       PORT: process.env.PORT ?? "4000",
     },
   });

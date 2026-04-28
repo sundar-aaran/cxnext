@@ -1,8 +1,27 @@
-import { Kysely, MysqlDialect } from "kysely";
+import { Kysely, MysqlDialect, type ColumnType, type Generated } from "kysely";
 import { createPool, type PoolOptions } from "mysql2/promise";
 import { z } from "zod";
 
-export type DatabaseSchema = Record<string, never>;
+type TimestampColumn = ColumnType<Date, Date | string | undefined, Date | string>;
+type NullableTimestampColumn = ColumnType<
+  Date | null,
+  Date | string | null | undefined,
+  Date | string | null
+>;
+
+export interface TenantsTable {
+  readonly id: Generated<number>;
+  readonly name: string;
+  readonly slug: string;
+  readonly is_active: Generated<boolean>;
+  readonly created_at: TimestampColumn;
+  readonly updated_at: TimestampColumn;
+  readonly deleted_at: NullableTimestampColumn;
+}
+
+export interface DatabaseSchema {
+  readonly tenants: TenantsTable;
+}
 
 export const databaseEnvSchema = z.object({
   DATABASE_HOST: z.string().default("localhost"),

@@ -6,6 +6,7 @@ import { HealthModule } from "./common/health/health.module";
 import { GraphqlFoundationModule } from "./common/graphql/graphql-foundation.module";
 import { CoreModule } from "./core/core.module";
 import { EventsModule } from "./events/events.module";
+import { TenantsModule } from "./modules/tenants/tenants.module";
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { EventsModule } from "./events/events.module";
     }),
     CoreModule,
     EventsModule,
+    TenantsModule,
     GraphqlFoundationModule,
     HealthModule,
   ],

@@ -2,11 +2,69 @@
 
 ## Version State
 
-- Current package version: `1.0.27`
-- Current release tag: `v-1.0.27`
+- Current package version: `1.0.34`
+- Current release tag: `v-1.0.34`
 - Versioned changelog label format: `v 1.0.<reference>`
 - Version section format: `## v-1.0.<reference>`
 - Entry format: `### [v 1.0.<reference>] YYYY-MM-DD - Title`
+
+## v-1.0.34
+
+### [v 1.0.34] 2026-04-29 - Enforce Strict Tenant Module Structure
+
+- Added a backend `tenants` bounded context under `apps/server/src/modules/tenants` with DDD layers plus `database/migrations` and `database/seeder`.
+- Registered the backend tenant module in the Nest application and module registry.
+- Refactored the frontend tenant feature into strict `domain`, `application`, `infrastructure`, and `interface/pages` folders.
+- Added strict repository rules requiring this backend and frontend module structure for future bounded contexts.
+
+## v-1.0.33
+
+### [v 1.0.33] 2026-04-29 - Add Reusable List Blocks And Match Master List UI
+
+- Added reusable `master-list`, `common-list`, and `entry-form` blocks under `@cxnext/ui`.
+- Added shared list toolbar, filter, column visibility, table card, detail/form card, and pagination surfaces.
+- Refit the tenant list, show, and upsert screens to the new shared list blocks with screenshot-matched transparent headers and split control/table/pagination cards.
+
+## v-1.0.32
+
+### [v 1.0.32] 2026-04-29 - Add Tenant Master Screens
+
+- Added Tenant as the first Organisation master module with list, show, create, and edit routes.
+- Added a `tenants` table-shaped frontend model with integer auto ids, slug, active status, timestamps, and soft delete.
+- Added the Kysely `tenants` table contract to the shared database schema.
+- Built the upsert workflow with TanStack Form and wired the Organisation sidebar Tenant row to `/desk/tenant`.
+
+## v-1.0.31
+
+### [v 1.0.31] 2026-04-29 - Replace Sidebar Menu With Organisation
+
+- Removed the old utility side menu rows.
+- Added an Organisation section with Tenant, Industry, and Company menu items.
+- Added boxed icon logos for the remaining side menu rows while preserving collapsed tooltips.
+
+## v-1.0.30
+
+### [v 1.0.30] 2026-04-29 - Make Overview Sidebar Item Final
+
+- Kept Overview linked directly to the `/desk` overview page.
+- Removed the chevron from the Overview side menu item.
+- Preserved chevrons for the rest of the side menu rows.
+
+## v-1.0.29
+
+### [v 1.0.29] 2026-04-29 - Simplify Sidebar Rows
+
+- Added Overview as the first side menu item.
+- Removed visible helper descriptions from expanded sidebar rows.
+- Kept helper text available in collapsed icon tooltips and accessibility labels.
+
+## v-1.0.28
+
+### [v 1.0.28] 2026-04-29 - Show Frontend URL During Dev
+
+- Added a root dev startup banner that prints the frontend, server, and health URLs before Turbo starts.
+- Repeated the frontend URL from the Next wrapper after startup begins so it stays visible beside later Next logs.
+- Kept the existing frontend port and dev process behavior unchanged.
 
 ## v-1.0.27
 

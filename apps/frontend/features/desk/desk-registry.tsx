@@ -13,12 +13,7 @@ import {
   Workflow,
 } from "lucide-react";
 
-export type DeskPortalId =
-  | "cxsun"
-  | "customer"
-  | "vendor"
-  | "admin"
-  | "super-admin";
+export type DeskPortalId = "cxsun" | "customer" | "vendor" | "admin" | "super-admin" | "tenant";
 
 export interface DeskMenuItem {
   readonly id: string;
@@ -46,8 +41,7 @@ export const deskPortals: readonly DeskPortalDefinition[] = [
     label: "Cxsun Base",
     href: "/desk/cxsun",
     badge: "Starter app",
-    summary:
-      "Starting workspace for intake, setup, approval, and operational follow-up work.",
+    summary: "Starting workspace for intake, setup, approval, and operational follow-up work.",
     menuItems: [
       {
         id: "cxsun-overview",
@@ -80,8 +74,7 @@ export const deskPortals: readonly DeskPortalDefinition[] = [
     label: "Customer Portal",
     href: "/desk/customer",
     badge: "Customer",
-    summary:
-      "Customer-facing workspace shell for future account, support, and activity surfaces.",
+    summary: "Customer-facing workspace shell for future account, support, and activity surfaces.",
     menuItems: [
       {
         id: "customer-overview",
@@ -108,8 +101,7 @@ export const deskPortals: readonly DeskPortalDefinition[] = [
     label: "Vendor Portal",
     href: "/desk/vendor",
     badge: "Vendor",
-    summary:
-      "Vendor workspace shell for future onboarding, catalog, and operations surfaces.",
+    summary: "Vendor workspace shell for future onboarding, catalog, and operations surfaces.",
     menuItems: [
       {
         id: "vendor-overview",
@@ -160,6 +152,28 @@ export const deskPortals: readonly DeskPortalDefinition[] = [
     ],
   },
   {
+    id: "tenant",
+    label: "Tenant",
+    href: "/desk/tenant",
+    badge: "Organisation",
+    summary:
+      "Organisation tenant master workspace for tenant identity, status, and lifecycle records.",
+    menuItems: [
+      {
+        id: "tenant-list",
+        label: "Tenants",
+        href: "/desk/tenant",
+        icon: <Store className="h-4 w-4" />,
+      },
+      {
+        id: "tenant-new",
+        label: "New tenant",
+        href: "/desk/tenant/new",
+        icon: <Settings className="h-4 w-4" />,
+      },
+    ],
+  },
+  {
     id: "super-admin",
     label: "Super-admin Portal",
     href: "/desk/super-admin",
@@ -189,8 +203,6 @@ export const deskPortals: readonly DeskPortalDefinition[] = [
   },
 ] as const;
 
-export function getDeskPortal(
-  portalId: string | undefined,
-): DeskPortalDefinition {
+export function getDeskPortal(portalId: string | undefined): DeskPortalDefinition {
   return deskPortals.find((portal) => portal.id === portalId) ?? deskPortals[0];
 }
