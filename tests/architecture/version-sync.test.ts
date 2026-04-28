@@ -33,6 +33,7 @@ describe("version sync", () => {
     const tempRoot = await mkdtemp(path.join(os.tmpdir(), "cxnext-version-sync-"));
     const packagePaths = [
       "package.json",
+      "apps/cli/package.json",
       "apps/server/package.json",
       "apps/frontend/package.json",
       "apps/desktop/package.json",

@@ -2,11 +2,19 @@
 
 ## Version State
 
-- Current package version: `1.0.3`
-- Current release tag: `v-1.0.3`
+- Current package version: `1.0.4`
+- Current release tag: `v-1.0.4`
 - Versioned changelog label format: `v 1.0.<reference>`
 - Version section format: `## v-1.0.<reference>`
 - Entry format: `### [v 1.0.<reference>] YYYY-MM-DD - Title`
+
+## v-1.0.4
+
+### [v 1.0.4] 2026-04-28 - Add GitHub Helper CLI
+
+- Added `apps/cli` with a GitHub helper workflow for pull/merge, changelog-based commit, and push.
+- Added `github` and `github:now` package scripts.
+- Wired version sync and tests to include the CLI helper.
 
 ## v-1.0.3
 

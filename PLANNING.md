@@ -1,6 +1,6 @@
 # PLANNING
 
-Active reference: `#3`
+Active reference: `#4`
 
 ## Current Plan
 
@@ -10,6 +10,6 @@ Active reference: `#3`
 
 ## Release Alignment
 
-- Current package version: `1.0.3`
-- Current release tag: `v-1.0.3`
-- Changelog section: `## v-1.0.3`
+- Current package version: `1.0.4`
+- Current release tag: `v-1.0.4`
+- Changelog section: `## v-1.0.4`

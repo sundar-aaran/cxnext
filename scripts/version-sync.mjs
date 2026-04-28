@@ -22,6 +22,7 @@ if (!reference || !/^\d+$/.test(reference)) {
 const version = `1.0.${reference}`;
 const packagePaths = [
   "package.json",
+  "apps/cli/package.json",
   "apps/server/package.json",
   "apps/frontend/package.json",
   "apps/desktop/package.json",

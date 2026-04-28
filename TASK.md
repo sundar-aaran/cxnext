@@ -1,12 +1,12 @@
 # TASK
 
-Active reference: `#3`
+Active reference: `#4`
 
 ## Current Batch
 
-- Status: dependency upgrade
-- Package version: `1.0.3`
-- Release tag: `v-1.0.3`
+- Status: GitHub helper CLI
+- Package version: `1.0.4`
+- Release tag: `v-1.0.4`
 
 ## Notes
 
