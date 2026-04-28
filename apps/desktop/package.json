@@ -1,12 +1,12 @@
 {
   "name": "@cxnext/desktop",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "private": true,
   "main": "dist/main.js",
   "scripts": {
-    "dev": "concurrently \"tsc -w -p tsconfig.json\" \"wait-on dist/main.js && electron dist/main.js\"",
+    "dev": "concurrently \"tsc -w -p tsconfig.json\" \"wait-on dist/main.js http://localhost:3000 http://localhost:4000/health && electron dist/main.js\"",
     "build": "tsc -p tsconfig.json",
-    "start": "electron dist/main.js",
+    "start": "wait-on http://localhost:3000 http://localhost:4000/health && electron dist/main.js",
     "lint": "eslint . --config ../../eslint.config.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

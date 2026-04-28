@@ -2,11 +2,19 @@
 
 ## Version State
 
-- Current package version: `1.0.6`
-- Current release tag: `v-1.0.6`
+- Current package version: `1.0.7`
+- Current release tag: `v-1.0.7`
 - Versioned changelog label format: `v 1.0.<reference>`
 - Version section format: `## v-1.0.<reference>`
 - Entry format: `### [v 1.0.<reference>] YYYY-MM-DD - Title`
+
+## v-1.0.7
+
+### [v 1.0.7] 2026-04-28 - Add Graceful Dev Server Controls
+
+- Added root start, stop, dev restart, and port release scripts for frontend and backend processes.
+- Added graceful backend shutdown hooks and Electron readiness checks for frontend and backend health.
+- Verified development and production startup flows and measured initial page load performance.
 
 ## v-1.0.6
 

@@ -1,12 +1,12 @@
 # TASK
 
-Active reference: `#6`
+Active reference: `#7`
 
 ## Current Batch
 
-- Status: Portal desk registry and form wiring
-- Package version: `1.0.6`
-- Release tag: `v-1.0.6`
+- Status: Graceful dev server controls
+- Package version: `1.0.7`
+- Release tag: `v-1.0.7`
 
 ## Notes
 
