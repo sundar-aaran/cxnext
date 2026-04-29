@@ -2,11 +2,19 @@
 
 ## Version State
 
-- Current package version: `1.0.44`
-- Current release tag: `v-1.0.44`
+- Current package version: `1.0.45`
+- Current release tag: `v-1.0.45`
 - Versioned changelog label format: `v 1.0.<reference>`
 - Version section format: `## v-1.0.<reference>`
 - Entry format: `### [v 1.0.<reference>] YYYY-MM-DD - Title`
+
+## v-1.0.45
+
+### [v 1.0.45] 2026-04-29 - Refactor Tenant Write Boundaries And Events
+
+- Added tenant create, update, and delete application use cases so HTTP writes no longer inject repositories directly.
+- Added a tenant domain-event publisher port with an event-bus adapter and published `tenants.tenant-created` after successful tenant creation.
+- Added focused coverage for tenant creation event publication.
 
 ## v-1.0.44
 
