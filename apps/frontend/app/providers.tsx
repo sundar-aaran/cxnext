@@ -1,7 +1,10 @@
 "use client";
 
+import { GlobalLoaderProvider, useGlobalLoader } from "@cxnext/ui";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useState, type ReactNode } from "react";
+import { usePathname } from "next/navigation";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Toaster } from "sonner";
 
 export function Providers({ children }: { readonly children: ReactNode }) {
   const [queryClient] = useState(
@@ -16,5 +19,30 @@ export function Providers({ children }: { readonly children: ReactNode }) {
       }),
   );
 
-  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  return (
+    <QueryClientProvider client={queryClient}>
+      <GlobalLoaderProvider>
+        <RouteLoaderReset />
+        {children}
+      </GlobalLoaderProvider>
+      <Toaster closeButton richColors position="top-right" />
+    </QueryClientProvider>
+  );
+}
+
+function RouteLoaderReset() {
+  const pathname = usePathname();
+  const previousPathname = useRef(pathname);
+  const { hideAll } = useGlobalLoader();
+
+  useEffect(() => {
+    if (previousPathname.current === pathname) {
+      return;
+    }
+
+    previousPathname.current = pathname;
+    hideAll();
+  }, [hideAll, pathname]);
+
+  return null;
 }

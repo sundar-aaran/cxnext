@@ -5,16 +5,21 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useForm } from "@tanstack/react-form";
 import { z } from "zod";
+import { toast } from "sonner";
 import {
   ArrowDown,
   ArrowLeft,
   ArrowUp,
   ArrowUpDown,
+  ChevronLeft,
+  ChevronRight,
   Eye,
   MoreHorizontal,
   Pencil,
   Plus,
+  Save,
   Trash2,
+  X,
 } from "lucide-react";
 import {
   Badge,
@@ -36,7 +41,9 @@ import {
   MasterListUpsertCard,
   MasterListUpsertLayout,
   Separator,
+  Switch,
   buildMasterListShowingLabel,
+  useGlobalLoader,
 } from "@cxnext/ui";
 import {
   buildTenantColumnOptions,
@@ -49,12 +56,12 @@ import {
   upsertTenant,
 } from "../../application/tenant-service";
 import {
-  TENANTS_TABLE_NAME,
   defaultTenantColumnVisibility,
   tenantStatusFilters,
   type TenantColumnId,
   type TenantRecord,
   type TenantStatusFilter,
+  type TenantUpsertInput,
 } from "../../domain/tenant";
 
 const tenantSchema = z.object({
@@ -70,10 +77,14 @@ const tenantSchema = z.object({
 
 type TenantSortKey = Exclude<TenantColumnId, "status"> | "status";
 type TenantSortDirection = "asc" | "desc";
+type TenantEditReturnTo = "list" | "show";
 
 export function TenantListPage() {
   const router = useRouter();
-  const [tenants, setTenants] = useState(() => listTenants({ source: "seed" }));
+  const { show: showGlobalLoader } = useGlobalLoader();
+  const [tenants, setTenants] = useState<readonly TenantRecord[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [searchValue, setSearchValue] = useState("");
   const [statusFilter, setStatusFilter] = useState<TenantStatusFilter>("all");
   const [currentPage, setCurrentPage] = useState(1);
@@ -104,8 +115,36 @@ export function TenantListPage() {
   const totalPages = Math.max(1, Math.ceil(filteredTenants.length / rowsPerPage));
 
   useEffect(() => {
-    setTenants(listTenants());
-  }, []);
+    window.localStorage.removeItem("cxnext.tenants");
+
+    const controller = new AbortController();
+    const hideGlobalLoader = showGlobalLoader();
+
+    listTenants({ signal: controller.signal })
+      .then((records) => {
+        setTenants(records);
+        setLoadError(null);
+      })
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) {
+          return;
+        }
+
+        setTenants([]);
+        setLoadError(error instanceof Error ? error.message : "Unable to load tenants.");
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setIsLoading(false);
+          hideGlobalLoader();
+        }
+      });
+
+    return () => {
+      controller.abort();
+      hideGlobalLoader();
+    };
+  }, [showGlobalLoader]);
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -132,9 +171,22 @@ export function TenantListPage() {
     [visibleColumns],
   );
 
-  function deleteTenant(tenant: TenantRecord) {
-    softDeleteTenant(tenant.id);
-    setTenants(listTenants());
+  async function deleteTenant(tenant: TenantRecord) {
+    const hideGlobalLoader = showGlobalLoader();
+
+    try {
+      await softDeleteTenant(tenant.id);
+      setTenants((currentTenants) => currentTenants.filter((item) => item.id !== tenant.id));
+      toast.success("Tenant deleted", {
+        description: `${tenant.name} was soft deleted.`,
+      });
+    } catch (error) {
+      toast.error("Could not delete tenant", {
+        description: getErrorMessage(error),
+      });
+    } finally {
+      hideGlobalLoader();
+    }
   }
 
   function showAllColumns() {
@@ -187,6 +239,8 @@ export function TenantListPage() {
         searchPlaceholder="Search tenant, slug, status, or id"
         searchValue={searchValue}
       />
+
+      {loadError ? <MasterListEmptyState>{loadError}</MasterListEmptyState> : null}
 
       <MasterListTableCard className="rounded-md">
         <div className="overflow-x-auto">
@@ -243,7 +297,10 @@ export function TenantListPage() {
                       <button
                         type="button"
                         className="cursor-pointer text-left font-medium text-foreground hover:underline"
-                        onClick={() => router.push(`/desk/tenant/${tenant.id}`)}
+                        onClick={() => {
+                          showGlobalLoader();
+                          router.push(`/desk/tenant/${tenant.id}`);
+                        }}
                       >
                         {tenant.name}
                       </button>
@@ -285,7 +342,10 @@ export function TenantListPage() {
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem asChild>
-                          <Link href={`/desk/tenant/${tenant.id}/edit`} className="gap-2.5">
+                          <Link
+                            href={`/desk/tenant/${tenant.id}/edit?returnTo=list`}
+                            className="gap-2.5"
+                          >
                             <Pencil className="size-4" />
                             Edit tenant
                           </Link>
@@ -307,7 +367,9 @@ export function TenantListPage() {
           </table>
         </div>
         {pageTenants.length === 0 ? (
-          <MasterListEmptyState>No tenants found.</MasterListEmptyState>
+          <MasterListEmptyState>
+            {isLoading ? "Loading tenants from database." : "No tenants found."}
+          </MasterListEmptyState>
         ) : null}
       </MasterListTableCard>
 
@@ -336,22 +398,56 @@ export function TenantListPage() {
 
 export function TenantShowPage({ tenantId }: { readonly tenantId: number }) {
   const router = useRouter();
-  const [tenant, setTenant] = useState(() => getTenant(tenantId, { source: "seed" }));
+  const { show: showGlobalLoader } = useGlobalLoader();
+  const [tenant, setTenant] = useState<TenantRecord | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    setTenant(getTenant(tenantId));
-  }, [tenantId]);
+    const controller = new AbortController();
+    const hideGlobalLoader = showGlobalLoader();
+
+    setIsLoading(true);
+    setTenant(null);
+
+    getTenant(tenantId, { signal: controller.signal })
+      .then((record) => {
+        setTenant(record);
+      })
+      .catch((error: unknown) => {
+        if (!controller.signal.aborted) {
+          console.error(error);
+          setTenant(null);
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setIsLoading(false);
+          hideGlobalLoader();
+        }
+      });
+
+    return () => {
+      controller.abort();
+      hideGlobalLoader();
+    };
+  }, [showGlobalLoader, tenantId]);
 
   if (!tenant) {
     return (
       <MasterListPageFrame
-        description="The requested tenant record was not found."
-        technicalName="page.tenant.show.missing"
-        title="Tenant not found"
+        description={
+          isLoading
+            ? "Loading tenant record from the live database."
+            : "The requested tenant record was not found."
+        }
+        technicalName={isLoading ? "page.tenant.show.loading" : "page.tenant.show.missing"}
+        title={isLoading ? "Loading tenant" : "Tenant not found"}
       >
-        <MasterListShowCard title="Tenant detail">
+        <MasterListShowCard title="Details">
           <div className="flex items-center justify-between gap-4">
-            <p className="text-sm text-muted-foreground">Return to the tenant list.</p>
+            <p className="text-sm text-muted-foreground">
+              {isLoading ? "Loading tenant record." : "Return to the tenant list."}
+            </p>
             <Button asChild variant="outline" className="rounded-xl">
               <Link href="/desk/tenant">Back to tenants</Link>
             </Button>
@@ -363,10 +459,22 @@ export function TenantShowPage({ tenantId }: { readonly tenantId: number }) {
 
   const currentTenant = tenant;
 
-  function handleSoftDelete() {
-    softDeleteTenant(currentTenant.id);
-    setTenant(null);
-    router.push("/desk/tenant");
+  async function handleSoftDelete() {
+    const hideGlobalLoader = showGlobalLoader();
+
+    try {
+      await softDeleteTenant(currentTenant.id);
+      setTenant(null);
+      toast.success("Tenant deleted", {
+        description: `${currentTenant.name} was soft deleted.`,
+      });
+      router.push("/desk/tenant");
+    } catch (error) {
+      hideGlobalLoader();
+      toast.error("Could not delete tenant", {
+        description: getErrorMessage(error),
+      });
+    }
   }
 
   return (
@@ -380,7 +488,7 @@ export function TenantShowPage({ tenantId }: { readonly tenantId: number }) {
             </Link>
           </Button>
           <Button asChild className="rounded-xl">
-            <Link href={`/desk/tenant/${currentTenant.id}/edit`}>
+            <Link href={`/desk/tenant/${currentTenant.id}/edit?returnTo=show`}>
               <Pencil className="size-4" />
               Edit
             </Link>
@@ -391,48 +499,14 @@ export function TenantShowPage({ tenantId }: { readonly tenantId: number }) {
           </Button>
         </div>
       }
-      description="Review tenant identity, status, and audit timestamps."
+      description={currentTenant.slug}
       technicalName="page.tenant.show"
       title={currentTenant.name}
     >
       <MasterListShowLayout
         cards={[
-          <MasterListShowCard
-            key="detail"
-            description={`Record from table ${TENANTS_TABLE_NAME}.`}
-            title="Tenant detail"
-          >
-            <div className="grid gap-4 sm:grid-cols-2">
-              <TenantDetailField label="ID" value={String(currentTenant.id)} />
-              <TenantDetailField label="Name" value={currentTenant.name} />
-              <TenantDetailField label="Slug" value={currentTenant.slug} monospace />
-              <div className="grid gap-1">
-                <span className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
-                  Active
-                </span>
-                <TenantStatusBadge isActive={currentTenant.isActive} />
-              </div>
-            </div>
-          </MasterListShowCard>,
-          <MasterListShowCard
-            key="audit"
-            description="Timestamp and soft delete fields."
-            title="Audit"
-          >
-            <div className="grid gap-4">
-              <TenantDetailField
-                label="Created at"
-                value={formatTenantDate(currentTenant.createdAt)}
-              />
-              <TenantDetailField
-                label="Updated at"
-                value={formatTenantDate(currentTenant.updatedAt)}
-              />
-              <TenantDetailField
-                label="Deleted at"
-                value={formatTenantDate(currentTenant.deletedAt)}
-              />
-            </div>
+          <MasterListShowCard key="detail" title="Details" className="lg:col-span-2">
+            <TenantDetailsTable tenant={currentTenant} />
           </MasterListShowCard>,
         ]}
       />
@@ -440,10 +514,26 @@ export function TenantShowPage({ tenantId }: { readonly tenantId: number }) {
   );
 }
 
-export function TenantUpsertPage({ tenantId }: { readonly tenantId?: number }) {
+export function TenantUpsertPage({
+  returnTo = "show",
+  tenantId,
+}: {
+  readonly returnTo?: TenantEditReturnTo;
+  readonly tenantId?: number;
+}) {
   const router = useRouter();
-  const existingTenant = tenantId ? getTenant(tenantId) : null;
+  const { show: showGlobalLoader } = useGlobalLoader();
   const isEdit = Boolean(tenantId);
+  const returnToQuery = isEdit ? `?returnTo=${returnTo}` : "";
+  const [existingTenant, setExistingTenant] = useState<TenantRecord | null>(null);
+  const [tenantNavigation, setTenantNavigation] = useState<{
+    readonly previousId: number | null;
+    readonly nextId: number | null;
+  }>({
+    previousId: null,
+    nextId: null,
+  });
+  const [isLoaded, setIsLoaded] = useState(!isEdit);
   const [message, setMessage] = useState<string | null>(null);
   const form = useForm({
     defaultValues: {
@@ -451,18 +541,96 @@ export function TenantUpsertPage({ tenantId }: { readonly tenantId?: number }) {
       slug: existingTenant?.slug ?? "",
       isActive: existingTenant?.isActive ?? true,
     },
-    onSubmit: ({ value }) => {
+    onSubmit: async ({ value }) => {
       const parsedValue = tenantSchema.safeParse(value);
       if (!parsedValue.success) {
         setMessage("Resolve validation errors before saving.");
         return;
       }
 
-      const tenant = upsertTenant(parsedValue.data, tenantId);
-      setMessage(`Saved tenant ${tenant.name}.`);
-      router.push(`/desk/tenant/${tenant.id}`);
+      const hideGlobalLoader = showGlobalLoader();
+
+      try {
+        const tenant = await upsertTenant(parsedValue.data as TenantUpsertInput, tenantId);
+        setMessage(null);
+        toast.success(isEdit ? "Tenant updated" : "Tenant created", {
+          description: `${tenant.name} was saved.`,
+        });
+        router.push(getTenantUpsertReturnPath(tenant.id, isEdit, returnTo));
+      } catch (error) {
+        hideGlobalLoader();
+        const errorMessage = getErrorMessage(error);
+        setMessage(errorMessage);
+        toast.error(isEdit ? "Could not update tenant" : "Could not create tenant", {
+          description: errorMessage,
+        });
+      }
     },
   });
+
+  useEffect(() => {
+    if (!tenantId) {
+      setExistingTenant(null);
+      setTenantNavigation({
+        previousId: null,
+        nextId: null,
+      });
+      setIsLoaded(true);
+      return;
+    }
+
+    const controller = new AbortController();
+    const hideGlobalLoader = showGlobalLoader();
+
+    setIsLoaded(false);
+    setExistingTenant(null);
+
+    Promise.all([
+      getTenant(tenantId, { signal: controller.signal }),
+      listTenants({ signal: controller.signal }),
+    ])
+      .then(([record, records]) => {
+        setExistingTenant(record);
+        setTenantNavigation(getTenantNavigation(records, tenantId));
+
+        if (record) {
+          form.setFieldValue("name", record.name);
+          form.setFieldValue("slug", record.slug);
+          form.setFieldValue("isActive", record.isActive);
+        }
+      })
+      .catch((error: unknown) => {
+        if (!controller.signal.aborted) {
+          console.error(error);
+          setExistingTenant(null);
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setIsLoaded(true);
+          hideGlobalLoader();
+        }
+      });
+
+    return () => {
+      controller.abort();
+      hideGlobalLoader();
+    };
+  }, [form, showGlobalLoader, tenantId]);
+
+  if (isEdit && !isLoaded) {
+    return (
+      <MasterListPageFrame
+        description="Loading tenant record from the live database."
+        technicalName="page.tenant.upsert.loading"
+        title="Loading tenant"
+      >
+        <MasterListUpsertCard title="Tenant setup">
+          <p className="text-sm text-muted-foreground">Loading tenant record.</p>
+        </MasterListUpsertCard>
+      </MasterListPageFrame>
+    );
+  }
 
   if (isEdit && !existingTenant) {
     return (
@@ -475,7 +643,10 @@ export function TenantUpsertPage({ tenantId }: { readonly tenantId?: number }) {
           <div className="flex items-center justify-between gap-4">
             <p className="text-sm text-muted-foreground">Return to the tenant list.</p>
             <Button asChild variant="outline" className="rounded-xl">
-              <Link href="/desk/tenant">Back to tenants</Link>
+              <Link href="/desk/tenant">
+                <ArrowLeft className="size-4" />
+                Back to tenants
+              </Link>
             </Button>
           </div>
         </MasterListUpsertCard>
@@ -486,9 +657,50 @@ export function TenantUpsertPage({ tenantId }: { readonly tenantId?: number }) {
   return (
     <MasterListPageFrame
       action={
-        <Button asChild variant="outline" className="rounded-xl">
-          <Link href="/desk/tenant">Cancel</Link>
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          {isEdit ? (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-xl"
+                disabled={!tenantNavigation.previousId}
+                onClick={() => {
+                  if (tenantNavigation.previousId) {
+                    showGlobalLoader();
+                    router.push(
+                      `/desk/tenant/${tenantNavigation.previousId}/edit${returnToQuery}`,
+                    );
+                  }
+                }}
+              >
+                <ChevronLeft className="size-4" />
+                Previous
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-xl"
+                disabled={!tenantNavigation.nextId}
+                onClick={() => {
+                  if (tenantNavigation.nextId) {
+                    showGlobalLoader();
+                    router.push(`/desk/tenant/${tenantNavigation.nextId}/edit${returnToQuery}`);
+                  }
+                }}
+              >
+                Next
+                <ChevronRight className="size-4" />
+              </Button>
+            </>
+          ) : null}
+          <Button asChild variant="outline" className="rounded-xl">
+            <Link href={getTenantCancelPath(tenantId, isEdit, returnTo)}>
+              <X className="size-4" />
+              Cancel
+            </Link>
+          </Button>
+        </div>
       }
       description={
         isEdit
@@ -499,10 +711,7 @@ export function TenantUpsertPage({ tenantId }: { readonly tenantId?: number }) {
       title={isEdit ? "Edit tenant" : "New tenant"}
     >
       <MasterListUpsertLayout>
-        <MasterListUpsertCard
-          description="Fields map to id, name, slug, active status, timestamps, and soft delete."
-          title={isEdit ? (existingTenant?.name ?? "Tenant setup") : "Tenant setup"}
-        >
+        <MasterListUpsertCard>
           <form
             className="space-y-6"
             onSubmit={(event) => {
@@ -565,19 +774,24 @@ export function TenantUpsertPage({ tenantId }: { readonly tenantId?: number }) {
             </div>
             <form.Field name="isActive">
               {(field) => (
-                <label className="flex cursor-pointer items-center justify-between gap-4 rounded-2xl border border-border/70 bg-muted/10 px-4 py-3">
+                <label
+                  className={
+                    field.state.value
+                      ? "flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-950 dark:border-emerald-900/70 dark:bg-emerald-950/30 dark:text-emerald-100"
+                      : "flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-border/70 bg-muted/10 px-4 py-3"
+                  }
+                >
                   <span>
-                    <span className="block text-sm font-medium text-foreground">Is active</span>
-                    <span className="block text-xs text-muted-foreground">
+                    <span className="block text-sm font-medium">Active</span>
+                    <span className="block text-xs text-muted-foreground dark:text-emerald-200/80">
                       Active tenants can be selected in organisation workflows.
                     </span>
                   </span>
-                  <input
+                  <Switch
                     checked={field.state.value}
-                    className="size-4 accent-current"
-                    type="checkbox"
+                    aria-label="Active"
                     onBlur={field.handleBlur}
-                    onChange={(event) => field.handleChange(event.target.checked)}
+                    onCheckedChange={(checked) => field.handleChange(checked)}
                   />
                 </label>
               )}
@@ -588,10 +802,14 @@ export function TenantUpsertPage({ tenantId }: { readonly tenantId?: number }) {
             <Separator />
             <div className="flex flex-wrap items-center gap-3">
               <Button type="submit" className="rounded-xl">
+                <Save className="size-4" />
                 {isEdit ? "Update tenant" : "Create tenant"}
               </Button>
               <Button asChild type="button" variant="outline" className="rounded-xl">
-                <Link href="/desk/tenant">Cancel</Link>
+                <Link href={getTenantCancelPath(tenantId, isEdit, returnTo)}>
+                  <X className="size-4" />
+                  Cancel
+                </Link>
               </Button>
             </div>
           </form>
@@ -616,7 +834,7 @@ function TableHeaderCell({
         <span>{label}</span>
         <button
           type="button"
-          className="inline-flex size-5 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="inline-flex size-5 cursor-pointer items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           aria-label={`Sort ${label}`}
           onClick={onSort}
         >
@@ -652,6 +870,51 @@ function compareTenantRecords(
   return left[key].localeCompare(right[key]) * multiplier;
 }
 
+function getTenantNavigation(tenants: readonly TenantRecord[], tenantId: number) {
+  const orderedTenants = [...tenants].sort((left, right) => left.id - right.id);
+  const currentIndex = orderedTenants.findIndex((tenant) => tenant.id === tenantId);
+
+  if (currentIndex === -1) {
+    return {
+      previousId: null,
+      nextId: null,
+    };
+  }
+
+  return {
+    previousId: orderedTenants[currentIndex - 1]?.id ?? null,
+    nextId: orderedTenants[currentIndex + 1]?.id ?? null,
+  };
+}
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Please try again.";
+}
+
+function getTenantUpsertReturnPath(
+  tenantId: number,
+  isEdit: boolean,
+  returnTo: TenantEditReturnTo,
+) {
+  if (isEdit && returnTo === "list") {
+    return "/desk/tenant";
+  }
+
+  return `/desk/tenant/${tenantId}`;
+}
+
+function getTenantCancelPath(
+  tenantId: number | undefined,
+  isEdit: boolean,
+  returnTo: TenantEditReturnTo,
+) {
+  if (!isEdit || !tenantId || returnTo === "list") {
+    return "/desk/tenant";
+  }
+
+  return `/desk/tenant/${tenantId}`;
+}
+
 function TenantStatusBadge({ isActive }: { readonly isActive: boolean }) {
   return (
     <Badge
@@ -667,24 +930,46 @@ function TenantStatusBadge({ isActive }: { readonly isActive: boolean }) {
   );
 }
 
-function TenantDetailField({
+function TenantDetailsTable({ tenant }: { readonly tenant: TenantRecord }) {
+  return (
+    <div className="overflow-hidden rounded-md border border-border/70">
+      <table className="w-full border-collapse text-sm">
+        <tbody>
+          <TenantDetailsRow label="ID" value={String(tenant.id)} />
+          <TenantDetailsRow label="Name" value={tenant.name} />
+          <TenantDetailsRow label="Slug" value={tenant.slug} monospace />
+          <TenantDetailsRow label="Active" value={<TenantStatusBadge isActive={tenant.isActive} />} />
+          <TenantDetailsRow label="Created at" value={formatTenantDate(tenant.createdAt)} />
+          <TenantDetailsRow label="Updated at" value={formatTenantDate(tenant.updatedAt)} />
+          <TenantDetailsRow label="Deleted at" value={formatTenantDate(tenant.deletedAt)} />
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function TenantDetailsRow({
   label,
   monospace = false,
   value,
 }: {
   readonly label: string;
   readonly monospace?: boolean;
-  readonly value: string;
+  readonly value: ReactNode;
 }) {
   return (
-    <div className="grid gap-1">
-      <span className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
+    <tr className="border-b border-border/60 last:border-b-0">
+      <th className="w-52 bg-muted/35 px-4 py-3 text-left text-sm font-medium text-muted-foreground">
         {label}
-      </span>
-      <span className={monospace ? "font-mono text-sm text-foreground" : "text-sm text-foreground"}>
+      </th>
+      <td
+        className={
+          monospace ? "px-4 py-3 font-mono text-sm text-foreground" : "px-4 py-3 text-foreground"
+        }
+      >
         {value}
-      </span>
-    </div>
+      </td>
+    </tr>
   );
 }
 

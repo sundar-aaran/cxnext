@@ -12,7 +12,9 @@ interface AuthFormProps {
 export function AuthForm({ mode }: AuthFormProps) {
   const isRegister = mode === "register";
   const isReset = mode === "reset";
-  const passwordSchema = isReset ? z.string().optional() : z.string().min(8, "Use at least 8 characters");
+  const passwordSchema = isReset
+    ? z.string().optional()
+    : z.string().min(8, "Use at least 8 characters");
   const formSchema = z.object({
     email: z.string().email("Enter a valid email"),
     name: isRegister ? z.string().min(2, "Enter your name") : z.string().optional(),

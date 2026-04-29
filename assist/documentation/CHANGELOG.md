@@ -2,11 +2,43 @@
 
 ## Version State
 
-- Current package version: `1.0.39`
-- Current release tag: `v-1.0.39`
+- Current package version: `1.0.43`
+- Current release tag: `v-1.0.43`
 - Versioned changelog label format: `v 1.0.<reference>`
 - Version section format: `## v-1.0.<reference>`
 - Entry format: `### [v 1.0.<reference>] YYYY-MM-DD - Title`
+
+## v-1.0.43
+
+### [v 1.0.43] 2026-04-29 - Fix Common Masters And Sidebar Accordion
+
+- Fixed common database refresh seed issues for tax defaults and shared row fields.
+- Reordered location seeds so India is the first country and Tamil Nadu is the first state, with the state hyphen placeholder second.
+- Updated common master lists to show foreign-key display names, expose status filters and column controls, and keep common sidebar subgroups collapsed around the active selection.
+
+## v-1.0.42
+
+### [v 1.0.42] 2026-04-29 - Fix Database CLI Environment Resolution
+
+- Added ancestor `.env` discovery for `@cxnext/db` so package-level CLI commands can read repository-root database settings.
+- Replaced raw MySQL access-denied stack traces with actionable credential guidance that avoids exposing secret values.
+- Added focused tests for db env resolution and credential-error messaging.
+
+## v-1.0.41
+
+### [v 1.0.41] 2026-04-29 - Remove Deprecated TypeScript baseUrl Usage
+
+- Removed deprecated `baseUrl` settings from the affected TypeScript configs and converted workspace path mappings to explicit relative targets.
+- Updated the server TypeScript config to consume `@cxnext/db` declarations from the built package boundary instead of compiling workspace source directly.
+- Prevented the Nest server build from regenerating JavaScript artifacts under `packages/db/src`.
+
+## v-1.0.40
+
+### [v 1.0.40] 2026-04-29 - Guard Build Artifacts From Source Trees
+
+- Updated build-output guidance to match the repository's current `dist`, `.next`, and `out` tooling conventions.
+- Added a repository rule that compiled JavaScript and declaration outputs must not appear inside `src/` trees.
+- Added architecture coverage that fails when generated `.js`, `.js.map`, `.d.ts`, or `.d.ts.map` files exist under app or package source directories.
 
 ## v-1.0.39
 

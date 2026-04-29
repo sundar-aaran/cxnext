@@ -1,9 +1,6 @@
 import { notFound } from "next/navigation";
 import { CxsunRecordFormPage } from "../../../../../../features/cxsun/cxsun-workspace";
-import {
-  getDeskPortal,
-  type DeskPortalId,
-} from "../../../../../../features/desk/desk-registry";
+import { getDeskPortal, type DeskPortalId } from "../../../../../../features/desk/desk-registry";
 
 export function generateStaticParams() {
   return [{ portal: "cxsun" }];

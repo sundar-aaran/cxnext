@@ -1,8 +1,4 @@
-import type {
-  CxsunRecord,
-  CxsunRecordPriority,
-  CxsunRecordStatus,
-} from "./data";
+import type { CxsunRecord, CxsunRecordPriority, CxsunRecordStatus } from "./data";
 
 export function getStatusLabel(status: CxsunRecordStatus) {
   return {
@@ -49,17 +45,13 @@ export function getRecordMetrics(records: readonly CxsunRecord[]) {
     {
       id: "ready",
       label: "Ready",
-      value: String(
-        records.filter((record) => record.status === "ready").length,
-      ),
+      value: String(records.filter((record) => record.status === "ready").length),
       detail: "Prepared for operator action",
     },
     {
       id: "blocked",
       label: "Blocked",
-      value: String(
-        records.filter((record) => record.status === "blocked").length,
-      ),
+      value: String(records.filter((record) => record.status === "blocked").length),
       detail: "Needs follow-up",
     },
   ] as const;

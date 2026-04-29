@@ -10,6 +10,7 @@ async function bootstrap(): Promise<void> {
   let isClosing = false;
 
   app.enableCors({
+    methods: ["GET", "HEAD", "POST", "PATCH", "DELETE", "OPTIONS"],
     origin: process.env.FRONTEND_URL ?? "http://localhost:3000",
   });
   app.enableShutdownHooks();

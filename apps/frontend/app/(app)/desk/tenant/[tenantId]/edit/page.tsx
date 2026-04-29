@@ -3,16 +3,20 @@ import { TenantUpsertPage } from "../../../../../../features/tenant/interface/pa
 
 export default async function TenantEditRoute({
   params,
+  searchParams,
 }: {
   readonly params: Promise<{ tenantId: string }>;
+  readonly searchParams: Promise<{ returnTo?: string }>;
 }) {
   const { tenantId } = await params;
+  const { returnTo } = await searchParams;
 
   if (!/^\d+$/.test(tenantId)) {
     notFound();
   }
 
   const numericTenantId = Number.parseInt(tenantId, 10);
+  const editReturnTo = returnTo === "list" ? "list" : "show";
 
-  return <TenantUpsertPage tenantId={numericTenantId} />;
+  return <TenantUpsertPage tenantId={numericTenantId} returnTo={editReturnTo} />;
 }

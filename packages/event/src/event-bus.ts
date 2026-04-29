@@ -4,7 +4,10 @@ import type { EventCallback, EventHandler } from "./event-handler";
 export interface EventBus {
   publish<TEvent extends BaseEvent>(event: TEvent): Promise<void>;
   publishAll<TEvent extends BaseEvent>(events: readonly TEvent[]): Promise<void>;
-  subscribe<TEvent extends BaseEvent>(eventName: TEvent["name"], handler: EventCallback<TEvent>): void;
+  subscribe<TEvent extends BaseEvent>(
+    eventName: TEvent["name"],
+    handler: EventCallback<TEvent>,
+  ): void;
   register<TEvent extends BaseEvent>(handler: EventHandler<TEvent>): void;
 }
 

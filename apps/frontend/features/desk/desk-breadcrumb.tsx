@@ -16,7 +16,10 @@ import { deskPortals, type DeskPortalDefinition } from "./desk-registry";
 export function DeskBreadcrumb({ activePortal }: { readonly activePortal: DeskPortalDefinition }) {
   return (
     <div className="flex flex-wrap items-center gap-2 text-sm">
-      <Link href="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground">
+      <Link
+        href="/"
+        className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+      >
         <Home className="h-4 w-4" />
         Home
       </Link>

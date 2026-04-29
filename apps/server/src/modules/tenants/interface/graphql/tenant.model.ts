@@ -20,6 +20,6 @@ export class TenantModel {
   @Field()
   public updatedAt!: string;
 
-  @Field({ nullable: true })
+  @Field(() => String, { nullable: true })
   public deletedAt!: string | null;
 }

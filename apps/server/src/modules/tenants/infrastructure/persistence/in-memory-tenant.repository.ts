@@ -1,5 +1,8 @@
 import { Injectable } from "@nestjs/common";
-import type { TenantRepository } from "../../application/services/tenant.repository";
+import type {
+  TenantRepository,
+  TenantUpsertParams,
+} from "../../application/services/tenant.repository";
 import { TenantAggregate } from "../../domain/aggregates/tenant.aggregate";
 import type { TenantRecord } from "./tenant-record";
 
@@ -42,6 +45,37 @@ export class InMemoryTenantRepository implements TenantRepository {
   public async getById(tenantId: string): Promise<TenantAggregate | null> {
     const tenant = seedTenants.find((item) => item.id === tenantId && !item.deletedAt);
     return tenant ? toAggregate(tenant) : null;
+  }
+
+  public async create(params: TenantUpsertParams): Promise<TenantAggregate> {
+    return TenantAggregate.create({
+      id: String(seedTenants.length + 1),
+      name: params.name,
+      slug: params.slug,
+      isActive: params.isActive,
+    });
+  }
+
+  public async update(tenantId: string, params: TenantUpsertParams): Promise<TenantAggregate | null> {
+    const tenant = seedTenants.find((item) => item.id === tenantId && !item.deletedAt);
+
+    if (!tenant) {
+      return null;
+    }
+
+    return TenantAggregate.create({
+      id: tenant.id,
+      name: params.name,
+      slug: params.slug,
+      isActive: params.isActive,
+      createdAt: tenant.createdAt,
+      updatedAt: new Date(),
+      deletedAt: null,
+    });
+  }
+
+  public async softDelete(tenantId: string): Promise<boolean> {
+    return seedTenants.some((tenant) => tenant.id === tenantId && !tenant.deletedAt);
   }
 }
 

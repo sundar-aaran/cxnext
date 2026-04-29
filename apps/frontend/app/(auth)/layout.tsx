@@ -11,7 +11,9 @@ export default function AuthLayout({ children }: { readonly children: ReactNode 
         <div className="grid flex-1 items-center gap-8 md:grid-cols-[0.9fr_1.1fr]">
           <section>
             <p className="text-sm font-medium text-primary">Secure access shell</p>
-            <h1 className="mt-3 text-3xl font-semibold tracking-normal">Auth surfaces ready for future modules.</h1>
+            <h1 className="mt-3 text-3xl font-semibold tracking-normal">
+              Auth surfaces ready for future modules.
+            </h1>
             <p className="mt-4 text-sm leading-6 text-muted-foreground">
               These pages are presentation only until an auth bounded context is added.
             </p>

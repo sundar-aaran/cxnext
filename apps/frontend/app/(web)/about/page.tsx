@@ -11,7 +11,8 @@ export default function AboutPage() {
     <section className="mx-auto max-w-4xl px-5 py-12">
       <h1 className="text-3xl font-semibold tracking-normal">About cxnext</h1>
       <p className="mt-4 text-base leading-7 text-muted-foreground">
-        cxnext is a platform foundation designed to let complex domains arrive later without reshaping the core.
+        cxnext is a platform foundation designed to let complex domains arrive later without
+        reshaping the core.
       </p>
       <div className="mt-8 grid gap-4">
         {items.map((item) => (

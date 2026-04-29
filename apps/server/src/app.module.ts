@@ -6,6 +6,9 @@ import { HealthModule } from "./common/health/health.module";
 import { GraphqlFoundationModule } from "./common/graphql/graphql-foundation.module";
 import { CoreModule } from "./core/core.module";
 import { EventsModule } from "./events/events.module";
+import { CompaniesModule } from "./modules/companies/companies.module";
+import { CommonModule } from "./modules/common/common.module";
+import { IndustriesModule } from "./modules/industries/industries.module";
 import { TenantsModule } from "./modules/tenants/tenants.module";
 
 @Module({
@@ -19,8 +22,11 @@ import { TenantsModule } from "./modules/tenants/tenants.module";
       autoSchemaFile: true,
       sortSchema: true,
     }),
+    CompaniesModule,
+    CommonModule,
     CoreModule,
     EventsModule,
+    IndustriesModule,
     TenantsModule,
     GraphqlFoundationModule,
     HealthModule,

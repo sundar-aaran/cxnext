@@ -369,14 +369,18 @@ export function ListDetailCard({
   readonly children: ReactNode;
   readonly className?: string;
   readonly description?: string;
-  readonly title: string;
+  readonly title?: string;
 }) {
   return (
     <Card className={cn("rounded-2xl border-border/70 bg-card/95 shadow-sm", className)}>
-      <div className="border-b border-border/70 px-5 py-4">
-        <h2 className="text-base font-medium text-foreground">{title}</h2>
-        {description ? <p className="mt-1 text-sm text-muted-foreground">{description}</p> : null}
-      </div>
+      {title || description ? (
+        <div className="border-b border-border/70 px-5 py-4">
+          {title ? <h2 className="text-base font-medium text-foreground">{title}</h2> : null}
+          {description ? (
+            <p className={cn("text-sm text-muted-foreground", title && "mt-1")}>{description}</p>
+          ) : null}
+        </div>
+      ) : null}
       <div className="p-5">{children}</div>
     </Card>
   );
@@ -391,7 +395,7 @@ export function ListFormCard({
   readonly children: ReactNode;
   readonly className?: string;
   readonly description?: string;
-  readonly title: string;
+  readonly title?: string;
 }) {
   return (
     <ListDetailCard className={className} description={description} title={title}>

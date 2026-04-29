@@ -1,157 +1,30 @@
 # Planning
 
-Active reference: `#39`
+Active reference: `#44`
 
 ## Active
 
-- `#39` Add database refresh command
+- `#44` Review MVP modular monolith architecture readiness
   - Goal:
-    - add a guarded database refresh command that drops all objects and reinstalls migrations plus seeders.
+    - review whether the current codebase is correctly shaped as an MVP-ready, scalable modular monolith using DDD, event-driven primitives, and NestJS module structure.
   - Scope:
-    - add a MySQL/MariaDB fresh helper in `@cxnext/db`.
-    - add CLI commands and scripts for `db:refresh` and `db:fresh`.
-    - keep `--yes` confirmation required for destructive refresh.
-    - synchronize workspace versions and changelog after validation.
+    - inspect assist rules and standards for the repository architecture contract.
+    - inspect backend app/module registration, bounded context folder structure, domain/application/infrastructure/interface separation, database placement, and event infrastructure.
+    - inspect frontend feature structure and shared package boundaries.
+    - run targeted validation commands or static checks that support the review.
+    - report concrete findings with file references and prioritized risks.
   - Constraints:
-    - do not run refresh against a live database in validation.
-    - keep the current typed migration/seeder runner unchanged except for shared result types/exports.
-    - preserve existing migrate, seed, prepare, and status behavior.
-  - Planned validation:
-    - run `@cxnext/db` typecheck, lint, build, and status.
-    - run server typecheck.
-    - run the database process e2e test.
-    - run Prettier checks for edited files.
-
-- `#38` Add TypeScript database migration and seeder runner
-  - Goal:
-    - replace raw tenant SQL assets with a typed migration/seeder workflow matching the temp application process style.
-    - provide command runners for migrate, seed, prepare, status, and fresh-style setup where safe.
-  - Scope:
-    - add migration/seeder process types, registry, ledger table names, and runner functions in `packages/db`.
-    - add TypeScript tenant migration and seeder definitions.
-    - add package scripts so the app can run migrations and seeders from TypeScript.
-    - add e2e-style tests around idempotent migrate/seed behavior.
-    - synchronize workspace versions and changelog after validation.
-  - Constraints:
-    - keep the design close to `temp/apps/framework/src/runtime/database/process`.
-    - preserve existing database connection config and tenant module layout.
-    - do not require a destructive database refresh unless explicitly confirmed by command arguments.
+    - this is a review batch, not a broad refactor.
+    - do not introduce new business modules or placeholder domains.
     - do not revert unrelated dirty worktree changes.
+    - keep execution tracking fresh and specific to this review.
   - Planned validation:
-    - run `@cxnext/db` typecheck and lint.
-    - run server typecheck and lint if imports/scripts affect server.
-    - run targeted e2e tests for migration/seeder runner idempotency.
-    - run Prettier checks for edited files.
+    - inspect source tree with `rg` and file listings.
+    - run existing architecture tests if present.
+    - run targeted typecheck only if needed to validate the reviewed structure.
   - Implemented:
-    - added database process types, ledger table names, registry, migration runner, seeder runner, and prepare helper in `packages/db/src/process`.
-    - added TypeScript tenant migration and seeder definitions under `packages/db/src/migrations` and `packages/db/src/seeders`.
-    - replaced tenant module raw SQL files with TypeScript re-exports and indexes under `apps/server/src/modules/tenants/database`.
-    - added `db:prepare`, `db:migrate`, `db:seed`, and `db:status` scripts at the root and `@cxnext/db` package level.
-    - added an e2e-style Vitest test for prepare, migrate, seed, and idempotent ledger skipping.
-    - synchronized workspace package versions to `1.0.38` and added a changelog entry.
+    - pending.
   - Validation:
-    - passed `corepack pnpm --filter @cxnext/db typecheck`.
-    - passed `corepack pnpm --filter @cxnext/db lint`.
-    - passed `corepack pnpm --filter @cxnext/server typecheck`.
-    - passed `corepack pnpm --filter @cxnext/server lint`.
-    - passed `node node_modules/vitest/vitest.mjs run packages/db/test/database-process.e2e.test.ts`.
-    - passed `corepack pnpm --filter @cxnext/db db:status` and reported one registered migration and one registered seeder.
-    - passed targeted Prettier checks for edited database, server, package, changelog, and execution files.
+    - pending.
   - Residual risk:
-    - the e2e test uses an in-process fake Kysely database for deterministic ledger/idempotency coverage; it does not require or mutate a live MySQL database.
-
-- `#37` Tighten master-list search card padding
-  - Goal:
-    - reduce the extra space around the master-list search/filter/columns toolbar card.
-  - Scope:
-    - update the shared list toolbar block under `packages/ui/src/blocks/lists`.
-    - keep table card, pagination card, tenant list behavior, and list APIs unchanged.
-    - synchronize workspace versions and changelog after validation.
-  - Constraints:
-    - make the change in the reusable master-list/common-list shared block, not a one-off tenant override.
-    - preserve responsive wrapping and button/input heights.
-    - do not revert unrelated dirty worktree changes.
-  - Planned validation:
-    - run UI typecheck and lint.
-    - run frontend typecheck and lint.
-    - run Prettier checks for edited files.
-    - verify the tenant list route still responds.
-  - Implemented:
-    - reduced the shared list toolbar card content padding from `p-3.5 sm:p-4` to `p-2.5 sm:p-3`.
-    - reduced the toolbar inner vertical gap from `gap-2.5` to `gap-2`.
-    - synchronized workspace package versions to `1.0.37` and added a changelog entry.
-  - Validation:
-    - passed `corepack pnpm --filter @cxnext/ui typecheck`.
-    - passed `corepack pnpm --filter @cxnext/ui lint`.
-    - passed `corepack pnpm --filter @cxnext/frontend typecheck`.
-    - passed `corepack pnpm --filter @cxnext/frontend lint`.
-    - passed Prettier checks for the edited shared list block, execution notes, changelog, and manifests.
-    - verified the tenant list route returns `200`.
-
-- `#36` Brighten desk surface tone
-  - Goal:
-    - make the Application Desk workspace feel a little brighter and cleaner in light mode while preserving the current enterprise layout.
-  - Scope:
-    - tune the shared frontend theme surface tokens used by the desk shell and body.
-    - keep dark mode, accent colors, shell spacing, and list structure intact.
-    - synchronize workspace versions and changelog after validation.
-  - Constraints:
-    - do not change tenant list structure or sidebar behavior in this pass.
-    - keep the tone restrained rather than pure white.
-    - do not revert unrelated dirty worktree changes.
-  - Planned validation:
-    - run frontend typecheck and lint.
-    - run Prettier checks for edited files.
-    - verify the tenant desk route still responds.
-  - Implemented:
-    - reduced primary and secondary color mixing in the light-mode `surface-card`, `surface-raised`, `surface-canvas`, and `surface-panel` tokens.
-    - softened the light-mode `surface-spotlight` so the desk background reads brighter without becoming flat white.
-    - synchronized workspace package versions to `1.0.36` and added a changelog entry.
-  - Validation:
-    - passed `corepack pnpm --filter @cxnext/frontend typecheck`.
-    - passed `corepack pnpm --filter @cxnext/frontend lint`.
-    - passed Prettier checks for the edited CSS, execution notes, changelog, and manifests.
-    - verified the tenant desk route returns `200`.
-
-- `#34` Enforce strict tenant module structure for backend and frontend
-  - Goal:
-    - make Tenant a first-class bounded context with an explicit modular monolith and DDD folder layout on both backend and frontend.
-    - codify strict repository rules so future modules follow the same structure without drift.
-  - Scope:
-    - add `apps/server/src/modules/tenants` with domain, application, infrastructure, interface, and database folders.
-    - include `database/migrations` and `database/seeder` inside the backend tenant module.
-    - register the backend tenant module with Nest and the module registry.
-    - refactor the frontend tenant feature into explicit module folders under `apps/frontend/features/tenant`.
-    - update assist standards/rules to make this structure mandatory.
-    - synchronize workspace versions and changelog after validation.
-  - Constraints:
-    - preserve the current tenant UI routes and current local data behavior in this batch.
-    - keep backend domain code framework-free and keep transport code thin.
-    - do not revert unrelated dirty worktree changes.
-  - Planned validation:
-    - run `corepack pnpm --filter @cxnext/server typecheck`.
-    - run `corepack pnpm --filter @cxnext/server lint`.
-    - run `corepack pnpm --filter @cxnext/frontend typecheck`.
-    - run `corepack pnpm --filter @cxnext/frontend lint`.
-    - run `corepack pnpm --filter @cxnext/ui typecheck` and lint if UI exports or imports are touched.
-    - run targeted Prettier checks for edited files.
-  - Implemented:
-    - added a real backend bounded context at `apps/server/src/modules/tenants` with `domain`, `application`, `infrastructure`, `interface`, and `database` folders.
-    - added `database/migrations` and `database/seeder` inside the backend tenant module.
-    - added backend tenant aggregate, value object, repository port, use cases, HTTP controller, GraphQL resolver, module definition, and registry bootstrap.
-    - registered the tenant backend module in Nest through `TenantsModule` and in the module registry through `TenantsRegistryBootstrap`.
-    - refactored frontend tenant code into `features/tenant/domain`, `application`, `infrastructure`, and `interface/pages`.
-    - updated desk tenant routes to import page components from the strict frontend interface layer.
-    - added `assist/rules/strict-module-structure.md` and updated standards/readme references to make the pattern mandatory.
-    - synchronized workspace package versions to `1.0.34`.
-  - Validation:
-    - passed `corepack pnpm --filter @cxnext/server typecheck`.
-    - passed `corepack pnpm --filter @cxnext/server lint`.
-    - passed `corepack pnpm --filter @cxnext/frontend typecheck`.
-    - passed `corepack pnpm --filter @cxnext/frontend lint`.
-    - passed `corepack pnpm --filter @cxnext/ui typecheck`.
-    - passed `corepack pnpm --filter @cxnext/ui lint`.
-    - passed targeted Prettier write/check for edited backend, frontend, and assist files.
-    - verified `http://localhost:3000/desk/tenant` returns `200` after the frontend module refactor.
-  - Residual risk:
-    - backend tenant persistence is still backed by an in-memory repository in this batch; the module structure, migration, and seeder are now in place for a later real database adapter.
+    - pending.

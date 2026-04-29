@@ -35,8 +35,7 @@ export const cxsunRecords: readonly CxsunRecord[] = [
     priority: "high",
     updatedAt: "2026-04-28 10:30",
     dueAt: "2026-04-29",
-    notes:
-      "Confirm first operator workflow, desk navigation, and approval routing.",
+    notes: "Confirm first operator workflow, desk navigation, and approval routing.",
   },
   {
     id: "base-002",
@@ -60,8 +59,7 @@ export const cxsunRecords: readonly CxsunRecord[] = [
     priority: "high",
     updatedAt: "2026-04-27 18:20",
     dueAt: "2026-04-28",
-    notes:
-      "Needs confirmation of operator roles before the queue can be enabled.",
+    notes: "Needs confirmation of operator roles before the queue can be enabled.",
   },
   {
     id: "base-004",

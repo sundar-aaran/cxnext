@@ -1,6 +1,7 @@
 import type { Kysely } from "kysely";
 
-import { databaseEnvSchema, createDatabaseConnection } from "./database";
+import { createDatabaseConnection } from "./database";
+import { loadDatabaseEnv, usesFallbackDatabaseCredentials, type LoadedDatabaseEnv } from "./env";
 import { freshApplicationDatabase } from "./process/fresh";
 import {
   listRegisteredDatabaseMigrations,
@@ -40,6 +41,45 @@ function hasRefreshConfirmation(args: readonly string[]) {
   return args.includes("--yes");
 }
 
+type DatabaseClientError = {
+  readonly code?: string;
+  readonly message?: string;
+};
+
+export function formatDatabaseCliError(error: unknown, envState: LoadedDatabaseEnv): string {
+  const databaseError = error as DatabaseClientError;
+
+  if (databaseError?.code === "ER_ACCESS_DENIED_ERROR") {
+    const lines = [
+      `Database connection failed for user '${envState.env.DATABASE_USER}' on ${envState.env.DATABASE_HOST}:${envState.env.DATABASE_PORT}/${envState.env.DATABASE_NAME}.`,
+    ];
+
+    if (envState.envFilePath) {
+      lines.push(`Loaded environment file: ${envState.envFilePath}`);
+    } else {
+      lines.push(`No .env file was found while searching upward from ${envState.cwd}.`);
+    }
+
+    if (usesFallbackDatabaseCredentials(envState)) {
+      lines.push(
+        "DATABASE_USER, DATABASE_PASSWORD, or DATABASE_NAME was not set, so the CLI used fallback defaults. Define those values in the repository root .env or current shell, or create a matching MySQL user and database.",
+      );
+    } else {
+      lines.push(
+        "Verify DATABASE_USER, DATABASE_PASSWORD, and DATABASE_NAME in the repository root .env or current shell, and ensure that MySQL grants this user access.",
+      );
+    }
+
+    return lines.join("\n");
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return String(error);
+}
+
 export async function runDatabaseCli(args = process.argv.slice(2)) {
   const command = resolveCommand(args[0]);
   const extraArgs = args.slice(1);
@@ -62,11 +102,15 @@ export async function runDatabaseCli(args = process.argv.slice(2)) {
     return;
   }
 
-  const env = databaseEnvSchema.parse(process.env);
-  const connection = createDatabaseConnection(env);
-  const database = connection.db as unknown as Kysely<unknown>;
+  let envState: LoadedDatabaseEnv | null = null;
+  let connection: ReturnType<typeof createDatabaseConnection> | null = null;
 
   try {
+    envState = loadDatabaseEnv();
+    connection = createDatabaseConnection(envState.env);
+
+    const database = connection.db as unknown as Kysely<unknown>;
+
     if (command === "migrate") {
       const result = await runDatabaseMigrations(database, { logger: console });
       console.info(
@@ -86,7 +130,7 @@ export async function runDatabaseCli(args = process.argv.slice(2)) {
 
     if (command === "fresh" || command === "refresh") {
       const result = await freshApplicationDatabase(database, {
-        databaseName: env.DATABASE_NAME,
+        databaseName: envState.env.DATABASE_NAME,
         logger: console,
       });
       console.info(
@@ -99,11 +143,17 @@ export async function runDatabaseCli(args = process.argv.slice(2)) {
     console.info(
       `Database prepared. Migrations applied: ${result.migrations.applied.length}, seeders applied: ${result.seeders.applied.length}`,
     );
+  } catch (error) {
+    console.error(envState ? formatDatabaseCliError(error, envState) : String(error));
+    process.exitCode = 1;
   } finally {
-    await connection.destroy();
+    await connection?.destroy();
   }
 }
 
 if (process.argv[1]?.endsWith("cli.js")) {
-  void runDatabaseCli();
+  void runDatabaseCli().catch((error) => {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exitCode = 1;
+  });
 }

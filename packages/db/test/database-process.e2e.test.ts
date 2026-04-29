@@ -6,6 +6,8 @@ import {
   prepareApplicationDatabase,
   runDatabaseMigrations,
   runDatabaseSeeders,
+  databaseMigrations,
+  databaseSeeders,
   systemMigrationTableName,
   systemSeederTableName,
 } from "../src";
@@ -134,33 +136,39 @@ class FakeInsertBuilder {
     const rows = this.database.tables.get(this.tableName) ?? [];
     const nextRow = { ...this.row };
 
-    if (this.tableName === "tenants" && nextRow.id === undefined) {
+    if (nextRow.id === undefined) {
       nextRow.id = rows.length + 1;
     }
 
     this.database.tables.set(this.tableName, [...rows, nextRow]);
+    return [{ insertId: nextRow.id }];
   }
 }
+
+const expectedMigrations = databaseMigrations.map((migration) => migration.id);
+const expectedSeeders = databaseSeeders.map((seeder) => seeder.id);
 
 function createFakeKysely() {
   return new FakeDatabase() as unknown as Kysely<unknown>;
 }
 
 describe("database process runner e2e", () => {
-  it("prepares tenant migrations and seeders once, then skips them", async () => {
+  it("prepares migrations and seeders once, then skips them", async () => {
     const database = createFakeKysely();
 
     const firstRun = await prepareApplicationDatabase(database);
     const secondRun = await prepareApplicationDatabase(database);
     const fakeDatabase = database as unknown as FakeDatabase;
 
-    expect(firstRun.migrations.applied).toEqual(["organisation:tenants:001-create-tenants"]);
-    expect(firstRun.seeders.applied).toEqual(["organisation:tenants:001-seed-tenants"]);
+    expect(firstRun.migrations.applied).toEqual(expectedMigrations);
+    expect(firstRun.seeders.applied).toEqual(expectedSeeders);
     expect(secondRun.migrations.skipped).toEqual(firstRun.migrations.applied);
     expect(secondRun.seeders.skipped).toEqual(firstRun.seeders.applied);
     expect(fakeDatabase.tables.get("tenants")).toHaveLength(3);
-    expect(fakeDatabase.tables.get(systemMigrationTableName)).toHaveLength(1);
-    expect(fakeDatabase.tables.get(systemSeederTableName)).toHaveLength(1);
+    expect(fakeDatabase.tables.get(systemMigrationTableName)).toHaveLength(
+      expectedMigrations.length,
+    );
+    expect(fakeDatabase.tables.get(systemSeederTableName)).toHaveLength(expectedSeeders.length);
   });
 
   it("runs migrations and seeders independently with ledger protection", async () => {
@@ -170,8 +178,8 @@ describe("database process runner e2e", () => {
     const seedRun = await runDatabaseSeeders(database);
     const repeatedSeedRun = await runDatabaseSeeders(database);
 
-    expect(migrationRun.applied).toEqual(["organisation:tenants:001-create-tenants"]);
-    expect(seedRun.applied).toEqual(["organisation:tenants:001-seed-tenants"]);
+    expect(migrationRun.applied).toEqual(expectedMigrations);
+    expect(seedRun.applied).toEqual(expectedSeeders);
     expect(repeatedSeedRun.applied).toEqual([]);
     expect(repeatedSeedRun.skipped).toEqual(seedRun.applied);
   });

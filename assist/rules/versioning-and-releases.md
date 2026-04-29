@@ -32,6 +32,7 @@
 
 ## Build Output Policy
 
-1. Standalone app builds belong under `build/app/<app>/<target>`.
-2. Plugin or module builds belong under `build/module/<module>/<target>`.
-3. Local tooling should respect the shared root build layout instead of scattering build outputs across app-local folders.
+1. TypeScript runtime builds for apps and packages belong under the local `dist/` folder configured by each workspace package.
+2. Framework-managed frontend builds may use their native output folders such as `.next/` and `out/`.
+3. Compiled `.js`, `.js.map`, `.d.ts`, and `.d.ts.map` files must never be emitted into `src/` or other source trees.
+4. Local tooling and validation must treat generated source-tree artifacts as a repository error.

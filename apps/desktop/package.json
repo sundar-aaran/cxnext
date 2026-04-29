@@ -1,6 +1,6 @@
 {
   "name": "@cxnext/desktop",
-  "version": "1.0.38",
+  "version": "1.0.43",
   "private": true,
   "main": "dist/main.js",
   "scripts": {

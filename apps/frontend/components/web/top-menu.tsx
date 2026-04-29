@@ -17,7 +17,11 @@ export function TopMenu() {
         </Link>
         <nav className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
           {navItems.map((item) => (
-            <Link key={item.href} href={item.href} className="transition-colors hover:text-foreground">
+            <Link
+              key={item.href}
+              href={item.href}
+              className="transition-colors hover:text-foreground"
+            >
               {item.label}
             </Link>
           ))}

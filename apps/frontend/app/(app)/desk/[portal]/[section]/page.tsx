@@ -1,8 +1,5 @@
 import { notFound } from "next/navigation";
-import {
-  CxsunQueuePage,
-  CxsunRecordsPage,
-} from "../../../../../features/cxsun/cxsun-workspace";
+import { CxsunQueuePage, CxsunRecordsPage } from "../../../../../features/cxsun/cxsun-workspace";
 import {
   deskPortals,
   getDeskPortal,
@@ -14,9 +11,7 @@ const cxsunSections = ["records", "queue"] as const;
 export function generateStaticParams() {
   return [
     ...deskPortals.flatMap((portal) =>
-      portal.id === "cxsun"
-        ? cxsunSections.map((section) => ({ portal: portal.id, section }))
-        : [],
+      portal.id === "cxsun" ? cxsunSections.map((section) => ({ portal: portal.id, section })) : [],
     ),
   ];
 }

@@ -5,7 +5,9 @@ export interface DomainEventMetadata {
   readonly [key: string]: unknown;
 }
 
-export abstract class DomainEvent<TPayload extends Record<string, unknown> = Record<string, unknown>> {
+export abstract class DomainEvent<
+  TPayload extends Record<string, unknown> = Record<string, unknown>,
+> {
   public readonly occurredAt: Date;
 
   protected constructor(

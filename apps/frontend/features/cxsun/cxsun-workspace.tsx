@@ -41,10 +41,7 @@ export function CxsunOverviewPage() {
   const pendingItems = cxsunQueueItems.slice(0, 3);
 
   return (
-    <div
-      data-technical-name="page.cxsun.overview"
-      className="space-y-3 p-4 md:p-6"
-    >
+    <div data-technical-name="page.cxsun.overview" className="space-y-3 p-4 md:p-6">
       <CxsunPageHeader
         eyebrow="Cxsun Base"
         title="Starting app workspace"
@@ -53,22 +50,14 @@ export function CxsunOverviewPage() {
         primaryLabel="New record"
       />
 
-      <section
-        data-technical-name="section.cxsun.kpis"
-        className="grid gap-3 md:grid-cols-3"
-      >
+      <section data-technical-name="section.cxsun.kpis" className="grid gap-3 md:grid-cols-3">
         {metrics.map((metric) => (
-          <Card
-            key={metric.id}
-            data-technical-name={`card.cxsun.kpi.${metric.id}`}
-          >
+          <Card key={metric.id} data-technical-name={`card.cxsun.kpi.${metric.id}`}>
             <CardHeader className="pb-2">
               <CardDescription>{metric.label}</CardDescription>
               <CardTitle className="text-2xl">{metric.value}</CardTitle>
             </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
-              {metric.detail}
-            </CardContent>
+            <CardContent className="text-sm text-muted-foreground">{metric.detail}</CardContent>
           </Card>
         ))}
       </section>
@@ -80,9 +69,7 @@ export function CxsunOverviewPage() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle>Pending items</CardTitle>
-            <CardDescription>
-              Queue entries that need operator attention.
-            </CardDescription>
+            <CardDescription>Queue entries that need operator attention.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
             {pendingItems.map((item) => (
@@ -110,9 +97,7 @@ export function CxsunOverviewPage() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle>Quick actions</CardTitle>
-            <CardDescription>
-              Primary operator tasks stay visible.
-            </CardDescription>
+            <CardDescription>Primary operator tasks stay visible.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-2">
             <Button asChild>
@@ -144,10 +129,7 @@ export function CxsunOverviewPage() {
 
 export function CxsunRecordsPage() {
   return (
-    <div
-      data-technical-name="page.cxsun.records"
-      className="space-y-3 p-4 md:p-6"
-    >
+    <div data-technical-name="page.cxsun.records" className="space-y-3 p-4 md:p-6">
       <CxsunPageHeader
         eyebrow="Master list"
         title="Starter records"
@@ -160,10 +142,7 @@ export function CxsunRecordsPage() {
         <CardContent className="grid gap-3 p-4 md:grid-cols-[1fr_12rem_12rem_auto]">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              className="pl-9"
-              placeholder="Search records, owners, references"
-            />
+            <Input className="pl-9" placeholder="Search records, owners, references" />
           </div>
           <Input aria-label="Status picker" placeholder="Status: all" />
           <Input aria-label="Owner autocomplete" placeholder="Owner lookup" />
@@ -177,9 +156,7 @@ export function CxsunRecordsPage() {
       <Card data-technical-name="section.cxsun.data-grid">
         <CardHeader className="pb-3">
           <CardTitle>Records</CardTitle>
-          <CardDescription>
-            Data-grid list with row actions and pagination.
-          </CardDescription>
+          <CardDescription>Data-grid list with row actions and pagination.</CardDescription>
         </CardHeader>
         <CardContent className="overflow-x-auto">
           <table className="w-full min-w-[760px] border-collapse text-sm">
@@ -196,36 +173,22 @@ export function CxsunRecordsPage() {
             </thead>
             <tbody>
               {cxsunRecords.map((record) => (
-                <tr
-                  key={record.id}
-                  className="border-b border-border/70 last:border-0"
-                >
+                <tr key={record.id} className="border-b border-border/70 last:border-0">
                   <td className="py-3 pr-3 font-medium">{record.code}</td>
                   <td className="py-3 pr-3">
-                    <Link
-                      href={`/desk/cxsun/records/${record.id}`}
-                      className="hover:underline"
-                    >
+                    <Link href={`/desk/cxsun/records/${record.id}`} className="hover:underline">
                       {record.title}
                     </Link>
-                    <p className="text-xs text-muted-foreground">
-                      {record.reference}
-                    </p>
+                    <p className="text-xs text-muted-foreground">{record.reference}</p>
                   </td>
                   <td className="py-3 pr-3">{record.owner}</td>
                   <td className="py-3 pr-3">
-                    <Badge
-                      variant="outline"
-                      className={getStatusBadgeClass(record.status)}
-                    >
+                    <Badge variant="outline" className={getStatusBadgeClass(record.status)}>
                       {getStatusLabel(record.status)}
                     </Badge>
                   </td>
                   <td className="py-3 pr-3">
-                    <Badge
-                      variant="outline"
-                      className={getPriorityBadgeClass(record.priority)}
-                    >
+                    <Badge variant="outline" className={getPriorityBadgeClass(record.priority)}>
                       {getPriorityLabel(record.priority)}
                     </Badge>
                   </td>
@@ -258,10 +221,7 @@ export function CxsunRecordsPage() {
 
 export function CxsunRecordFormPage() {
   return (
-    <div
-      data-technical-name="page.cxsun.record-form"
-      className="space-y-3 p-4 md:p-6"
-    >
+    <div data-technical-name="page.cxsun.record-form" className="space-y-3 p-4 md:p-6">
       <CxsunPageHeader
         eyebrow="Record workflow"
         title="Create starter record"
@@ -274,25 +234,17 @@ export function CxsunRecordFormPage() {
         <Card data-technical-name="section.cxsun.form.identity">
           <CardHeader className="pb-3">
             <CardTitle>Identity</CardTitle>
-            <CardDescription>
-              Required record fields and searchable references.
-            </CardDescription>
+            <CardDescription>Required record fields and searchable references.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-2">
             <Field label="Record title">
-              <Input
-                placeholder="Enter record title"
-                defaultValue="New starter workflow"
-              />
+              <Input placeholder="Enter record title" defaultValue="New starter workflow" />
             </Field>
             <Field label="Owner lookup">
               <Input placeholder="Search owner" defaultValue="Operations" />
             </Field>
             <Field label="Reference lookup">
-              <Input
-                placeholder="Search reference"
-                defaultValue="Foundation setup"
-              />
+              <Input placeholder="Search reference" defaultValue="Foundation setup" />
             </Field>
             <Field label="Due date">
               <Input type="date" defaultValue="2026-04-30" />
@@ -303,9 +255,7 @@ export function CxsunRecordFormPage() {
         <Card data-technical-name="section.cxsun.form.controls">
           <CardHeader className="pb-3">
             <CardTitle>Workflow controls</CardTitle>
-            <CardDescription>
-              Use compact picker-style fields for repeat entry.
-            </CardDescription>
+            <CardDescription>Use compact picker-style fields for repeat entry.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-3">
             <Field label="Status picker">
@@ -327,9 +277,7 @@ export function CxsunRecordFormPage() {
         <Card data-technical-name="section.cxsun.form.notes">
           <CardHeader className="pb-3">
             <CardTitle>Notes</CardTitle>
-            <CardDescription>
-              Operational notes for handoff and audit context.
-            </CardDescription>
+            <CardDescription>Operational notes for handoff and audit context.</CardDescription>
           </CardHeader>
           <CardContent>
             <textarea
@@ -353,19 +301,11 @@ export function CxsunRecordFormPage() {
   );
 }
 
-export function CxsunRecordDetailPage({
-  recordId,
-}: {
-  readonly recordId: string;
-}) {
-  const record =
-    cxsunRecords.find((item) => item.id === recordId) ?? cxsunRecords[0];
+export function CxsunRecordDetailPage({ recordId }: { readonly recordId: string }) {
+  const record = cxsunRecords.find((item) => item.id === recordId) ?? cxsunRecords[0];
 
   return (
-    <div
-      data-technical-name="page.cxsun.record-detail"
-      className="space-y-3 p-4 md:p-6"
-    >
+    <div data-technical-name="page.cxsun.record-detail" className="space-y-3 p-4 md:p-6">
       <CxsunPageHeader
         eyebrow={record.code}
         title={record.title}
@@ -378,27 +318,18 @@ export function CxsunRecordDetailPage({
         <Card data-technical-name="section.cxsun.detail.timeline">
           <CardHeader>
             <CardTitle>Operational follow-up</CardTitle>
-            <CardDescription>
-              Detail view for review, approval, and handoff work.
-            </CardDescription>
+            <CardDescription>Detail view for review, approval, and handoff work.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {["Intake captured", "Owner assigned", "Awaiting approval"].map(
-              (item, index) => (
-                <div
-                  key={item}
-                  className="flex gap-3 rounded-md border border-border px-3 py-2"
-                >
-                  <Badge variant="secondary">{index + 1}</Badge>
-                  <div>
-                    <p className="text-sm font-medium">{item}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Updated {record.updatedAt}
-                    </p>
-                  </div>
+            {["Intake captured", "Owner assigned", "Awaiting approval"].map((item, index) => (
+              <div key={item} className="flex gap-3 rounded-md border border-border px-3 py-2">
+                <Badge variant="secondary">{index + 1}</Badge>
+                <div>
+                  <p className="text-sm font-medium">{item}</p>
+                  <p className="text-xs text-muted-foreground">Updated {record.updatedAt}</p>
                 </div>
-              ),
-            )}
+              </div>
+            ))}
           </CardContent>
         </Card>
 
@@ -413,10 +344,7 @@ export function CxsunRecordDetailPage({
             <SummaryRow label="Due" value={record.dueAt} />
             <div className="flex items-center justify-between gap-3">
               <span className="text-muted-foreground">Status</span>
-              <Badge
-                variant="outline"
-                className={getStatusBadgeClass(record.status)}
-              >
+              <Badge variant="outline" className={getStatusBadgeClass(record.status)}>
                 {getStatusLabel(record.status)}
               </Badge>
             </div>
@@ -429,10 +357,7 @@ export function CxsunRecordDetailPage({
 
 export function CxsunQueuePage() {
   return (
-    <div
-      data-technical-name="page.cxsun.queue"
-      className="space-y-3 p-4 md:p-6"
-    >
+    <div data-technical-name="page.cxsun.queue" className="space-y-3 p-4 md:p-6">
       <CxsunPageHeader
         eyebrow="Queue"
         title="Follow-up work"
@@ -444,25 +369,18 @@ export function CxsunQueuePage() {
       <Card data-technical-name="section.cxsun.queue-list">
         <CardContent className="divide-y divide-border p-0">
           {cxsunQueueItems.map((item) => (
-            <div
-              key={item.id}
-              className="grid gap-3 p-4 md:grid-cols-[1fr_auto] md:items-center"
-            >
+            <div key={item.id} className="grid gap-3 p-4 md:grid-cols-[1fr_auto] md:items-center">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="font-medium">{item.title}</p>
                   {item.blocked ? (
-                    <Badge
-                      variant="outline"
-                      className={getStatusBadgeClass("blocked")}
-                    >
+                    <Badge variant="outline" className={getStatusBadgeClass("blocked")}>
                       Blocked
                     </Badge>
                   ) : null}
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {item.recordCode} / {item.stage} / {item.assignee} / due{" "}
-                  {item.dueAt}
+                  {item.recordCode} / {item.stage} / {item.assignee} / due {item.dueAt}
                 </p>
               </div>
               <div className="flex justify-end gap-2">
@@ -502,12 +420,8 @@ function CxsunPageHeader({
           <Badge variant="outline">{eyebrow}</Badge>
           <Badge variant="secondary">starting app</Badge>
         </div>
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          {title}
-        </h1>
-        <p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">
-          {description}
-        </p>
+        <h1 className="text-xl font-semibold tracking-tight text-foreground">{title}</h1>
+        <p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">{description}</p>
       </div>
       <Button asChild>
         <Link href={primaryHref}>
@@ -524,9 +438,7 @@ function CxsunRecentActivity() {
     <Card data-technical-name="section.cxsun.recent-activity">
       <CardHeader className="pb-3">
         <CardTitle>Recent activity</CardTitle>
-        <CardDescription>
-          Latest record movements in the starter app.
-        </CardDescription>
+        <CardDescription>Latest record movements in the starter app.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-2">
         {cxsunRecords.map((record) => (
@@ -591,13 +503,7 @@ function RecordActionMenu({ recordId }: { readonly recordId: string }) {
   );
 }
 
-function SummaryRow({
-  label,
-  value,
-}: {
-  readonly label: string;
-  readonly value: string;
-}) {
+function SummaryRow({ label, value }: { readonly label: string; readonly value: string }) {
   return (
     <div className="flex items-center justify-between gap-3">
       <span className="text-muted-foreground">{label}</span>

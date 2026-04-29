@@ -60,10 +60,19 @@ export interface DashboardNavItem {
   readonly active?: boolean;
 }
 
+export interface DashboardNavGroup {
+  readonly id: string;
+  readonly label: string;
+  readonly icon?: ReactNode;
+  readonly items?: readonly DashboardNavItem[];
+  readonly subGroups?: readonly DashboardNavGroup[];
+}
+
 export interface DashboardShellProps {
   readonly brand: string;
   readonly workspace: string;
   readonly navItems: readonly DashboardNavItem[];
+  readonly navGroups?: readonly DashboardNavGroup[];
   readonly children: ReactNode;
   readonly header?: ReactNode;
   readonly className?: string;
@@ -232,10 +241,40 @@ function toInitials(name: string) {
   );
 }
 
+function flattenNavGroupItems(group: DashboardNavGroup): readonly DashboardNavItem[] {
+  return [
+    ...(group.items ?? []),
+    ...(group.subGroups ?? []).flatMap((subGroup) => flattenNavGroupItems(subGroup)),
+  ];
+}
+
+function collectSubGroupIds(group: DashboardNavGroup): readonly string[] {
+  return [
+    ...(group.subGroups ?? []).map((subGroup) => subGroup.id),
+    ...(group.subGroups ?? []).flatMap((subGroup) => collectSubGroupIds(subGroup)),
+  ];
+}
+
+function hasOpenSubGroup(group: DashboardNavGroup, openGroups: Record<string, boolean>) {
+  return collectSubGroupIds(group).some((subGroupId) => openGroups[subGroupId]);
+}
+
+function hasActiveItem(group: DashboardNavGroup): boolean {
+  return flattenNavGroupItems(group).some((item) => item.active);
+}
+
+function collectActiveGroupIds(group: DashboardNavGroup): readonly string[] {
+  return [
+    ...(hasActiveItem(group) ? [group.id] : []),
+    ...(group.subGroups ?? []).flatMap((subGroup) => collectActiveGroupIds(subGroup)),
+  ];
+}
+
 export function DashboardShell({
   brand,
   workspace,
   navItems,
+  navGroups,
   children,
   className,
   shellTechnicalName,
@@ -243,7 +282,15 @@ export function DashboardShell({
 }: DashboardShellProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [organisationOpen, setOrganisationOpen] = useState(true);
+  const [openNavGroups, setOpenNavGroups] = useState<Record<string, boolean>>({
+    organisation: true,
+    common: true,
+    "common-location": false,
+    "common-contacts": false,
+    "common-product": false,
+    "common-orders": false,
+    "common-others": false,
+  });
   const [themeMode, setThemeMode] = useState<ThemeMode>("system");
   const [accentTheme, setAccentTheme] = useState<AccentTheme>("neutral");
   const [readNotificationIds, setReadNotificationIds] = useState<Set<NotificationId>>(
@@ -253,6 +300,28 @@ export function DashboardShell({
   const unreadCount = useMemo(
     () => notifications.filter((item) => !readNotificationIds.has(item.id)).length,
     [readNotificationIds],
+  );
+  const sidebarGroups = useMemo<readonly DashboardNavGroup[]>(
+    () =>
+      navGroups && navGroups.length > 0
+        ? navGroups
+        : [
+            {
+              id: "organisation",
+              label: "Organisation",
+              icon: <Building2 className="size-4" />,
+              items: navItems,
+            },
+          ],
+    [navGroups, navItems],
+  );
+  const sidebarLeafItems = useMemo(
+    () => sidebarGroups.flatMap((group) => flattenNavGroupItems(group)),
+    [sidebarGroups],
+  );
+  const activeGroupIdsKey = useMemo(
+    () => sidebarGroups.flatMap((group) => collectActiveGroupIds(group)).join("|"),
+    [sidebarGroups],
   );
 
   function markAllNotificationsRead() {
@@ -281,6 +350,35 @@ export function DashboardShell({
   }, [accentTheme, themeMode]);
 
   useEffect(() => {
+    if (!activeGroupIdsKey) return;
+
+    const activeGroupIds = new Set(activeGroupIdsKey.split("|"));
+
+    setOpenNavGroups((current) => {
+      const next = { ...current };
+
+      for (const group of sidebarGroups) {
+        const subGroupIds = collectSubGroupIds(group);
+        const activeSubGroupIds = subGroupIds.filter((subGroupId) =>
+          activeGroupIds.has(subGroupId),
+        );
+
+        if (activeGroupIds.has(group.id) || activeSubGroupIds.length > 0) {
+          next[group.id] = true;
+        }
+
+        if (activeSubGroupIds.length > 0) {
+          for (const subGroupId of subGroupIds) {
+            next[subGroupId] = activeGroupIds.has(subGroupId);
+          }
+        }
+      }
+
+      return next;
+    });
+  }, [activeGroupIdsKey, sidebarGroups]);
+
+  useEffect(() => {
     if (themeMode !== "system") {
       return;
     }
@@ -307,6 +405,27 @@ export function DashboardShell({
     setAccentTheme(accent);
     window.localStorage.setItem("codexsun-theme-accent", accent);
     applyTheme(themeMode, accent);
+  }
+
+  function toggleNavGroup(group: DashboardNavGroup, defaultOpen: boolean) {
+    setOpenNavGroups((current) => {
+      if (group.id === "common" && hasOpenSubGroup(group, current)) {
+        const collapsedSubGroups = Object.fromEntries(
+          collectSubGroupIds(group).map((subGroupId) => [subGroupId, false]),
+        );
+
+        return { ...current, ...collapsedSubGroups, [group.id]: true };
+      }
+
+      return { ...current, [group.id]: !(current[group.id] ?? defaultOpen) };
+    });
+  }
+
+  function keepNavGroupsOpen(...groupIds: readonly string[]) {
+    setOpenNavGroups((current) => ({
+      ...current,
+      ...Object.fromEntries(groupIds.map((groupId) => [groupId, true])),
+    }));
   }
 
   function renderSidebarContent({
@@ -445,109 +564,201 @@ export function DashboardShell({
             ) : null}
           </Tooltip>
 
-          <div className="space-y-1.5">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  aria-expanded={!labelsHidden ? organisationOpen : undefined}
-                  aria-label="Organisation"
-                  className={cn(
-                    "group flex min-h-11 w-full cursor-pointer items-center rounded-md text-sm font-semibold text-foreground transition-[background-color,padding,gap,justify-content,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-sidebar-accent",
-                    labelsHidden ? "justify-center px-0" : "gap-3 px-1 py-2",
-                  )}
-                  onClick={() => setOrganisationOpen((open) => !open)}
-                >
-                  <span
-                    className={cn(
-                      "flex shrink-0 items-center justify-center text-foreground transition-[width,height] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
-                      labelsHidden ? "size-8" : "size-7",
-                    )}
-                    aria-hidden="true"
-                  >
-                    <Building2 className="size-4" />
-                  </span>
-                  <span className={cn("flex-1 text-left", sidebarLabelClass(labelsHidden))}>
-                    <span className="block truncate">Organisation</span>
-                  </span>
-                  <span
-                    className={cn(
-                      "flex size-4 shrink-0 items-center justify-center text-muted-foreground transition-[opacity,transform,width] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
-                      organisationOpen ? "rotate-90" : "rotate-0",
-                      labelsHidden
-                        ? "w-0 translate-x-1 opacity-0"
-                        : "w-4 translate-x-0 opacity-100 delay-75",
-                    )}
-                    aria-hidden="true"
-                  >
-                    <ChevronRight className="size-4" />
-                  </span>
-                </button>
-              </TooltipTrigger>
-              {labelsHidden ? (
-                <TooltipContent
-                  side="right"
-                  align="center"
-                  sideOffset={12}
-                  className="max-w-56 rounded-md bg-foreground px-3 py-2 text-background shadow-lg"
-                >
-                  <span className="block text-xs font-semibold">Organisation</span>
-                </TooltipContent>
-              ) : null}
-            </Tooltip>
-
-            <div
-              className={cn(
-                "grid overflow-hidden transition-[grid-template-rows,opacity,transform,margin] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
-                labelsHidden || !organisationOpen
-                  ? "mt-0 grid-rows-[0fr] -translate-y-2 opacity-0"
-                  : "mt-1 grid-rows-[1fr] translate-y-0 opacity-100",
-              )}
-            >
-              <div className="min-h-0">
-                <div className="ml-3 space-y-1 border-l border-sidebar-border pl-5">
-                  {navItems.map((item, index) => (
-                    <a
-                      key={item.id}
-                      href={item.href}
-                      aria-current={item.active ? "page" : undefined}
-                      aria-label={item.label}
-                      style={{
-                        transitionDelay: organisationOpen ? `${index * 45}ms` : "0ms",
-                      }}
+          {sidebarGroups.map((group) => {
+            const groupOpen = openNavGroups[group.id] ?? true;
+            return (
+              <div key={group.id} className="space-y-1.5">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      aria-expanded={!labelsHidden ? groupOpen : undefined}
+                      aria-label={group.label}
                       className={cn(
-                        "group flex min-h-9 w-full cursor-pointer items-center gap-2.5 rounded-md px-1 py-1.5 text-sm font-medium text-muted-foreground transition-[background-color,color,gap,padding,opacity,transform] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-sidebar-accent hover:text-foreground",
-                        organisationOpen ? "translate-x-0 opacity-100" : "-translate-x-2 opacity-0",
-                        item.active && "bg-sidebar-accent text-foreground",
+                        "group flex min-h-11 w-full cursor-pointer items-center rounded-md text-sm font-semibold text-foreground transition-[background-color,padding,gap,justify-content,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-sidebar-accent",
+                        labelsHidden ? "justify-center px-0" : "gap-3 px-1 py-2",
                       )}
-                      onClick={() => {
-                        if (drawer) {
-                          setMobileSidebarOpen(false);
-                        }
-                      }}
+                      onClick={() => toggleNavGroup(group, true)}
                     >
                       <span
-                        className="flex size-5 shrink-0 items-center justify-center"
+                        className={cn(
+                          "flex shrink-0 items-center justify-center text-foreground transition-[width,height] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                          labelsHidden ? "size-8" : "size-7",
+                        )}
                         aria-hidden="true"
                       >
-                        {item.icon}
+                        {group.icon ?? <Building2 className="size-4" />}
+                      </span>
+                      <span className={cn("flex-1 text-left", sidebarLabelClass(labelsHidden))}>
+                        <span className="block truncate">{group.label}</span>
                       </span>
                       <span
                         className={cn(
-                          "min-w-0 flex-1 overflow-hidden truncate whitespace-nowrap transition-[max-width,opacity,transform] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
-                          "max-w-[12rem] translate-x-0 opacity-100",
+                          "flex size-4 shrink-0 items-center justify-center text-muted-foreground transition-[opacity,transform,width] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                          groupOpen ? "rotate-90" : "rotate-0",
+                          labelsHidden
+                            ? "w-0 translate-x-1 opacity-0"
+                            : "w-4 translate-x-0 opacity-100 delay-75",
                         )}
+                        aria-hidden="true"
                       >
-                        {item.label}
+                        <ChevronRight className="size-4" />
                       </span>
-                    </a>
-                  ))}
+                    </button>
+                  </TooltipTrigger>
+                  {labelsHidden ? (
+                    <TooltipContent
+                      side="right"
+                      align="center"
+                      sideOffset={12}
+                      className="max-w-56 rounded-md bg-foreground px-3 py-2 text-background shadow-lg"
+                    >
+                      <span className="block text-xs font-semibold">{group.label}</span>
+                    </TooltipContent>
+                  ) : null}
+                </Tooltip>
+
+                <div
+                  className={cn(
+                    "grid overflow-hidden transition-[grid-template-rows,opacity,transform,margin] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
+                    labelsHidden || !groupOpen
+                      ? "mt-0 grid-rows-[0fr] -translate-y-2 opacity-0"
+                      : "mt-1 grid-rows-[1fr] translate-y-0 opacity-100",
+                  )}
+                >
+                  <div className="min-h-0">
+                    <div className="ml-3 space-y-1 border-l border-sidebar-border pl-5">
+                      {(group.items ?? []).map((item, index) => (
+                        <a
+                          key={item.id}
+                          href={item.href}
+                          aria-current={item.active ? "page" : undefined}
+                          aria-label={item.label}
+                          style={{
+                            transitionDelay: groupOpen ? `${index * 45}ms` : "0ms",
+                          }}
+                          className={cn(
+                            "group flex min-h-9 w-full cursor-pointer items-center gap-2.5 rounded-md px-1 py-1.5 text-sm font-medium text-muted-foreground transition-[background-color,color,gap,padding,opacity,transform] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-sidebar-accent hover:text-foreground",
+                            groupOpen ? "translate-x-0 opacity-100" : "-translate-x-2 opacity-0",
+                            item.active && "bg-sidebar-accent text-foreground",
+                          )}
+                          onClick={() => {
+                            keepNavGroupsOpen(group.id);
+                            if (drawer) {
+                              setMobileSidebarOpen(false);
+                            }
+                          }}
+                        >
+                          <span
+                            className="flex size-5 shrink-0 items-center justify-center"
+                            aria-hidden="true"
+                          >
+                            {item.icon}
+                          </span>
+                          <span
+                            className={cn(
+                              "min-w-0 flex-1 overflow-hidden truncate whitespace-nowrap transition-[max-width,opacity,transform] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
+                              "max-w-[12rem] translate-x-0 opacity-100",
+                            )}
+                          >
+                            {item.label}
+                          </span>
+                        </a>
+                      ))}
+                      {(group.subGroups ?? []).map((subGroup, subGroupIndex) => {
+                        const subGroupActive = flattenNavGroupItems(subGroup).some(
+                          (item) => item.active,
+                        );
+                        const subGroupOpen = openNavGroups[subGroup.id] ?? subGroupActive;
+
+                        return (
+                          <div key={subGroup.id} className="space-y-1">
+                            <button
+                              type="button"
+                              aria-expanded={subGroupOpen}
+                              className={cn(
+                                "group flex min-h-9 w-full cursor-pointer items-center gap-2.5 rounded-md px-1 py-1.5 text-sm font-medium text-muted-foreground transition-[background-color,color,opacity,transform] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-sidebar-accent hover:text-foreground",
+                                groupOpen
+                                  ? "translate-x-0 opacity-100"
+                                  : "-translate-x-2 opacity-0",
+                                flattenNavGroupItems(subGroup).some((item) => item.active) &&
+                                  "text-foreground",
+                              )}
+                              style={{
+                                transitionDelay: groupOpen ? `${subGroupIndex * 45}ms` : "0ms",
+                              }}
+                              onClick={() =>
+                                setOpenNavGroups((current) => ({
+                                  ...current,
+                                  ...Object.fromEntries(
+                                    (group.subGroups ?? [])
+                                      .filter((candidate) => candidate.id !== subGroup.id)
+                                      .map((candidate) => [candidate.id, false]),
+                                  ),
+                                  [subGroup.id]: !subGroupOpen,
+                                }))
+                              }
+                            >
+                              <span
+                                className="flex size-5 shrink-0 items-center justify-center"
+                                aria-hidden="true"
+                              >
+                                {subGroup.icon}
+                              </span>
+                              <span className="min-w-0 flex-1 truncate text-left">
+                                {subGroup.label}
+                              </span>
+                              <ChevronRight
+                                className={cn(
+                                  "size-4 shrink-0 transition-transform",
+                                  subGroupOpen && "rotate-90",
+                                )}
+                              />
+                            </button>
+                            <div
+                              className={cn(
+                                "grid overflow-hidden transition-[grid-template-rows,opacity,transform,margin] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+                                subGroupOpen
+                                  ? "mt-1 grid-rows-[1fr] translate-y-0 opacity-100"
+                                  : "mt-0 grid-rows-[0fr] -translate-y-1 opacity-0",
+                              )}
+                            >
+                              <div className="min-h-0">
+                                <div className="ml-3 space-y-1 border-l border-sidebar-border pl-5">
+                                  {(subGroup.items ?? []).map((item) => (
+                                    <a
+                                      key={item.id}
+                                      href={item.href}
+                                      aria-current={item.active ? "page" : undefined}
+                                      aria-label={item.label}
+                                      className={cn(
+                                        "flex min-h-8 cursor-pointer items-center rounded-md px-1 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground",
+                                        item.active && "bg-sidebar-accent text-foreground",
+                                      )}
+                                      onClick={() => {
+                                        keepNavGroupsOpen(group.id, subGroup.id);
+                                        if (drawer) {
+                                          setMobileSidebarOpen(false);
+                                        }
+                                      }}
+                                    >
+                                      <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                                    </a>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
+            );
+          })}
           {labelsHidden
-            ? navItems.map((item) => {
+            ? sidebarLeafItems.map((item) => {
                 const menuItem = (
                   <a
                     href={item.href}

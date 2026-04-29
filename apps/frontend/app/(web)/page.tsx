@@ -4,8 +4,16 @@ import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } fro
 
 const foundations = [
   { title: "Strict modules", detail: "Bounded contexts stay isolated and testable.", icon: Boxes },
-  { title: "DDD ready", detail: "Domain, application, infrastructure, and interface layers are prepared.", icon: ShieldCheck },
-  { title: "Event-first", detail: "Internal events are in-process today and async-ready later.", icon: Network },
+  {
+    title: "DDD ready",
+    detail: "Domain, application, infrastructure, and interface layers are prepared.",
+    icon: ShieldCheck,
+  },
+  {
+    title: "Event-first",
+    detail: "Internal events are in-process today and async-ready later.",
+    icon: Network,
+  },
 ] as const;
 
 export default function HomePage() {
@@ -18,7 +26,8 @@ export default function HomePage() {
             Modular monolith platform shell for future domains.
           </h1>
           <p className="mt-5 max-w-2xl text-base leading-7 text-muted-foreground">
-            A production-grade starting point with governance, shared packages, and clean application surfaces.
+            A production-grade starting point with governance, shared packages, and clean
+            application surfaces.
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
             <Button asChild>

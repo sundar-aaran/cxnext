@@ -1,5 +1,14 @@
 import { Mail, MessageSquare } from "lucide-react";
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label } from "@cxnext/ui";
+import {
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Input,
+  Label,
+} from "@cxnext/ui";
 
 export default function ContactPage() {
   return (
