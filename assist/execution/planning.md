@@ -1,39 +1,42 @@
 # Planning
 
-Active reference: `#44`
+Active reference: `#46`
 
 ## Active
 
-- `#44` Review MVP modular monolith architecture readiness
+- `#46` Refactor company module read boundaries
   - Goal:
-    - review whether the current codebase is correctly shaped as an MVP-ready, scalable modular monolith using DDD, event-driven primitives, and NestJS module structure.
+    - remove the company repository's direct cross-module joins to tenant and industry tables while preserving the current company API response shape.
   - Scope:
-    - inspect assist rules and standards for the repository architecture contract.
-    - inspect backend app/module registration, bounded context folder structure, domain/application/infrastructure/interface separation, database placement, and event infrastructure.
-    - inspect frontend feature structure and shared package boundaries.
-    - run targeted validation commands or static checks that support the review.
-    - report concrete findings with file references and prioritized risks.
+    - add company application-layer lookup ports for tenant and industry display names.
+    - add infrastructure adapters that read display names through generic database access without importing tenant or industry module internals.
+    - update `KyselyCompanyRepository` so its base company query touches only company-owned tables.
+    - register lookup adapters in `CompaniesModule`.
+    - validate and prepare an independent branch/PR.
   - Constraints:
-    - this is a review batch, not a broad refactor.
-    - do not introduce new business modules or placeholder domains.
-    - do not revert unrelated dirty worktree changes.
-    - keep execution tracking fresh and specific to this review.
+    - fix one module slice only; do not refactor tenant/common/industry strict shapes in this batch.
+    - preserve current `CompanyRecord` fields and HTTP response shape.
+    - do not import another module's domain/application/infrastructure internals.
+    - do not revert unrelated work.
   - Planned validation:
-    - inspect source tree with `rg` and file listings.
-    - run existing architecture tests if present.
-    - run targeted typecheck only if needed to validate the reviewed structure.
+    - run `@cxnext/server` typecheck.
+    - run targeted ESLint for changed company files.
+    - run architecture/source artifact tests if source tree changes.
+    - sync version/changelog for `#46`.
   - Implemented:
-    - read `assist/Readme.md`, `assist/agent.md`, architecture rules, and architecture standards before review.
-    - cleared previous execution details and created a fresh `#44` review task and plan.
-    - inspected Nest application composition, bounded context folders, module registry usage, DDD primitives, event bus primitives, frontend feature folders, and file sizes.
-    - identified strict module shape gaps in `common`, `companies`, and `industries`.
-    - identified frontend feature structure gaps in `common`, `company`, `industry`, `cxsun`, and `desk`.
-    - identified architecture risks around cross-module persistence joins, domain event publication, and oversized UI files.
-    - added a matching `v-1.0.44` changelog entry and synchronized workspace versions to `1.0.44`.
+    - created branch `codex/refactor-company-boundaries` from `main`.
+    - added company application ports for tenant and industry display-name lookup.
+    - added Kysely lookup adapters for tenant and industry display names without importing tenant or industry module internals.
+    - removed direct `tenants` and `industries` joins from `KyselyCompanyRepository`.
+    - preserved `tenantName` and `industryName` in `CompanyRecord`/HTTP responses by resolving names through lookup ports.
+    - registered lookup adapters in `CompaniesModule`.
+    - added a boundary regression test preventing company persistence from joining tenant or industry tables.
+    - added changelog entry `v-1.0.46` and synchronized workspace package versions to `1.0.46`.
   - Validation:
-    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture/source-tree-artifacts.test.ts tests/architecture/version-sync.test.ts packages/core/test/domain-primitives.test.ts packages/event/test/event-bus.test.ts`.
     - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd --filter @cxnext/server typecheck`.
-    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd --filter @cxnext/frontend typecheck`.
-    - passed `node scripts/version-sync.mjs --ref 44`.
+    - passed targeted ESLint for changed company files and the new company boundary test.
+    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/server/companies/company-boundary.test.ts tests/architecture/source-tree-artifacts.test.ts`.
+    - passed `node scripts/version-sync.mjs --ref 46`.
   - Residual risk:
-    - the codebase is MVP-usable, but it is not yet fully compliant with the strict scalable modular monolith/DDD contract; the review findings should be fixed before treating the structure as the durable pattern for new modules.
+    - the lookup adapters still read tenant and industry database tables because those modules do not yet expose formal public read contracts; this is isolated behind company-owned application ports and is the next-best boundary until tenant/industry contracts are introduced.
+    - full `@cxnext/server lint` remains blocked by existing common-module lint errors outside this company slice.

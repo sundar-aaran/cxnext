@@ -2,11 +2,19 @@
 
 ## Version State
 
-- Current package version: `1.0.44`
-- Current release tag: `v-1.0.44`
+- Current package version: `1.0.46`
+- Current release tag: `v-1.0.46`
 - Versioned changelog label format: `v 1.0.<reference>`
 - Version section format: `## v-1.0.<reference>`
 - Entry format: `### [v 1.0.<reference>] YYYY-MM-DD - Title`
+
+## v-1.0.46
+
+### [v 1.0.46] 2026-04-29 - Refactor Company Read Boundaries
+
+- Removed direct tenant and industry joins from company persistence.
+- Added company-owned application ports and Kysely lookup adapters for tenant and industry display names.
+- Added boundary coverage to prevent company persistence from reintroducing tenant or industry joins.
 
 ## v-1.0.44
 
