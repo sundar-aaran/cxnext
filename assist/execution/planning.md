@@ -1,8 +1,117 @@
 # Planning
 
-Active reference: `#34`
+Active reference: `#39`
 
 ## Active
+
+- `#39` Add database refresh command
+  - Goal:
+    - add a guarded database refresh command that drops all objects and reinstalls migrations plus seeders.
+  - Scope:
+    - add a MySQL/MariaDB fresh helper in `@cxnext/db`.
+    - add CLI commands and scripts for `db:refresh` and `db:fresh`.
+    - keep `--yes` confirmation required for destructive refresh.
+    - synchronize workspace versions and changelog after validation.
+  - Constraints:
+    - do not run refresh against a live database in validation.
+    - keep the current typed migration/seeder runner unchanged except for shared result types/exports.
+    - preserve existing migrate, seed, prepare, and status behavior.
+  - Planned validation:
+    - run `@cxnext/db` typecheck, lint, build, and status.
+    - run server typecheck.
+    - run the database process e2e test.
+    - run Prettier checks for edited files.
+
+- `#38` Add TypeScript database migration and seeder runner
+  - Goal:
+    - replace raw tenant SQL assets with a typed migration/seeder workflow matching the temp application process style.
+    - provide command runners for migrate, seed, prepare, status, and fresh-style setup where safe.
+  - Scope:
+    - add migration/seeder process types, registry, ledger table names, and runner functions in `packages/db`.
+    - add TypeScript tenant migration and seeder definitions.
+    - add package scripts so the app can run migrations and seeders from TypeScript.
+    - add e2e-style tests around idempotent migrate/seed behavior.
+    - synchronize workspace versions and changelog after validation.
+  - Constraints:
+    - keep the design close to `temp/apps/framework/src/runtime/database/process`.
+    - preserve existing database connection config and tenant module layout.
+    - do not require a destructive database refresh unless explicitly confirmed by command arguments.
+    - do not revert unrelated dirty worktree changes.
+  - Planned validation:
+    - run `@cxnext/db` typecheck and lint.
+    - run server typecheck and lint if imports/scripts affect server.
+    - run targeted e2e tests for migration/seeder runner idempotency.
+    - run Prettier checks for edited files.
+  - Implemented:
+    - added database process types, ledger table names, registry, migration runner, seeder runner, and prepare helper in `packages/db/src/process`.
+    - added TypeScript tenant migration and seeder definitions under `packages/db/src/migrations` and `packages/db/src/seeders`.
+    - replaced tenant module raw SQL files with TypeScript re-exports and indexes under `apps/server/src/modules/tenants/database`.
+    - added `db:prepare`, `db:migrate`, `db:seed`, and `db:status` scripts at the root and `@cxnext/db` package level.
+    - added an e2e-style Vitest test for prepare, migrate, seed, and idempotent ledger skipping.
+    - synchronized workspace package versions to `1.0.38` and added a changelog entry.
+  - Validation:
+    - passed `corepack pnpm --filter @cxnext/db typecheck`.
+    - passed `corepack pnpm --filter @cxnext/db lint`.
+    - passed `corepack pnpm --filter @cxnext/server typecheck`.
+    - passed `corepack pnpm --filter @cxnext/server lint`.
+    - passed `node node_modules/vitest/vitest.mjs run packages/db/test/database-process.e2e.test.ts`.
+    - passed `corepack pnpm --filter @cxnext/db db:status` and reported one registered migration and one registered seeder.
+    - passed targeted Prettier checks for edited database, server, package, changelog, and execution files.
+  - Residual risk:
+    - the e2e test uses an in-process fake Kysely database for deterministic ledger/idempotency coverage; it does not require or mutate a live MySQL database.
+
+- `#37` Tighten master-list search card padding
+  - Goal:
+    - reduce the extra space around the master-list search/filter/columns toolbar card.
+  - Scope:
+    - update the shared list toolbar block under `packages/ui/src/blocks/lists`.
+    - keep table card, pagination card, tenant list behavior, and list APIs unchanged.
+    - synchronize workspace versions and changelog after validation.
+  - Constraints:
+    - make the change in the reusable master-list/common-list shared block, not a one-off tenant override.
+    - preserve responsive wrapping and button/input heights.
+    - do not revert unrelated dirty worktree changes.
+  - Planned validation:
+    - run UI typecheck and lint.
+    - run frontend typecheck and lint.
+    - run Prettier checks for edited files.
+    - verify the tenant list route still responds.
+  - Implemented:
+    - reduced the shared list toolbar card content padding from `p-3.5 sm:p-4` to `p-2.5 sm:p-3`.
+    - reduced the toolbar inner vertical gap from `gap-2.5` to `gap-2`.
+    - synchronized workspace package versions to `1.0.37` and added a changelog entry.
+  - Validation:
+    - passed `corepack pnpm --filter @cxnext/ui typecheck`.
+    - passed `corepack pnpm --filter @cxnext/ui lint`.
+    - passed `corepack pnpm --filter @cxnext/frontend typecheck`.
+    - passed `corepack pnpm --filter @cxnext/frontend lint`.
+    - passed Prettier checks for the edited shared list block, execution notes, changelog, and manifests.
+    - verified the tenant list route returns `200`.
+
+- `#36` Brighten desk surface tone
+  - Goal:
+    - make the Application Desk workspace feel a little brighter and cleaner in light mode while preserving the current enterprise layout.
+  - Scope:
+    - tune the shared frontend theme surface tokens used by the desk shell and body.
+    - keep dark mode, accent colors, shell spacing, and list structure intact.
+    - synchronize workspace versions and changelog after validation.
+  - Constraints:
+    - do not change tenant list structure or sidebar behavior in this pass.
+    - keep the tone restrained rather than pure white.
+    - do not revert unrelated dirty worktree changes.
+  - Planned validation:
+    - run frontend typecheck and lint.
+    - run Prettier checks for edited files.
+    - verify the tenant desk route still responds.
+  - Implemented:
+    - reduced primary and secondary color mixing in the light-mode `surface-card`, `surface-raised`, `surface-canvas`, and `surface-panel` tokens.
+    - softened the light-mode `surface-spotlight` so the desk background reads brighter without becoming flat white.
+    - synchronized workspace package versions to `1.0.36` and added a changelog entry.
+  - Validation:
+    - passed `corepack pnpm --filter @cxnext/frontend typecheck`.
+    - passed `corepack pnpm --filter @cxnext/frontend lint`.
+    - passed Prettier checks for the edited CSS, execution notes, changelog, and manifests.
+    - verified the tenant desk route returns `200`.
 
 - `#34` Enforce strict tenant module structure for backend and frontend
   - Goal:

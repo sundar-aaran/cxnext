@@ -1,6 +1,6 @@
 {
   "name": "cxnext",
-  "version": "1.0.35",
+  "version": "1.0.38",
   "private": true,
   "packageManager": "pnpm@10.33.2",
   "scripts": {
@@ -16,6 +16,12 @@
     "stop": "node scripts/dev-stop.mjs",
     "start:stop": "node scripts/dev-stop.mjs",
     "build": "corepack pnpm -r --no-bail build",
+    "db:migrate": "corepack pnpm --filter @cxnext/db db:migrate",
+    "db:prepare": "corepack pnpm --filter @cxnext/db db:prepare",
+    "db:fresh": "corepack pnpm --filter @cxnext/db db:fresh",
+    "db:refresh": "corepack pnpm --filter @cxnext/db db:refresh",
+    "db:seed": "corepack pnpm --filter @cxnext/db db:seed",
+    "db:status": "corepack pnpm --filter @cxnext/db db:status",
     "lint": "corepack pnpm -r --no-bail lint",
     "typecheck": "corepack pnpm -r --no-bail typecheck",
     "test": "vitest run",

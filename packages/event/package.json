@@ -1,6 +1,6 @@
 {
   "name": "@cxnext/event",
-  "version": "1.0.35",
+  "version": "1.0.38",
   "private": true,
   "exports": {
     ".": {

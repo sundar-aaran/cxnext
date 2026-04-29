@@ -178,6 +178,9 @@ importers:
       '@cxnext/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@cxnext/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       '@cxnext/event':
         specifier: workspace:*
         version: link:../../packages/event

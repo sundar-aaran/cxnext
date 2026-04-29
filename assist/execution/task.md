@@ -1,8 +1,30 @@
 # Task
 
-Active reference: `#34`
+Active reference: `#39`
 
 ## Active
+
+- [ ] `#39` Add database refresh command
+  - [x] Phase 1: inspect current runner and temp fresh implementation
+  - [x] Phase 2: add guarded refresh/fresh drop-and-reinstall workflow
+  - [ ] Phase 3: validate, sync version, and document
+
+- [x] `#38` Add TypeScript database migration and seeder runner
+  - [x] Phase 1: read temp migration and seeder process files
+  - [x] Phase 2: implement typed migration, seeder, registry, and runner in `@cxnext/db`
+  - [x] Phase 3: add tenant migration/seeder modules and package scripts
+  - [x] Phase 4: add e2e coverage for migrate/seed idempotency
+  - [x] Phase 5: validate, sync version, and document
+
+- [x] `#37` Tighten master-list search card padding
+  - [x] Phase 1: inspect reusable list toolbar spacing
+  - [x] Phase 2: reduce master-list search card inner padding
+  - [x] Phase 3: validate, sync version, and document
+
+- [x] `#36` Brighten desk surface tone
+  - [x] Phase 1: inspect current theme shell surface tokens
+  - [x] Phase 2: reduce dark mixing in light desk surfaces
+  - [x] Phase 3: validate, sync version, and document
 
 - [x] `#34` Enforce strict tenant module structure for backend and frontend
   - [x] Phase 1: inspect architecture and current tenant wiring

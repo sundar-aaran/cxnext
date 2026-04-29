@@ -2,11 +2,42 @@
 
 ## Version State
 
-- Current package version: `1.0.35`
-- Current release tag: `v-1.0.35`
+- Current package version: `1.0.39`
+- Current release tag: `v-1.0.39`
 - Versioned changelog label format: `v 1.0.<reference>`
 - Version section format: `## v-1.0.<reference>`
 - Entry format: `### [v 1.0.<reference>] YYYY-MM-DD - Title`
+
+## v-1.0.39
+
+### [v 1.0.39] 2026-04-29 - Add Database Refresh Command
+
+- Added a guarded `db:refresh` / `db:fresh` workflow that drops database views and tables, then reruns migrations and seeders.
+- Required explicit `--yes` confirmation in the CLI before destructive refresh runs.
+- Added e2e coverage for the refresh confirmation guard.
+
+## v-1.0.38
+
+### [v 1.0.38] 2026-04-29 - Add Database Migration And Seeder Runner
+
+- Added typed migration, seeder, registry, ledger, and runner support to `@cxnext/db`.
+- Converted tenant database setup to TypeScript migration and seeder definitions with server module re-exports.
+- Added `db:prepare`, `db:migrate`, `db:seed`, and `db:status` scripts plus e2e coverage for idempotent migrate/seed behavior.
+
+## v-1.0.37
+
+### [v 1.0.37] 2026-04-29 - Tighten Master List Search Card Padding
+
+- Reduced the shared list toolbar card padding around search, filters, and columns controls.
+- Preserved input and button sizing so the master-list toolbar remains stable across breakpoints.
+
+## v-1.0.36
+
+### [v 1.0.36] 2026-04-29 - Brighten Desk Surface Tone
+
+- Reduced dark primary mixing in the light-mode desk surface tokens.
+- Softened the shell spotlight so the workspace reads brighter while keeping the restrained desk tone.
+- Preserved dark mode, accent palettes, layout, and list structure.
 
 ## v-1.0.35
 

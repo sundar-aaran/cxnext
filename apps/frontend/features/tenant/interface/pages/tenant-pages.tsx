@@ -242,7 +242,7 @@ export function TenantListPage() {
                     <td className="px-4 py-2.5">
                       <button
                         type="button"
-                        className="text-left font-medium text-foreground hover:underline"
+                        className="cursor-pointer text-left font-medium text-foreground hover:underline"
                         onClick={() => router.push(`/desk/tenant/${tenant.id}`)}
                       >
                         {tenant.name}

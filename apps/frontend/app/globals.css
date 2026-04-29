@@ -37,28 +37,28 @@
   --radius: 0.625rem;
   --surface-card: linear-gradient(
     180deg,
-    color-mix(in oklab, var(--card) 96%, var(--primary) 4%) 0%,
-    color-mix(in oklab, var(--card) 90%, var(--secondary) 10%) 100%
+    color-mix(in oklab, var(--card) 98%, var(--primary) 2%) 0%,
+    color-mix(in oklab, var(--card) 95%, var(--secondary) 5%) 100%
   );
   --surface-raised: linear-gradient(
     180deg,
-    color-mix(in oklab, var(--background) 92%, var(--primary) 8%) 0%,
-    color-mix(in oklab, var(--background) 84%, var(--secondary) 16%) 100%
+    color-mix(in oklab, var(--background) 96%, var(--primary) 4%) 0%,
+    color-mix(in oklab, var(--background) 93%, var(--secondary) 7%) 100%
   );
   --surface-spotlight: radial-gradient(
     circle at top,
-    color-mix(in oklab, var(--primary) 16%, transparent) 0%,
-    transparent 34%
+    color-mix(in oklab, var(--primary) 9%, transparent) 0%,
+    transparent 32%
   );
   --surface-canvas: linear-gradient(
     180deg,
-    color-mix(in oklab, var(--background) 92%, var(--primary) 8%) 0%,
-    color-mix(in oklab, var(--background) 88%, var(--secondary) 12%) 100%
+    color-mix(in oklab, var(--background) 97%, var(--primary) 3%) 0%,
+    color-mix(in oklab, var(--background) 95%, var(--secondary) 5%) 100%
   );
   --surface-panel: linear-gradient(
     180deg,
-    color-mix(in oklab, var(--card) 94%, var(--primary) 6%) 0%,
-    color-mix(in oklab, var(--card) 88%, var(--secondary) 12%) 100%
+    color-mix(in oklab, var(--card) 98%, var(--primary) 2%) 0%,
+    color-mix(in oklab, var(--card) 96%, var(--secondary) 4%) 100%
   );
 }
 
