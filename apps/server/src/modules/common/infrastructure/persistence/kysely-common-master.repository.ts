@@ -16,6 +16,10 @@ type CommonMasterRow = Record<string, unknown> & {
   readonly code: string | null;
   readonly name: string | null;
   readonly description: string | null;
+  readonly image?: string | null;
+  readonly position_order?: number | string | null;
+  readonly show_on_storefront_top_menu?: boolean | number | null;
+  readonly show_on_storefront_catalog?: boolean | number | null;
   readonly is_active: boolean | number;
   readonly created_at: Date | string;
   readonly updated_at: Date | string;
@@ -177,6 +181,21 @@ function toDatabasePayload(
       case "description":
         payload.description = params.description?.trim() || null;
         break;
+      case "image":
+        payload.image = params.image?.trim() || null;
+        break;
+      case "positionOrder":
+        payload.position_order =
+          params.positionOrder === null || params.positionOrder === undefined
+            ? 0
+            : Number(params.positionOrder);
+        break;
+      case "showOnStorefrontTopMenu":
+        payload.show_on_storefront_top_menu = Boolean(params.showOnStorefrontTopMenu);
+        break;
+      case "showOnStorefrontCatalog":
+        payload.show_on_storefront_catalog = Boolean(params.showOnStorefrontCatalog);
+        break;
       default:
         break;
     }
@@ -190,6 +209,20 @@ function toCommonMasterRecord(row: CommonMasterRow): CommonMasterRecord {
     code: row.code ?? null,
     name: row.name ?? null,
     description: row.description ?? null,
+    image: row.image ?? null,
+    positionOrder:
+      row.position_order === null || row.position_order === undefined
+        ? null
+        : Number(row.position_order),
+    showOnStorefrontTopMenu:
+      row.show_on_storefront_top_menu === null ||
+      row.show_on_storefront_top_menu === undefined
+        ? null
+        : Boolean(row.show_on_storefront_top_menu),
+    showOnStorefrontCatalog:
+      row.show_on_storefront_catalog === null || row.show_on_storefront_catalog === undefined
+        ? null
+        : Boolean(row.show_on_storefront_catalog),
     isActive: Boolean(row.is_active),
     createdAt: toDate(row.created_at),
     updatedAt: toDate(row.updated_at),

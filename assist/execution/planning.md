@@ -1,23 +1,23 @@
 # Planning
 
-Active reference: `#52`
+Active reference: `#53`
 
 ## Active
 
-- `#52` Refactor common contact masters
+- `#53` Refactor common product taxonomy masters
   - Goal:
-    - move `contact-groups`, `contact-types`, `address-types`, and `bank-names` out of controller/repository CRUD and into common master domain/application/infrastructure/interface layering.
+    - move `product-groups`, `product-categories`, and `product-types` out of controller/repository CRUD and into common master domain/application/infrastructure/interface layering.
   - Scope:
-    - introduce shared common master domain entity, definition value object, and create/update/delete events.
-    - introduce common master repository port, five application use cases, Kysely adapter, event publisher adapter, provider registration, and HTTP controller base.
-    - rewrite each child controller to extend the controller base and inject use cases instead of repositories.
-    - rewrite each child module to import shared infrastructure providers.
-    - remove direct controller-to-repository access from the contact master controllers.
-    - add architecture tests that verify no child controller imports a repository directly and domain files stay framework-free.
-    - add use-case tests that verify domain events are published after create, update, and delete.
-    - update release tracking to `1.0.52`.
+    - extend or reuse the common master definition/repository/use-case flow from `#52`.
+    - preserve product group/category/type writable fields and response shape.
+    - rewrite each taxonomy controller to extend the common master controller base and inject use cases instead of repositories.
+    - rewrite each taxonomy module to import shared infrastructure providers.
+    - remove direct controller-to-repository access from product taxonomy controllers.
+    - add architecture tests that verify no taxonomy controller imports a repository directly and domain files stay framework-free.
+    - add use-case or boundary coverage for taxonomy event publication and field mapping.
+    - update release tracking to `1.0.53`.
   - Constraints:
-    - preserve current HTTP routes: `common/contact-groups`, `common/contact-types`, `common/address-types`, and `common/bank-names`.
+    - preserve current HTTP routes: `common/product-groups`, `common/product-categories`, and `common/product-types`.
     - preserve current response shape and soft-delete/force-delete behavior.
     - keep Kysely inside `infrastructure/persistence`.
     - keep event bus integration inside `infrastructure/adapters`.
@@ -25,39 +25,29 @@ Active reference: `#52`
   - Planned validation:
     - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd --filter @cxnext/server typecheck`
     - targeted ESLint on changed files.
-    - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/server/common/contact-master-use-cases.test.ts tests/architecture/common-contact-master-boundaries.test.ts`
-    - `node scripts/version-sync.mjs --ref 52`
+    - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/server/common/product-taxonomy-use-cases.test.ts tests/architecture/common-product-taxonomy-boundaries.test.ts`
+    - `node scripts/version-sync.mjs --ref 53`
     - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture/version-sync.test.ts tests/architecture/source-tree-artifacts.test.ts`
     - `git diff --check`
   - Implemented:
-    - added common master domain records, definitions, and create/update/delete domain events.
-    - added common master repository port, list/get/create/update/delete use cases, Kysely repository adapter, event publisher provider wiring, and HTTP controller base.
-    - rewired contact groups, contact types, address types, and bank names controllers to extend the use-case-backed controller base.
-    - rewired the four child modules to use shared common master infrastructure providers.
-    - removed the old per-child repository files.
-    - added boundary and use-case tests for repository-free controllers, provider wiring, removed repository files, and write-event publication.
-    - updated release tracking to `1.0.52`.
+    - extended common master definitions to include product groups, product categories, and product types.
+    - preserved product category fields for `image`, `positionOrder`, `showOnStorefrontTopMenu`, and `showOnStorefrontCatalog`.
+    - rewired product taxonomy controllers to extend the shared common master controller base and inject use cases.
+    - rewired product taxonomy modules to use shared common master infrastructure providers.
+    - removed the old per-child product taxonomy repository files.
+    - added boundary and use-case tests for repository-free controllers, provider wiring, removed repository files, category field definitions, and write-event publication.
+    - updated release tracking to `1.0.53`.
   - Validation:
     - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd --filter @cxnext/server typecheck`.
-    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/server/common/contact-master-use-cases.test.ts tests/architecture/common-contact-master-boundaries.test.ts`.
-    - passed `node scripts/version-sync.mjs --ref 52`.
-    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/server/common/contact-master-use-cases.test.ts tests/architecture/common-contact-master-boundaries.test.ts tests/architecture/version-sync.test.ts tests/architecture/source-tree-artifacts.test.ts`.
-    - passed targeted ESLint on changed `#52` source and test files.
+    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/server/common/product-taxonomy-use-cases.test.ts tests/architecture/common-product-taxonomy-boundaries.test.ts tests/server/common/contact-master-use-cases.test.ts tests/architecture/common-contact-master-boundaries.test.ts`.
+    - passed `node scripts/version-sync.mjs --ref 53`.
+    - passed targeted ESLint on changed `#53` source and test files.
+    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/server/common/product-taxonomy-use-cases.test.ts tests/architecture/common-product-taxonomy-boundaries.test.ts tests/server/common/contact-master-use-cases.test.ts tests/architecture/common-contact-master-boundaries.test.ts tests/architecture/version-sync.test.ts tests/architecture/source-tree-artifacts.test.ts`.
     - passed `git diff --check`.
   - Residual risk:
     - full server lint is still blocked by unrelated common modules that are scheduled for later roadmap tasks and still use older repository/controller patterns.
 
 ## Roadmap
-
-- `#53` Common product taxonomy masters:
-  - Goal:
-    - refactor `product-groups`, `product-categories`, and `product-types` into DDD/application boundaries.
-  - Scope:
-    - reuse the common master pattern from `#52` where table behavior matches.
-    - preserve parent/foreign-key mapping behavior and add display-name safety checks where applicable.
-    - avoid coupling product taxonomy code to future inventory/catalog domains.
-  - Validation:
-    - server typecheck, targeted lint, taxonomy persistence tests, controller boundary tests, version sync tests, and `git diff --check`.
 
 - `#54` Common product attribute masters:
   - Goal:

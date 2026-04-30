@@ -2,11 +2,19 @@
 
 ## Version State
 
-- Current package version: `1.0.52`
-- Current release tag: `v-1.0.52`
+- Current package version: `1.0.53`
+- Current release tag: `v-1.0.53`
 - Versioned changelog label format: `v 1.0.<reference>`
 - Version section format: `## v-1.0.<reference>`
 - Entry format: `### [v 1.0.<reference>] YYYY-MM-DD - Title`
+
+## v-1.0.53
+
+### [v 1.0.53] 2026-04-30 - Refactor Common Product Taxonomy Boundaries
+
+- Moved product groups, product categories, and product types behind the shared common master use cases, repository port, and infrastructure providers.
+- Extended common master definitions and persistence mapping for product category storefront fields.
+- Removed direct repository injection from product taxonomy controllers and added focused boundary and event coverage.
 
 ## v-1.0.52
 

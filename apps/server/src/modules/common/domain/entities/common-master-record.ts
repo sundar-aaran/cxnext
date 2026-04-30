@@ -3,6 +3,10 @@ export interface CommonMasterRecord {
   readonly code: string | null;
   readonly name: string | null;
   readonly description: string | null;
+  readonly image?: string | null;
+  readonly positionOrder?: number | null;
+  readonly showOnStorefrontTopMenu?: boolean | null;
+  readonly showOnStorefrontCatalog?: boolean | null;
   readonly isActive: boolean;
   readonly createdAt: Date;
   readonly updatedAt: Date;

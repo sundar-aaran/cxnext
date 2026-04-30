@@ -1,6 +1,6 @@
 # Task
 
-Active reference: `#52`
+Active reference: `#53`
 
 ## Next Agent Handoff
 
@@ -10,10 +10,10 @@ Start here before any new implementation:
 2. Keep working directly on `main` unless the user asks for a branch.
 3. Continue the current `## Active` task. If it is complete, move its completed details to `assist/documentation/CHANGELOG.md`, then promote the first unchecked item from `## Upcoming` into `## Active`.
 4. Use reference/version alignment:
-   - `#52` means package version `1.0.52`.
-   - changelog section `## v-1.0.52`.
-   - changelog entry `### [v 1.0.52] YYYY-MM-DD - Title`.
-   - commit subject starts with `#52`.
+   - `#53` means package version `1.0.53`.
+   - changelog section `## v-1.0.53`.
+   - changelog entry `### [v 1.0.53] YYYY-MM-DD - Title`.
+   - commit subject starts with `#53`.
 5. Do not copy completed task details forward. Completed history belongs in `assist/documentation/CHANGELOG.md`.
 
 Command flow:
@@ -41,18 +41,13 @@ git push origin main
 
 ## Active
 
-- [x] `#52` Refactor common contact masters
-  - [x] Move `contact-groups`, `contact-types`, `address-types`, and `bank-names` behind common master domain/application/infrastructure/interface layers.
-  - [x] Replace controller-to-repository access with use cases and ports.
+- [x] `#53` Refactor common product taxonomy masters
+  - [x] Move `product-groups`, `product-categories`, and `product-types` behind common master use cases and repository ports.
+  - [x] Preserve product taxonomy field mapping and list response shape.
   - [x] Add create/update/delete domain events and event-bus publication.
   - [x] Add focused boundary and event tests.
 
 ## Upcoming
-
-- [ ] `#53` Refactor common product taxonomy masters
-  - [ ] Move `product-groups`, `product-categories`, and `product-types` behind common master use cases and repository ports.
-  - [ ] Keep taxonomy-specific validation in domain/value-object helpers.
-  - [ ] Add focused boundary and event tests.
 
 - [ ] `#54` Refactor common product attribute masters
   - [ ] Move `brands`, `colours`, `sizes`, `styles`, and `units` behind the common master DDD/application flow.

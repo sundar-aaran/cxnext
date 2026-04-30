@@ -12,6 +12,13 @@ export interface CommonMasterUpsertRequest {
   readonly code?: unknown;
   readonly name?: unknown;
   readonly description?: unknown;
+  readonly image?: unknown;
+  readonly positionOrder?: unknown;
+  readonly position_order?: unknown;
+  readonly showOnStorefrontTopMenu?: unknown;
+  readonly show_on_storefront_top_menu?: unknown;
+  readonly showOnStorefrontCatalog?: unknown;
+  readonly show_on_storefront_catalog?: unknown;
   readonly isActive?: unknown;
 }
 
@@ -93,6 +100,14 @@ function parseCommonMasterRequest(body: CommonMasterUpsertRequest): CommonMaster
     code: toNullableStringValue(body.code),
     name: toNullableStringValue(body.name),
     description: toNullableStringValue(body.description),
+    image: toNullableStringValue(body.image),
+    positionOrder: toNumberValue(body.positionOrder ?? body.position_order),
+    showOnStorefrontTopMenu: toBooleanValue(
+      body.showOnStorefrontTopMenu ?? body.show_on_storefront_top_menu,
+    ),
+    showOnStorefrontCatalog: toBooleanValue(
+      body.showOnStorefrontCatalog ?? body.show_on_storefront_catalog,
+    ),
     isActive: body.isActive === undefined ? true : Boolean(body.isActive),
   };
 }
@@ -100,4 +115,14 @@ function parseCommonMasterRequest(body: CommonMasterUpsertRequest): CommonMaster
 function toNullableStringValue(value: unknown) {
   if (typeof value !== "string") return null;
   return value.trim() || null;
+}
+
+function toNumberValue(value: unknown) {
+  if (value === null || value === undefined || value === "") return null;
+  return Number(value);
+}
+
+function toBooleanValue(value: unknown) {
+  if (value === null || value === undefined || value === "") return null;
+  return Boolean(value);
 }

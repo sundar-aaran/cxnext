@@ -2,9 +2,20 @@ export type CommonMasterModuleKey =
   | "contactGroups"
   | "contactTypes"
   | "addressTypes"
-  | "bankNames";
+  | "bankNames"
+  | "productGroups"
+  | "productCategories"
+  | "productTypes";
 
-export type CommonMasterColumnKey = "code" | "name" | "description" | "isActive";
+export type CommonMasterColumnKey =
+  | "code"
+  | "name"
+  | "description"
+  | "image"
+  | "positionOrder"
+  | "showOnStorefrontTopMenu"
+  | "showOnStorefrontCatalog"
+  | "isActive";
 
 export interface CommonMasterDefinition {
   readonly key: CommonMasterModuleKey;
@@ -40,6 +51,36 @@ export const commonMasterDefinitions = {
     key: "bankNames",
     tableName: "common_bank_names",
     label: "Bank Names",
+    listOrder: ["name", "asc"],
+    writableColumns: ["code", "name", "description", "isActive"],
+  },
+  productGroups: {
+    key: "productGroups",
+    tableName: "common_product_groups",
+    label: "Product Groups",
+    listOrder: ["name", "asc"],
+    writableColumns: ["code", "name", "description", "isActive"],
+  },
+  productCategories: {
+    key: "productCategories",
+    tableName: "common_product_categories",
+    label: "Product Categories",
+    listOrder: ["position_order", "asc"],
+    writableColumns: [
+      "code",
+      "name",
+      "description",
+      "image",
+      "positionOrder",
+      "showOnStorefrontTopMenu",
+      "showOnStorefrontCatalog",
+      "isActive",
+    ],
+  },
+  productTypes: {
+    key: "productTypes",
+    tableName: "common_product_types",
+    label: "Product Types",
     listOrder: ["name", "asc"],
     writableColumns: ["code", "name", "description", "isActive"],
   },

@@ -1,9 +1,9 @@
 import { Module } from "@nestjs/common";
+import { commonMasterProviders } from "../infrastructure/common-master.providers";
 import { ProductCategoriesController } from "./product-categories.controller";
-import { ProductCategoriesRepository } from "./product-categories.repository";
 
 @Module({
   controllers: [ProductCategoriesController],
-  providers: [ProductCategoriesRepository],
+  providers: [...commonMasterProviders],
 })
 export class ProductCategoriesModule {}
