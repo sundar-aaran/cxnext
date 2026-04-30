@@ -8,3 +8,4 @@ export * from "./process/runner";
 export * from "./process/table-names";
 export * from "./process/types";
 export * from "./seeders";
+export type { Kysely } from "kysely";

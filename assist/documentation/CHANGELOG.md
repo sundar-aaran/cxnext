@@ -2,11 +2,56 @@
 
 ## Version State
 
-- Current package version: `1.0.65`
-- Current release tag: `v-1.0.65`
+- Current package version: `1.0.69`
+- Current release tag: `v-1.0.69`
 - Versioned changelog label format: `v 1.0.<reference>`
 - Version section format: `## v-1.0.<reference>`
 - Entry format: `### [v 1.0.<reference>] YYYY-MM-DD - Title`
+
+## v-1.0.69
+
+### [v 1.0.69] 2026-04-30 - Refine Sales Invoice Print Layout
+
+- Reworked the Sales print invoice header with a centered top `TAX INVOICE` label, right-aligned original-copy marker, and larger portal-style QR area.
+- Combined bill details and e-invoice IRN/Ack details into a compact bordered information band above the buyer/ship-to party area.
+- Improved invoice detail readability with aligned label/value columns, wider invoice/date/reference values, larger IRN/Ack text, and hyphenated invoice dates.
+
+### [v 1.0.69] 2026-04-30 - Implement Entries Basic Billing Modules
+
+- Added the `entries` backend bounded context with DDD layers, Kysely persistence, HTTP endpoints, GraphQL placeholders, migrations, seeders, and create/update/delete domain events.
+- Added `sales`, `sales_items`, `purchases`, `purchase_items`, `payments`, `payment_allocations`, `receipts`, and `receipt_allocations` tables with seed data.
+- Added separate modular frontend features and `/desk` routes for Sales, Purchase, Payment, and Receipt list/show/upsert flows.
+- Added the desk sidebar `Entries` group while preserving locked `Organisation`, `Master`, and `Common` behavior.
+- Added focused Entries event and architecture boundary coverage, plus migration and seed validation.
+
+## v-1.0.68
+
+### [v 1.0.68] 2026-04-30 - Add Contact And Product Upsert Tabs
+
+- Updated Contact upsert to use Company-style animated grouped tabs for Details, Communication, and Addresses.
+- Updated Product upsert to use Company-style animated grouped tabs for Details, Catalogue, Media, and Tags.
+- Preserved existing upsert save, load, cancel, and route behavior while aligning the form shell with `MasterListUpsertCard`.
+
+## v-1.0.67
+
+### [v 1.0.67] 2026-04-30 - Build Product List Show Upsert Module
+
+- Added the `products` backend bounded context with domain records, value objects, create/update/delete events, application use cases, Kysely persistence, HTTP controller, GraphQL read placeholder, migration, and seeder.
+- Added product slug and SEO helper use cases and HTTP endpoints.
+- Added the `product` frontend feature with domain/form models, API adapter, list/show/upsert services, route-facing pages, and `/desk/product` routes.
+- Added Product to the desk sidebar `Master` group beside Contact while preserving the locked Organisation accordion.
+- Added focused product event and boundary coverage, and extended final boundary enforcement to include product backend and frontend module shapes.
+- Verified product list/show/create and slug helper e2e on the local dev stack.
+
+## v-1.0.66
+
+### [v 1.0.66] 2026-04-30 - Build Contact List Show Upsert Module
+
+- Added the `contacts` backend bounded context with domain records, value objects, create/update/delete events, application use cases, Kysely persistence, HTTP controller, GraphQL read placeholder, migration, and seeder.
+- Added the `contact` frontend feature with domain/form models, API adapter, list/show/upsert services, route-facing pages, and `/desk/contact` routes.
+- Added a new desk sidebar `Master` group and placed Contact under it while preserving the locked Organisation accordion.
+- Added focused contact event and boundary coverage, and extended final boundary enforcement to include the contact backend and frontend module shapes.
+- Verified contact list/show/create/update/search e2e on the local dev stack and fixed runtime GraphQL nullable string metadata plus aborted fetch cleanup discovered during smoke testing.
 
 ## v-1.0.65
 

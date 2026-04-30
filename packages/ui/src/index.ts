@@ -6,6 +6,8 @@ export * from "./components/dropdown-menu";
 export * from "./components/global-loader";
 export * from "./components/input";
 export * from "./components/label";
+export * from "./components/row-action-menu";
+export * from "./components/save-print-buttons";
 export * from "./components/separator";
 export * from "./components/sheet";
 export * from "./components/switch";

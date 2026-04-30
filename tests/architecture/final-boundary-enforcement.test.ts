@@ -7,19 +7,55 @@ const repositoryRoot = fileURLToPath(new URL("../..", import.meta.url));
 const serverModulesRoot = path.join(repositoryRoot, "apps/server/src/modules");
 const frontendFeaturesRoot = path.join(repositoryRoot, "apps/frontend/features");
 
-const backendModules = ["common", "companies", "industries", "tenants"] as const;
-const frontendFeatures = ["common", "company", "cxsun", "desk", "industry", "tenant"] as const;
+const backendModules = [
+  "common",
+  "companies",
+  "contacts",
+  "entries",
+  "industries",
+  "products",
+  "tenants",
+] as const;
+const frontendFeatures = [
+  "common",
+  "company",
+  "contact",
+  "cxsun",
+  "desk",
+  "payment",
+  "purchase",
+  "receipt",
+  "sales",
+  "industry",
+  "product",
+  "tenant",
+] as const;
 const frontendApplicationFiles = [
   "common/application/common-service.ts",
   "common/location/application/common-location-service.ts",
   "company/application/company-service.ts",
+  "contact/application/contact-list.service.ts",
+  "contact/application/contact-upsert.service.ts",
+  "desk/interface/shell/desk-shell.tsx",
   "industry/application/industry-service.ts",
+  "payment/application/payment-service.ts",
+  "product/application/product-list.service.ts",
+  "product/application/product-upsert.service.ts",
+  "purchase/application/purchase-service.ts",
+  "receipt/application/receipt-service.ts",
+  "sales/application/sales-service.ts",
   "tenant/application/tenant-service.ts",
 ] as const;
 const publicEntrypoints = [
   "apps/frontend/features/common/interface/pages/common-pages.tsx",
   "apps/frontend/features/company/interface/pages/company-pages.tsx",
+  "apps/frontend/features/contact/interface/pages/contact-pages.tsx",
   "apps/frontend/features/industry/interface/pages/industry-pages.tsx",
+  "apps/frontend/features/product/interface/pages/product-pages.tsx",
+  "apps/frontend/features/purchase/interface/pages/purchase-pages.tsx",
+  "apps/frontend/features/receipt/interface/pages/receipt-pages.tsx",
+  "apps/frontend/features/sales/interface/pages/sales-pages.tsx",
+  "apps/frontend/features/payment/interface/pages/payment-pages.tsx",
   "apps/frontend/features/tenant/interface/pages/tenant-pages.tsx",
   "packages/ui/src/blocks/dashboard/dashboard-shell.tsx",
 ] as const;

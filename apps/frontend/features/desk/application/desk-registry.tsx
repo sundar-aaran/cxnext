@@ -22,7 +22,8 @@ export type DeskPortalId =
   | "super-admin"
   | "tenant"
   | "industry"
-  | "company";
+  | "company"
+  | "contact";
 
 export interface DeskMenuItem {
   readonly id: string;
@@ -209,6 +210,21 @@ export const deskPortals: readonly DeskPortalDefinition[] = [
         label: "Companies",
         href: "/desk/company",
         icon: <Building2 className="h-4 w-4" />,
+      },
+    ],
+  },
+  {
+    id: "contact",
+    label: "Contact",
+    href: "/desk/contact",
+    badge: "Contacts",
+    summary: "Contact master workspace for parties, communication, tax, and banking records.",
+    menuItems: [
+      {
+        id: "contact-list",
+        label: "Contacts",
+        href: "/desk/contact",
+        icon: <Users className="h-4 w-4" />,
       },
     ],
   },

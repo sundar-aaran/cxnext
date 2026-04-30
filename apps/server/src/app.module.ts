@@ -8,7 +8,10 @@ import { CoreModule } from "./core/core.module";
 import { EventsModule } from "./events/events.module";
 import { CompaniesModule } from "./modules/companies/companies.module";
 import { CommonModule } from "./modules/common/common.module";
+import { ContactsModule } from "./modules/contacts/contacts.module";
+import { EntriesModule } from "./modules/entries/entries.module";
 import { IndustriesModule } from "./modules/industries/industries.module";
+import { ProductsModule } from "./modules/products/products.module";
 import { TenantsModule } from "./modules/tenants/tenants.module";
 
 @Module({
@@ -24,9 +27,12 @@ import { TenantsModule } from "./modules/tenants/tenants.module";
     }),
     CompaniesModule,
     CommonModule,
+    ContactsModule,
     CoreModule,
+    EntriesModule,
     EventsModule,
     IndustriesModule,
+    ProductsModule,
     TenantsModule,
     GraphqlFoundationModule,
     HealthModule,

@@ -6,9 +6,12 @@ import { DashboardShell } from "@cxnext/ui";
 import {
   Building2,
   Contact,
+  CreditCard,
   Factory,
   Flag,
+  HandCoins,
   Package,
+  ReceiptText,
   ShoppingBag,
   Users,
   WalletCards,
@@ -37,6 +40,52 @@ const organisationNavItems = [
     icon: <Building2 className="h-4 w-4" />,
   },
 ] as const;
+
+const masterNavItems = [
+  {
+    id: "contact",
+    label: "Contact",
+    href: "/desk/contact",
+    icon: <Contact className="h-4 w-4" />,
+  },
+  {
+    id: "product",
+    label: "Product",
+    href: "/desk/product",
+    icon: <Package className="h-4 w-4" />,
+  },
+] as const;
+
+const entriesNavItems = [
+  {
+    id: "sales",
+    label: "Sales",
+    href: "/desk/sales",
+    icon: <ReceiptText className="h-4 w-4" />,
+  },
+  {
+    id: "purchase",
+    label: "Purchase",
+    href: "/desk/purchase",
+    icon: <ShoppingBag className="h-4 w-4" />,
+  },
+  {
+    id: "payment",
+    label: "Payment",
+    href: "/desk/payment",
+    icon: <CreditCard className="h-4 w-4" />,
+  },
+  {
+    id: "receipt",
+    label: "Receipt",
+    href: "/desk/receipt",
+    icon: <HandCoins className="h-4 w-4" />,
+  },
+] as const;
+
+const entriesMenuLabels: Record<string, string> = Object.fromEntries(
+  entriesNavItems.map((item) => [item.id, item.label]),
+);
 
 const commonGroupIcons: Record<string, ReactNode> = {
   Location: <Flag className="h-4 w-4" />,
@@ -69,6 +118,10 @@ function getWorkspaceLabel(pathname: string, isDeskRoot: boolean, fallbackLabel:
   }
 
   const [, root, portalId, moduleKey] = pathname.split("/");
+  if (root === "desk" && portalId && entriesMenuLabels[portalId]) {
+    return entriesMenuLabels[portalId];
+  }
+
   if (root === "desk" && portalId === "common" && moduleKey) {
     return commonMenuLabels[moduleKey] ?? "Common";
   }
@@ -85,6 +138,14 @@ export function DeskShell({ children }: { readonly children: ReactNode }) {
     ...item,
     active: pathname === item.href || pathname.startsWith(`${item.href}/`),
   }));
+  const masterItems = masterNavItems.map((item) => ({
+    ...item,
+    active: pathname === item.href || pathname.startsWith(`${item.href}/`),
+  }));
+  const entriesItems = entriesNavItems.map((item) => ({
+    ...item,
+    active: pathname === item.href || pathname.startsWith(`${item.href}/`),
+  }));
   const commonGroups = commonSubGroups.map((group) => ({
     ...group,
     items: group.items.map((item) => ({
@@ -97,13 +158,25 @@ export function DeskShell({ children }: { readonly children: ReactNode }) {
     <DashboardShell
       brand="CODEXSUN COMME..."
       workspace={workspaceLabel}
-      navItems={navItems}
+      navItems={[...navItems, ...masterItems, ...entriesItems]}
       navGroups={[
         {
           id: "organisation",
           label: "Organisation",
           icon: <Building2 className="size-4" />,
           items: navItems,
+        },
+        {
+          id: "master",
+          label: "Master",
+          icon: <Contact className="size-4" />,
+          items: masterItems,
+        },
+        {
+          id: "entries",
+          label: "Entries",
+          icon: <ReceiptText className="size-4" />,
+          items: entriesItems,
         },
         {
           id: "common",

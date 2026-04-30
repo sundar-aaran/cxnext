@@ -214,6 +214,9 @@ importers:
       graphql:
         specifier: ^16.13.2
         version: 16.13.2
+      kysely:
+        specifier: 0.28.16
+        version: 0.28.16
       reflect-metadata:
         specifier: ^0.2.2
         version: 0.2.2

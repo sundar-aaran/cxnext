@@ -1,6 +1,6 @@
 {
   "name": "@cxnext/server",
-  "version": "1.0.65",
+  "version": "1.0.69",
   "private": true,
   "scripts": {
     "dev": "nest start --watch",
@@ -25,6 +25,7 @@
     "@nestjs/platform-fastify": "^11.1.19",
     "fastify": "^5.8.5",
     "graphql": "^16.13.2",
+    "kysely": "0.28.16",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2"
   },

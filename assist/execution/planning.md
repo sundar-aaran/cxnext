@@ -1,259 +1,436 @@
 # Planning
 
-Active reference: `#65`
+Active reference: `#128`
 
 ## Active
 
-- `#65` Final boundary enforcement suite
+- `#128` Center Sales invoice print body
   - Goal:
-    - provide a final consolidated guard for the completed boundary refactor train.
+    - Center the whole Sales invoice print area within the printed page.
   - Scope:
-    - enforce strict backend module folders.
-    - enforce strict frontend feature folders.
-    - enforce adapter placement for frontend application services.
-    - enforce public entrypoint size thresholds and generated source artifact checks.
-    - update release tracking to `1.0.65`.
+    - Update Sales frontend print-only centering styles.
   - Constraints:
-    - keep checks focused and fast.
-    - avoid requiring browser or database access.
-    - leave #66/#67 contact and product build tasks untouched.
+    - Keep 198mm print wrapper width.
+    - Keep 100% print scale behavior.
+    - Keep touched source files below repository size limits.
   - Planned validation:
-    - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd --filter @cxnext/server typecheck`
-    - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd --filter @cxnext/frontend typecheck`
-    - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd --filter @cxnext/ui typecheck`
-    - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd lint`
-    - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture`
-    - `node scripts/version-sync.mjs --ref 65`
-    - `git diff --check`
+    - Run Prettier on touched Sales print page and execution files.
+    - Run `pnpm --filter @cxnext/frontend typecheck`.
   - Implemented:
-    - moved tenant frontend API calls into `tenant/infrastructure/tenant-api.ts`.
-    - added `final-boundary-enforcement.test.ts` for strict folders, adapter placement, entrypoint size, and source artifacts.
-    - updated release tracking to `1.0.65`.
+    - Added print-only body flex centering with `justify-content: center`.
   - Validation:
-    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd --filter @cxnext/server typecheck`.
-    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd --filter @cxnext/frontend typecheck`.
-    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd --filter @cxnext/ui typecheck`.
-    - passed targeted ESLint on changed tenant frontend files and final architecture test.
-    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture/final-boundary-enforcement.test.ts`.
-    - passed `node scripts/version-sync.mjs --ref 65`.
-    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture` with 18 files and 53 tests.
-    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd lint` with existing warnings only: one `no-explicit-any` warning in `packages/db/src/migrations/common/common-master-migration.ts` and four `no-explicit-any` warnings in `apps/frontend/features/company/interface/pages/company-pages-root.tsx`.
-    - passed `git diff --check`.
+    - Ran Prettier on the touched Sales print page and execution files.
+    - Ran `pnpm --filter @cxnext/frontend typecheck`.
+    - Ran `git diff --check` for touched files; only existing CRLF normalization warnings were reported for execution markdown files.
+    - Confirmed `sales-print-page.tsx` is 451 lines.
   - Residual risk:
-    - contact and product list/show/upsert modules remain scheduled as `#66` and `#67`.
+    - If the print route is wrapped by a full-width application root, an additional route-level print wrapper centering rule may be needed.
 
-## Roadmap
-
-- `#55` Common compliance masters:
+- `#127` Align Sales invoice IRN divider
   - Goal:
-    - refactor `hsn-codes` and `taxes` without hiding tax-specific fields inside overly generic code.
+    - Align the IRN section left divider with the Buyer Ship To left border.
   - Scope:
-    - use specialized mappers for tax and HSN fields.
-    - guard database refresh behavior because tax seed issues previously blocked `db:fresh`.
-    - keep the existing HTTP contract stable.
+    - Update Sales frontend print invoice band grid only.
+  - Constraints:
+    - Keep existing invoice print width and data unchanged.
+    - Keep touched source files below repository size limits.
+  - Planned validation:
+    - Run Prettier on touched Sales print page and execution files.
+    - Run `pnpm --filter @cxnext/frontend typecheck`.
+  - Implemented:
+    - Changed the bill/IRN band grid from 48/52 to equal two columns, aligning the IRN divider with the Ship To border below.
   - Validation:
-    - server typecheck, targeted lint, tax/HSN persistence mapping tests, optional `db:fresh` when database access is available, version sync tests, and `git diff --check`.
+    - Ran Prettier on the touched Sales print page and execution files.
+    - Ran `pnpm --filter @cxnext/frontend typecheck`.
+    - Ran `git diff --check` for touched files; only existing CRLF normalization warnings were reported for execution markdown files.
+    - Confirmed `sales-print-page.tsx` is 446 lines.
+  - Residual risk:
+    - None identified.
 
-- `#56` Common order and logistics masters:
+- `#126` Set Sales invoice print width to 198mm
   - Goal:
-    - refactor `warehouses`, `transports`, `destinations`, `order-types`, and `stock-rejection-types`.
+    - Set the Sales invoice print wrapper to 198mm and keep it horizontally centered.
   - Scope:
-    - keep the work as one logistics/order-common slice because current controllers share the same CRUD shape.
-    - avoid introducing order-domain behavior beyond the current common master records.
-    - preserve current API shape while moving orchestration into application use cases.
+    - Update Sales frontend print wrapper sizing only.
+  - Constraints:
+    - Keep the invoice horizontally centered.
+    - Keep 100% print scale behavior.
+    - Keep touched source files below repository size limits.
+  - Planned validation:
+    - Run Prettier on touched Sales print page and execution files.
+    - Run `pnpm --filter @cxnext/frontend typecheck`.
+  - Implemented:
+    - Reduced the print wrapper width from 200mm to 198mm while keeping `print:mx-auto`.
   - Validation:
-    - server typecheck, targeted lint, boundary tests, write-event tests, version sync tests, and `git diff --check`.
+    - Ran Prettier on the touched Sales print page and execution files.
+    - Ran `pnpm --filter @cxnext/frontend typecheck`.
+    - Ran `git diff --check` for touched files; only existing CRLF normalization warnings were reported for execution markdown files.
+    - Confirmed `sales-print-page.tsx` is 446 lines.
+  - Residual risk:
+    - Hardware printer margins can still vary, but the browser print wrapper now centers at 198mm.
 
-- `#57` Common finance and terms masters:
+- `#125` Slightly narrow Sales invoice print width
   - Goal:
-    - refactor `currencies` and `payment-terms`.
+    - Add a very small even margin on both sides by reducing the printed invoice width.
   - Scope:
-    - keep currency and payment-term behavior domain-neutral under common.
-    - add tests for status/delete behavior and currency field mapping.
+    - Update Sales frontend print wrapper sizing only.
+  - Constraints:
+    - Keep the invoice horizontally centered.
+    - Keep 100% print scale behavior.
+    - Keep touched source files below repository size limits.
+  - Planned validation:
+    - Run Prettier on touched Sales print page and execution files.
+    - Run `pnpm --filter @cxnext/frontend typecheck`.
+  - Implemented:
+    - Reduced the print wrapper width from 202mm to 200mm while keeping `print:mx-auto`.
   - Validation:
-    - server typecheck, targeted lint, focused persistence/use-case tests, version sync tests, and `git diff --check`.
+    - Ran Prettier on the touched Sales print page and execution files.
+    - Ran `pnpm --filter @cxnext/frontend typecheck`.
+    - Ran `git diff --check` for touched files; only existing CRLF normalization warnings were reported for execution markdown files.
+    - Confirmed `sales-print-page.tsx` is 446 lines.
+  - Residual risk:
+    - Hardware printer margins can still vary, but the browser print wrapper now leaves a small centered margin within the configured printable area.
 
-- `#58` Backend domain hardening:
+- `#124` Improve Sales item table header
   - Goal:
-    - replace placeholder DDD folders with useful domain code and strengthen event publication across backend write flows.
+    - Make the Sales invoice item table header visually distinct and vertically centered.
   - Scope:
-    - start with `industries` and `companies` because they currently have record types but little real domain model.
-    - add update/delete events where they represent meaningful domain facts.
-    - keep shared event publisher abstractions local unless a truly generic package-level abstraction is justified.
+    - Update Sales frontend print item table header styling only.
+  - Constraints:
+    - Keep existing row count and dummy data unchanged.
+    - Keep print table readable while dense.
+    - Keep touched source files below repository size limits.
+  - Planned validation:
+    - Run Prettier on touched Sales print page and execution files.
+    - Run `pnpm --filter @cxnext/frontend typecheck`.
+  - Implemented:
+    - Added `align-middle` to item header cells.
+    - Changed the header bottom rule to a 4px double border.
   - Validation:
-    - domain import-restriction tests, event publication tests, server typecheck, version sync tests, and `git diff --check`.
+    - Ran Prettier on the touched Sales print page and execution files.
+    - Ran `pnpm --filter @cxnext/frontend typecheck`.
+    - Ran `git diff --check` for touched files; only existing CRLF normalization warnings were reported for execution markdown files.
+    - Confirmed `sales-print-page.tsx` is 446 lines.
+  - Residual risk:
+    - Double-border thickness may need a visual adjustment after print preview if it reads too strong.
 
-- `#59` Frontend feature module shells:
+- `#123` Clamp Sales item particulars lines
   - Goal:
-    - make `common`, `company`, and `industry` frontend features match `domain/application/infrastructure/interface/pages`.
+    - Prevent Sales invoice Particulars cells from growing beyond 3 lines and show an ellipsis at the end.
   - Scope:
-    - move fetch/storage/browser adapter code into `infrastructure`.
-    - keep route imports stable from `interface/pages`.
-    - add structure tests for frontend bounded contexts.
+    - Update Sales frontend print item table Particulars rendering only.
+  - Constraints:
+    - Keep existing row count and dummy data unchanged.
+    - Keep print table readable while dense.
+    - Keep touched source files below repository size limits.
+  - Planned validation:
+    - Run Prettier on touched Sales print page and execution files.
+    - Run `pnpm --filter @cxnext/frontend typecheck`.
+  - Implemented:
+    - Wrapped Particulars text in a clamped block using `-webkit-line-clamp: 3`.
+    - Kept whitespace handling for multi-line particulars while hiding overflow after the third line.
   - Validation:
-    - frontend typecheck, targeted lint, frontend structure tests, version sync tests, and `git diff --check`.
+    - Ran Prettier on the touched Sales print page and execution files.
+    - Ran `pnpm --filter @cxnext/frontend typecheck`.
+    - Ran `git diff --check` for touched files; only existing CRLF normalization warnings were reported for execution markdown files.
+    - Confirmed `sales-print-page.tsx` is 446 lines.
+  - Residual risk:
+    - Multiline ellipsis rendering depends on Chromium/WebKit line-clamp support, which is supported by the current Next.js browser preview path.
 
-- `#60` Frontend common/location pages:
+- `#122` Normalize Sales item table font size
   - Goal:
-    - split common list and location page composition into smaller bounded-context files.
+    - Make the Sales invoice item table text use a consistent font size across header, rows, and total.
   - Scope:
-    - keep common-list UI behavior stable.
-    - avoid touching unrelated desk navigation unless required by imports.
-    - preserve route imports through `features/<module>/interface/pages`.
+    - Update Sales frontend print item table styling only.
+  - Constraints:
+    - Keep existing row count and dummy data unchanged.
+    - Keep print table readable while dense.
+    - Keep touched source files below repository size limits.
+  - Planned validation:
+    - Run Prettier on touched Sales print page and execution files.
+    - Run `pnpm --filter @cxnext/frontend typecheck`.
+  - Implemented:
+    - Updated item row font size from 8px to 9px so header, row, and total text match.
   - Validation:
-    - frontend typecheck, page import boundary tests, optional browser smoke test, version sync tests, and `git diff --check`.
+    - Ran Prettier on the touched Sales print page and execution files.
+    - Ran `pnpm --filter @cxnext/frontend typecheck`.
+    - Ran `git diff --check` for touched files; only existing CRLF normalization warnings were reported for execution markdown files.
+    - Confirmed `sales-print-page.tsx` is 442 lines.
+  - Residual risk:
+    - 9px is denser than the broader invoice text but consistent inside the item table.
 
-- `#61` Frontend desk and cxsun modules:
+- `#121` Add one 3-line Sales dummy row
   - Goal:
-    - move flat `desk` and `cxsun` features into strict frontend bounded-context layout.
+    - Increase the dummy item particulars area by exactly 3 printed lines.
   - Scope:
-    - preserve `desk-registry` public contract during moves.
-    - keep route behavior stable for portal and record pages.
+    - Update Sales print dummy item helper row count and line-count pattern only.
+  - Constraints:
+    - Preserve deterministic dummy data.
+    - Keep touched source files below repository size limits.
+  - Planned validation:
+    - Run Prettier on touched Sales dummy helper and execution files.
+    - Run `pnpm --filter @cxnext/frontend typecheck`.
+  - Implemented:
+    - Increased generated dummy item rows from 12 to 13.
+    - Forced the added 13th row to render 3 particulars lines, increasing total particulars lines from 24 to 27.
   - Validation:
-    - frontend typecheck, route import tests, optional browser smoke test, version sync tests, and `git diff --check`.
+    - Ran Prettier on the touched Sales dummy helper and execution files.
+    - Ran `pnpm --filter @cxnext/frontend typecheck`.
+    - Ran `git diff --check` for touched files; only existing CRLF normalization warnings were reported for execution markdown files.
+    - Confirmed `sales-print-dummy-items.ts` is 68 lines.
+  - Residual risk:
+    - Dummy rows remain print-layout test data and should be replaced with live invoice items before final production use.
 
-- `#62` Dashboard shell split:
+- `#120` Fit Sales dummy rows to 24 lines
   - Goal:
-    - reduce `packages/ui/src/blocks/dashboard/dashboard-shell.tsx` below the file-size threshold.
+    - Fit the Sales invoice dummy item area to 24 total particulars lines, not 24 rows.
   - Scope:
-    - split by cohesive UI responsibility: shell frame, sidebar/nav, header, content area, and responsive helpers.
-    - keep package exports stable.
+    - Update Sales print dummy item helper row count only.
+  - Constraints:
+    - Keep the 1/2/3 line particulars pattern.
+    - Keep print content deterministic rather than changing on every render.
+    - Keep touched source files below repository size limits.
+  - Planned validation:
+    - Run Prettier on touched Sales dummy helper and execution files.
+    - Run `pnpm --filter @cxnext/frontend typecheck`.
+  - Implemented:
+    - Reduced generated dummy item rows from 24 to 12.
+    - Kept the 1/2/3 particulars line pattern, which totals 24 printed particulars lines across 12 rows.
   - Validation:
-    - package/frontend typecheck, targeted lint, file-size architecture test, version sync tests, and `git diff --check`.
+    - Ran Prettier on the touched Sales dummy helper and execution files.
+    - Ran `pnpm --filter @cxnext/frontend typecheck`.
+    - Ran `git diff --check` for touched files; only existing CRLF normalization warnings were reported for execution markdown files.
+    - Confirmed `sales-print-page.tsx` is 442 lines and `sales-print-dummy-items.ts` is 68 lines.
+  - Residual risk:
+    - Dummy rows remain print-layout test data and should be replaced with live invoice items before final production use.
 
-- `#63` Frontend page file split:
+- `#119` Fix Sales dummy item initialization
   - Goal:
-    - reduce oversized `tenant-pages.tsx`, `company-pages.tsx`, `industry-pages.tsx`, and `common-pages.tsx`.
+    - Fix the runtime `Cannot access 'dummyProductLines' before initialization` error.
   - Scope:
-    - split into list/show/upsert/form/helpers while preserving public page exports.
-    - avoid behavior changes unless tests reveal defects.
+    - Update Sales print dummy item helper initialization order only.
+  - Constraints:
+    - Keep the 24 dummy rows and their deterministic values.
+    - Keep touched source files below repository size limits.
+  - Planned validation:
+    - Run Prettier on touched Sales dummy helper and execution files.
+    - Run `pnpm --filter @cxnext/frontend typecheck`.
+  - Implemented:
+    - Moved the dummy source line arrays above `dummySalesItems`, so module-load generation can read them safely.
   - Validation:
-    - frontend typecheck, file-size architecture test, route import boundary test, version sync tests, and `git diff --check`.
+    - Ran Prettier on the touched Sales dummy helper and execution files.
+    - Ran `pnpm --filter @cxnext/frontend typecheck`.
+    - Ran `git diff --check` for touched files; only existing CRLF normalization warnings were reported for execution markdown files.
+    - Confirmed `sales-print-dummy-items.ts` is 68 lines.
+  - Residual risk:
+    - None identified for the initialization-order fix.
 
-- `#64` Frontend/backend route and module boundary checks:
+- `#118` Rebuild Sales invoice dummy rows
   - Goal:
-    - add targeted checks before the final enforcement pass so boundary drift is caught early.
+    - Replace the current Sales invoice item stress data with 24 random-looking rows and 1 to 3 line particulars.
   - Scope:
-    - add architecture tests for frontend route imports.
-    - add architecture tests for backend controller repository access.
-    - add architecture tests for domain framework imports.
+    - Update Sales frontend print document dummy item row rendering only.
+  - Constraints:
+    - Keep the item table dummy-only for layout testing.
+    - Keep print content deterministic rather than changing on every render.
+    - Keep touched source file below repository size limits.
+  - Planned validation:
+    - Run Prettier on touched Sales print page and execution files.
+    - Run `pnpm --filter @cxnext/frontend typecheck`.
+  - Implemented:
+    - Replaced the item stress table with 24 deterministic dummy rows.
+    - Added 1, 2, and 3 line Particulars values across the dummy rows using random-looking textile descriptions.
+    - Moved dummy row generation into `sales-print-dummy-items.ts` to keep the print page compact.
+    - Tightened item font sizing to support the denser 24-row test table.
   - Validation:
-    - focused architecture tests, server/frontend typecheck as needed, version sync tests, and `git diff --check`.
+    - Ran Prettier on the touched Sales print page, dummy item helper, and execution files.
+    - Ran `pnpm --filter @cxnext/frontend typecheck`.
+    - Ran `git diff --check` for touched files; only existing CRLF normalization warnings were reported for execution markdown files.
+    - Confirmed `sales-print-page.tsx` is 442 lines and `sales-print-dummy-items.ts` is 68 lines.
+  - Residual risk:
+    - The 24 rows are still print-layout test data and should be replaced with real invoice rows before final production use.
 
-- `#65` Final boundary enforcement suite:
+- `#117` Tighten Sales invoice item rows
   - Goal:
-    - add permanent architecture coverage so future work cannot regress backend/frontend boundaries.
+    - Reduce the vertical height of Sales invoice item rows slightly for print fit.
   - Scope:
-    - cover strict backend folders, strict frontend folders, generated source artifacts, version sync, and file-size thresholds.
-    - keep tests readable and cheap enough for regular local runs.
-    - leave a final checklist for any remaining modules.
+    - Update Sales frontend print item row styling only.
+  - Constraints:
+    - Keep 13 dummy rows and current dummy values unchanged.
+    - Keep text readable in print.
+    - Keep touched source file below repository size limits.
+  - Planned validation:
+    - Run Prettier on touched Sales print page and execution files.
+    - Run `pnpm --filter @cxnext/frontend typecheck`.
+  - Implemented:
+    - Reduced header and item row cell height from 22px to 20px.
   - Validation:
-    - full architecture test suite, server typecheck, frontend typecheck, targeted lint, and `git diff --check`.
+    - Ran Prettier on the touched Sales print page and execution files.
+    - Ran `pnpm --filter @cxnext/frontend typecheck`.
+    - Ran `git diff --check` for touched files; only existing CRLF normalization warnings were reported for execution markdown files.
+    - Confirmed `sales-print-page.tsx` is 486 lines.
+  - Residual risk:
+    - Very dense printers or browser zoom settings may still require another 1px adjustment after preview.
 
-- `#66` Contact list/show/upsert module:
+- `#116` Reduce Sales invoice dummy rows
   - Goal:
-    - build the real contact bounded context from `temp/apps/core` as a scalable modular monolith module with DDD layers and event-driven writes.
-  - Source references:
-    - `temp/apps/core/shared/schemas/contact.ts`
-    - `temp/apps/core/shared/schemas/address-book.ts`
-    - `temp/apps/core/src/services/contact-service.ts`
-    - `temp/apps/core/database/migration/03-contacts.ts`
-    - `temp/apps/core/database/migration/10-contact-code-backfill.ts`
-    - `temp/apps/core/database/seeder/03-contacts.ts`
-    - `temp/apps/core/web/src/features/contact/contact-form-state.ts`
-    - `temp/apps/core/web/src/features/contact/contact-form-sections.tsx`
-    - `temp/apps/core/web/src/features/contact/contact-upsert-section.tsx`
-  - Backend target files:
-    - `apps/server/src/modules/contacts/domain/entities/contact.entity.ts`
-    - `apps/server/src/modules/contacts/domain/value-objects/contact-code.value-object.ts`
-    - `apps/server/src/modules/contacts/domain/value-objects/contact-address.value-object.ts`
-    - `apps/server/src/modules/contacts/domain/events/contact-created.event.ts`
-    - `apps/server/src/modules/contacts/domain/events/contact-updated.event.ts`
-    - `apps/server/src/modules/contacts/domain/events/contact-deleted.event.ts`
-    - `apps/server/src/modules/contacts/application/services/contact.repository.ts`
-    - `apps/server/src/modules/contacts/application/services/domain-event-publisher.ts`
-    - `apps/server/src/modules/contacts/application/use-cases/list-contacts.use-case.ts`
-    - `apps/server/src/modules/contacts/application/use-cases/get-contact.use-case.ts`
-    - `apps/server/src/modules/contacts/application/use-cases/create-contact.use-case.ts`
-    - `apps/server/src/modules/contacts/application/use-cases/update-contact.use-case.ts`
-    - `apps/server/src/modules/contacts/application/use-cases/delete-contact.use-case.ts`
-    - `apps/server/src/modules/contacts/infrastructure/persistence/kysely-contact.repository.ts`
-    - `apps/server/src/modules/contacts/infrastructure/adapters/event-bus-domain-event-publisher.ts`
-    - `apps/server/src/modules/contacts/infrastructure/contacts.providers.ts`
-    - `apps/server/src/modules/contacts/interface/http/contacts.controller.ts`
-    - `apps/server/src/modules/contacts/interface/graphql/contact.model.ts`
-    - `apps/server/src/modules/contacts/interface/graphql/contacts.resolver.ts`
-    - `apps/server/src/modules/contacts/database/migrations/001-create-contacts.ts`
-    - `apps/server/src/modules/contacts/database/seeders/001-seed-contacts.ts`
-  - Frontend target files:
-    - `apps/frontend/features/contact/domain/contact.ts`
-    - `apps/frontend/features/contact/domain/contact-form.ts`
-    - `apps/frontend/features/contact/application/contact-list.service.ts`
-    - `apps/frontend/features/contact/application/contact-upsert.service.ts`
-    - `apps/frontend/features/contact/infrastructure/contact-api.ts`
-    - `apps/frontend/features/contact/interface/pages/contact-list-page.tsx`
-    - `apps/frontend/features/contact/interface/pages/contact-show-page.tsx`
-    - `apps/frontend/features/contact/interface/pages/contact-upsert-page.tsx`
-    - `apps/frontend/features/contact/interface/components/contact-form-sections.tsx`
-  - Implementation notes:
-    - support list, show, create, update, and delete.
-    - model contact type, ledger reference, legal/tax fields, opening balance, credit limit, addresses, emails, phones, bank accounts, and GST details.
-    - keep common lookup dependencies behind application/API calls; do not cross-join common master tables from the contact repository.
-    - publish contact create/update/delete domain events only after persistence succeeds.
+    - Reduce the Sales invoice print stress table to 13 dummy rows.
+  - Scope:
+    - Update Sales frontend print document dummy row count only.
+  - Constraints:
+    - Keep the existing dummy row values and layout behavior unchanged.
+    - Keep the print layout within A4 at 100% scale.
+    - Keep touched source file below repository size limits.
+  - Planned validation:
+    - Run Prettier on touched Sales print page and execution files.
+    - Run `pnpm --filter @cxnext/frontend typecheck`.
+  - Implemented:
+    - Reduced the rendered dummy item rows from 15 to 13.
   - Validation:
-    - server typecheck, frontend typecheck, focused contact use-case tests, controller boundary tests, route import tests, version sync tests, source-tree artifact tests, and `git diff --check`.
+    - Ran Prettier on the touched Sales print page and execution files.
+    - Ran `pnpm --filter @cxnext/frontend typecheck`.
+    - Ran `git diff --check` for touched files; only existing CRLF normalization warnings were reported for execution markdown files.
+    - Confirmed `sales-print-page.tsx` is 486 lines.
+  - Residual risk:
+    - Dummy rows remain print-layout test data and should be removed or replaced before final production output.
 
-- `#67` Product list/show/upsert module:
+- `#115` Adjust Sales invoice dummy item count
   - Goal:
-    - build the real product bounded context from `temp/apps/core` as a scalable modular monolith module with DDD layers and event-driven writes.
-  - Source references:
-    - `temp/apps/core/shared/schemas/product.ts`
-    - `temp/apps/core/src/services/product-service.ts`
-    - `temp/apps/core/database/migration/12-products.ts`
-    - `temp/apps/core/database/seeder/08-products.ts`
-    - `temp/apps/core/src/data/product-seed.ts`
-    - `temp/apps/core/web/src/features/product/product-form-state.ts`
-    - `temp/apps/core/web/src/features/product/product-form-sections.tsx`
-    - `temp/apps/core/web/src/features/product/product-upsert-section.tsx`
-  - Backend target files:
-    - `apps/server/src/modules/products/domain/entities/product.entity.ts`
-    - `apps/server/src/modules/products/domain/value-objects/product-code.value-object.ts`
-    - `apps/server/src/modules/products/domain/value-objects/product-slug.value-object.ts`
-    - `apps/server/src/modules/products/domain/value-objects/product-pricing.value-object.ts`
-    - `apps/server/src/modules/products/domain/events/product-created.event.ts`
-    - `apps/server/src/modules/products/domain/events/product-updated.event.ts`
-    - `apps/server/src/modules/products/domain/events/product-deleted.event.ts`
-    - `apps/server/src/modules/products/application/services/product.repository.ts`
-    - `apps/server/src/modules/products/application/services/domain-event-publisher.ts`
-    - `apps/server/src/modules/products/application/use-cases/list-products.use-case.ts`
-    - `apps/server/src/modules/products/application/use-cases/get-product.use-case.ts`
-    - `apps/server/src/modules/products/application/use-cases/create-product.use-case.ts`
-    - `apps/server/src/modules/products/application/use-cases/update-product.use-case.ts`
-    - `apps/server/src/modules/products/application/use-cases/delete-product.use-case.ts`
-    - `apps/server/src/modules/products/application/use-cases/generate-product-slug.use-case.ts`
-    - `apps/server/src/modules/products/application/use-cases/generate-product-seo-field.use-case.ts`
-    - `apps/server/src/modules/products/infrastructure/persistence/kysely-product.repository.ts`
-    - `apps/server/src/modules/products/infrastructure/adapters/event-bus-domain-event-publisher.ts`
-    - `apps/server/src/modules/products/infrastructure/products.providers.ts`
-    - `apps/server/src/modules/products/interface/http/products.controller.ts`
-    - `apps/server/src/modules/products/interface/graphql/product.model.ts`
-    - `apps/server/src/modules/products/interface/graphql/products.resolver.ts`
-    - `apps/server/src/modules/products/database/migrations/001-create-products.ts`
-    - `apps/server/src/modules/products/database/seeders/001-seed-products.ts`
-  - Frontend target files:
-    - `apps/frontend/features/product/domain/product.ts`
-    - `apps/frontend/features/product/domain/product-form.ts`
-    - `apps/frontend/features/product/application/product-list.service.ts`
-    - `apps/frontend/features/product/application/product-upsert.service.ts`
-    - `apps/frontend/features/product/infrastructure/product-api.ts`
-    - `apps/frontend/features/product/interface/pages/product-list-page.tsx`
-    - `apps/frontend/features/product/interface/pages/product-show-page.tsx`
-    - `apps/frontend/features/product/interface/pages/product-upsert-page.tsx`
-    - `apps/frontend/features/product/interface/components/product-form-sections.tsx`
-  - Implementation notes:
-    - support list, show, create, update, delete, slug generation, and SEO field generation.
-    - model brand/category/group/type/unit/HSN/style/tax references, SKU, pricing, images, variants, discounts, offers, attributes, stock, SEO, storefront settings, tags, and reviews.
-    - keep common lookup dependencies behind application/API calls; do not cross-join common master tables from the product repository.
-    - publish product create/update/delete domain events only after persistence succeeds.
+    - Remove the real first item line from the print stress table and show 15 dummy rows.
+  - Scope:
+    - Update Sales frontend print document row rendering only.
+  - Constraints:
+    - Keep totals based on real invoice items unless explicitly changed.
+    - Keep the print layout within A4 at 100% scale.
+    - Keep touched source file below repository size limits.
+  - Planned validation:
+    - Run Prettier on touched Sales print page and execution files.
+    - Run `pnpm --filter @cxnext/frontend typecheck`.
+  - Implemented:
+    - Changed the rendered item table to use 15 dummy rows only, removing the visible real first item line from the layout stress view.
+    - Left real invoice totals unchanged so totals still reflect the actual record data.
   - Validation:
-    - server typecheck, frontend typecheck, focused product use-case tests, controller boundary tests, route import tests, version sync tests, source-tree artifact tests, and `git diff --check`.
+    - Ran Prettier on the touched Sales print page and execution files.
+    - Ran `pnpm --filter @cxnext/frontend typecheck`.
+    - Ran `git diff --check` for touched files; only existing CRLF normalization warnings were reported for execution markdown files.
+    - Confirmed `sales-print-page.tsx` is 486 lines.
+  - Residual risk:
+    - The item table is now dummy-only for layout testing; live item rendering should be restored before final production use if needed.
+
+- `#114` Update Sales invoice dummy particulars
+  - Goal:
+    - Replace generic dummy particulars with alternating requested product descriptions and keep particulars left-aligned.
+  - Scope:
+    - Update Sales frontend print document dummy item row rendering only.
+  - Constraints:
+    - Keep totals based on real invoice items, not dummy layout rows.
+    - Keep the print layout within A4 at 100% scale.
+    - Keep touched source file below repository size limits.
+  - Planned validation:
+    - Run Prettier on touched Sales print page and execution files.
+    - Run `pnpm --filter @cxnext/frontend typecheck`.
+  - Implemented:
+    - Replaced generic dummy particulars with alternating requested product descriptions.
+    - Left-aligned the dummy Particulars column while preserving other dummy column alignment.
+  - Validation:
+    - Ran Prettier on the touched Sales print page and execution files.
+    - Ran `pnpm --filter @cxnext/frontend typecheck`.
+    - Ran `git diff --check` for touched files; only existing CRLF normalization warnings were reported for execution markdown files.
+    - Confirmed `sales-print-page.tsx` is 488 lines.
+  - Residual risk:
+    - Dummy particulars remain layout-test data and should be removed or replaced before final production print output.
+
+- `#113` Stress-test Sales invoice item columns
+  - Goal:
+    - Fill all Sales invoice item columns with wide dummy values and add 6 more rows to test print fit.
+  - Scope:
+    - Update Sales frontend print document dummy row rendering only.
+  - Constraints:
+    - Keep totals based on real invoice items, not dummy layout rows.
+    - Keep the print layout within A4 at 100% scale.
+    - Keep touched source file below repository size limits.
+  - Planned validation:
+    - Run Prettier on touched Sales print page and execution files.
+    - Run `pnpm --filter @cxnext/frontend typecheck`.
+  - Implemented:
+    - Increased dummy layout rows from 12 to 18.
+    - Filled all dummy item columns with stress-test values, including 6-digit quantity, 1 crore taxable value, and 10 crore sub total.
+    - Kept real invoice totals based only on real item rows.
+  - Validation:
+    - Ran Prettier on the touched Sales print page and execution files.
+    - Ran `pnpm --filter @cxnext/frontend typecheck`.
+    - Ran `git diff --check` for touched files; only existing CRLF normalization warnings were reported for execution markdown files.
+    - Confirmed `sales-print-page.tsx` is 485 lines.
+  - Residual risk:
+    - Dummy rows intentionally contain unrealistic values for print-fit testing and should not remain as production invoice data.
+
+- `#112` Expand Sales invoice item test rows
+  - Goal:
+    - Fill more of the A4 page with sales item rows and test single-line PO/DC/Particulars alignment using 12 rows.
+  - Scope:
+    - Update Sales frontend print document row rendering only.
+  - Constraints:
+    - Keep totals based on real invoice items, not dummy layout rows.
+    - Keep the print layout within A4 at 100% scale.
+    - Keep touched source file below repository size limits.
+  - Planned validation:
+    - Run Prettier on touched Sales print page and execution files.
+    - Run `pnpm --filter @cxnext/frontend typecheck`.
+  - Implemented:
+    - Removed rendered PO sample data from real item rows.
+    - Added 12 dummy layout rows after real invoice items with single-line `PO-###`, `DC-###`, and `Dummy sales item line #` text.
+    - Kept totals and quantity calculations based only on real invoice items.
+    - Moved QR path generation into `sales-print-qr.ts` so the print page stays below the 500-line review point.
+  - Validation:
+    - Ran Prettier on the touched Sales print page, QR helper, and execution files.
+    - Ran `pnpm --filter @cxnext/frontend typecheck`.
+    - Ran `git diff --check` for touched files; only existing CRLF normalization warnings were reported for execution markdown files.
+    - Confirmed `sales-print-page.tsx` is 477 lines and `sales-print-qr.ts` is 31 lines.
+  - Residual risk:
+    - Dummy rows are for print-layout checking only and should be removed or replaced before using live invoice data for final production print output.
+
+- `#111` Fix Sales invoice print horizontal centering
+  - Goal:
+    - Make left and right print-preview whitespace equal while keeping the invoice at 100% scale.
+  - Scope:
+    - Update Sales frontend print document layout only.
+  - Constraints:
+    - Keep the invoice within A4 printable area.
+    - Preserve the printable SVG QR/barcode.
+    - Keep touched source file below repository size limits.
+  - Planned validation:
+    - Run Prettier on touched Sales print page and execution files.
+    - Run `pnpm --filter @cxnext/frontend typecheck`.
+  - Implemented:
+    - Changed print `html, body` width from fixed `210mm` to `auto`, so the `202mm` invoice wrapper centers within the real printable content area instead of an oversized body box.
+  - Validation:
+    - Ran Prettier on the touched Sales print page and execution files.
+    - Ran `pnpm --filter @cxnext/frontend typecheck`.
+    - Ran `git diff --check` for touched files; only existing CRLF normalization warnings were reported for execution markdown files.
+    - Confirmed `sales-print-page.tsx` is 499 lines.
+  - Residual risk:
+    - Printer hardware margins can still vary by device, but browser print preview should now show equal left and right whitespace for the invoice wrapper.
+
+- `#110` Widen Sales invoice print and print QR
+  - Goal:
+    - Make the Sales invoice print wider and horizontally centered while ensuring the QR/barcode appears in print output.
+  - Scope:
+    - Update Sales frontend print document layout only.
+  - Constraints:
+    - Keep Sales code inside its frontend bounded context.
+    - Keep touched source file below repository size limits.
+    - Preserve invoice content while reducing vertical pressure.
+  - Planned validation:
+    - Run Prettier on touched Sales print page and execution files.
+    - Run `pnpm --filter @cxnext/frontend typecheck`.
+  - Implemented:
+    - Set the A4 print side margins to 4mm and widened the invoice wrapper to 202mm.
+    - Removed print body default margin and explicitly centered the invoice wrapper.
+    - Changed the top-right QR/barcode from CSS background cells to printable SVG path shapes.
+  - Validation:
+    - Ran Prettier on the touched Sales print page and execution files.
+    - Ran `pnpm --filter @cxnext/frontend typecheck`.
+    - Ran `git diff --check` for touched files; only existing CRLF normalization warnings were reported for execution markdown files.
+    - Confirmed `sales-print-page.tsx` is 499 lines.
+  - Residual risk:
+    - Printer hardware margins can still vary by device, but the layout now fills the configured A4 printable width at 100% scale and stays horizontally centered.
