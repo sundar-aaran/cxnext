@@ -1,9 +1,9 @@
 import { Module } from "@nestjs/common";
+import { commonMasterProviders } from "../infrastructure/common-master.providers";
 import { ContactGroupsController } from "./contact-groups.controller";
-import { ContactGroupsRepository } from "./contact-groups.repository";
 
 @Module({
   controllers: [ContactGroupsController],
-  providers: [ContactGroupsRepository],
+  providers: [...commonMasterProviders],
 })
 export class ContactGroupsModule {}

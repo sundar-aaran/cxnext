@@ -2,11 +2,19 @@
 
 ## Version State
 
-- Current package version: `1.0.51`
-- Current release tag: `v-1.0.51`
+- Current package version: `1.0.52`
+- Current release tag: `v-1.0.52`
 - Versioned changelog label format: `v 1.0.<reference>`
 - Version section format: `## v-1.0.<reference>`
 - Entry format: `### [v 1.0.<reference>] YYYY-MM-DD - Title`
+
+## v-1.0.52
+
+### [v 1.0.52] 2026-04-30 - Refactor Common Contact Master Boundaries
+
+- Moved contact groups, contact types, address types, and bank names behind common master use cases, repository ports, and infrastructure providers.
+- Added common master domain records, definitions, and create/update/delete events with event-bus publication after successful writes.
+- Removed direct repository injection from contact master controllers and added focused boundary and event publication tests.
 
 ## v-1.0.51
 

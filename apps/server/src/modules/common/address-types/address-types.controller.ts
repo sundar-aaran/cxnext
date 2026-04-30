@@ -1,24 +1,42 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from "@nestjs/common";
-import { AddressTypesRepository } from "./address-types.repository";
+import { Controller, Get, Inject, Param } from "@nestjs/common";
+import { CreateCommonMasterRecordUseCase } from "../application/use-cases/contact-masters/create-common-master-record.use-case";
+import { DeleteCommonMasterRecordUseCase } from "../application/use-cases/contact-masters/delete-common-master-record.use-case";
+import { GetCommonMasterRecordUseCase } from "../application/use-cases/contact-masters/get-common-master-record.use-case";
+import { ListCommonMasterRecordsUseCase } from "../application/use-cases/contact-masters/list-common-master-records.use-case";
+import { UpdateCommonMasterRecordUseCase } from "../application/use-cases/contact-masters/update-common-master-record.use-case";
+import { CommonMasterControllerBase } from "../interface/http/common-master-controller";
 
 @Controller("common/address-types")
-export class AddressTypesController {
-  public constructor(private readonly repository: AddressTypesRepository) {}
+export class AddressTypesController extends CommonMasterControllerBase {
+  public constructor(
+    @Inject(ListCommonMasterRecordsUseCase)
+    listCommonMasterRecordsUseCase: ListCommonMasterRecordsUseCase,
+    @Inject(GetCommonMasterRecordUseCase)
+    getCommonMasterRecordUseCase: GetCommonMasterRecordUseCase,
+    @Inject(CreateCommonMasterRecordUseCase)
+    createCommonMasterRecordUseCase: CreateCommonMasterRecordUseCase,
+    @Inject(UpdateCommonMasterRecordUseCase)
+    updateCommonMasterRecordUseCase: UpdateCommonMasterRecordUseCase,
+    @Inject(DeleteCommonMasterRecordUseCase)
+    deleteCommonMasterRecordUseCase: DeleteCommonMasterRecordUseCase,
+  ) {
+    super(
+      "addressTypes",
+      listCommonMasterRecordsUseCase,
+      getCommonMasterRecordUseCase,
+      createCommonMasterRecordUseCase,
+      updateCommonMasterRecordUseCase,
+      deleteCommonMasterRecordUseCase,
+    );
+  }
 
   @Get()
-  public list() { return this.repository.list(); }
+  public list() {
+    return this.listRecords();
+  }
 
   @Get(":id")
-  public get(@Param("id") id: string) { return this.repository.get(Number(id)); }
-
-  @Post()
-  public create(@Body() body: Record<string, unknown>) { return this.repository.create(body); }
-
-  @Patch(":id")
-  public update(@Param("id") id: string, @Body() body: Record<string, unknown>) { return this.repository.update(Number(id), body); }
-
-  @Delete(":id")
-  public delete(@Param("id") id: string, @Query("force") force?: string) {
-    return force === "true" ? this.repository.forceDelete(Number(id)) : this.repository.drop(Number(id));
+  public getById(@Param("id") id: string) {
+    return this.getRecord(id);
   }
 }

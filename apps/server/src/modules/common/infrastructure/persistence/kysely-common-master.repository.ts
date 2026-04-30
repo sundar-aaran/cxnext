@@ -1,0 +1,202 @@
+import { Injectable, type OnModuleDestroy } from "@nestjs/common";
+import { createDatabaseConnection, loadDatabaseEnv, type DatabaseConnection } from "@cxnext/db";
+import type { CommonMasterRepository } from "../../application/services/common-master.repository";
+import type {
+  CommonMasterRecord,
+  CommonMasterUpsertParams,
+} from "../../domain/entities/common-master-record";
+import type {
+  CommonMasterDefinition,
+  CommonMasterModuleKey,
+} from "../../domain/value-objects/common-master-definition";
+import { getCommonMasterDefinition } from "../../domain/value-objects/common-master-definition";
+
+type CommonMasterRow = Record<string, unknown> & {
+  readonly id: number;
+  readonly code: string | null;
+  readonly name: string | null;
+  readonly description: string | null;
+  readonly is_active: boolean | number;
+  readonly created_at: Date | string;
+  readonly updated_at: Date | string;
+  readonly deleted_at: Date | string | null;
+};
+
+interface DynamicQueryBuilder {
+  selectAll(): DynamicQueryBuilder;
+  where(column: string, operator: string, value: unknown): DynamicQueryBuilder;
+  orderBy(column: string, direction: "asc" | "desc"): DynamicQueryBuilder;
+  values(payload: Record<string, unknown>): DynamicQueryBuilder;
+  set(payload: Record<string, unknown>): DynamicQueryBuilder;
+  execute(): Promise<Record<string, unknown>[]>;
+  executeTakeFirst(): Promise<Record<string, unknown>>;
+}
+
+interface DynamicQueryDatabase {
+  selectFrom(tableName: string): DynamicQueryBuilder;
+  insertInto(tableName: string): DynamicQueryBuilder;
+  updateTable(tableName: string): DynamicQueryBuilder;
+  deleteFrom(tableName: string): DynamicQueryBuilder;
+}
+
+@Injectable()
+export class KyselyCommonMasterRepository implements CommonMasterRepository, OnModuleDestroy {
+  private readonly connection: DatabaseConnection;
+
+  public constructor() {
+    this.connection = createDatabaseConnection(loadDatabaseEnv().env);
+  }
+
+  public async onModuleDestroy(): Promise<void> {
+    await this.connection.destroy();
+  }
+
+  public async list(moduleKey: CommonMasterModuleKey): Promise<readonly CommonMasterRecord[]> {
+    const definition = getCommonMasterDefinition(moduleKey);
+    const [sortColumn, sortDirection] = definition.listOrder;
+    const rows = await this.queryDatabase()
+      .selectFrom(definition.tableName)
+      .selectAll()
+      .where("deleted_at", "is", null)
+      .orderBy(sortColumn, sortDirection)
+      .execute();
+
+    return (rows as CommonMasterRow[]).map((row) => toCommonMasterRecord(row));
+  }
+
+  public async getById(
+    moduleKey: CommonMasterModuleKey,
+    id: string,
+  ): Promise<CommonMasterRecord | null> {
+    const recordId = Number(id);
+    const definition = getCommonMasterDefinition(moduleKey);
+    const row = await this.queryDatabase()
+      .selectFrom(definition.tableName)
+      .selectAll()
+      .where("id", "=", recordId)
+      .where("deleted_at", "is", null)
+      .executeTakeFirst();
+
+    return row ? toCommonMasterRecord(row as CommonMasterRow) : null;
+  }
+
+  public async create(
+    moduleKey: CommonMasterModuleKey,
+    params: CommonMasterUpsertParams,
+  ): Promise<CommonMasterRecord> {
+    const definition = getCommonMasterDefinition(moduleKey);
+    const now = new Date();
+
+    const [result] = await this.queryDatabase()
+      .insertInto(definition.tableName)
+      .values({
+        ...toDatabasePayload(definition, params),
+        created_at: now,
+        updated_at: now,
+        deleted_at: null,
+      })
+      .execute();
+
+    const record = await this.getById(moduleKey, String(result?.insertId ?? ""));
+
+    if (!record) {
+      throw new Error(`${definition.label} record was created but could not be read back.`);
+    }
+
+    return record;
+  }
+
+  public async update(
+    moduleKey: CommonMasterModuleKey,
+    id: string,
+    params: CommonMasterUpsertParams,
+  ): Promise<CommonMasterRecord | null> {
+    const recordId = Number(id);
+    const definition = getCommonMasterDefinition(moduleKey);
+    await this.queryDatabase()
+      .updateTable(definition.tableName)
+      .set({
+        ...toDatabasePayload(definition, params),
+        updated_at: new Date(),
+      })
+      .where("id", "=", recordId)
+      .where("deleted_at", "is", null)
+      .executeTakeFirst();
+
+    return this.getById(moduleKey, id);
+  }
+
+  public async softDelete(moduleKey: CommonMasterModuleKey, id: string): Promise<boolean> {
+    const recordId = Number(id);
+    const definition = getCommonMasterDefinition(moduleKey);
+    const result = await this.queryDatabase()
+      .updateTable(definition.tableName)
+      .set({
+        deleted_at: new Date(),
+        updated_at: new Date(),
+      })
+      .where("id", "=", recordId)
+      .where("deleted_at", "is", null)
+      .executeTakeFirst();
+
+    return Number(result.numUpdatedRows) > 0;
+  }
+
+  public async forceDelete(moduleKey: CommonMasterModuleKey, id: string): Promise<boolean> {
+    const recordId = Number(id);
+    const definition = getCommonMasterDefinition(moduleKey);
+    const result = await this.queryDatabase()
+      .deleteFrom(definition.tableName)
+      .where("id", "=", recordId)
+      .executeTakeFirst();
+
+    return Number(result.numDeletedRows) > 0;
+  }
+
+  private queryDatabase() {
+    return this.connection.db as unknown as DynamicQueryDatabase;
+  }
+}
+
+function toDatabasePayload(
+  definition: CommonMasterDefinition,
+  params: CommonMasterUpsertParams,
+) {
+  const payload: Record<string, unknown> = {};
+  for (const column of definition.writableColumns) {
+    switch (column) {
+      case "isActive":
+        payload.is_active = params.isActive;
+        break;
+      case "code":
+        payload.code = params.code?.trim() || null;
+        break;
+      case "name":
+        payload.name = params.name?.trim() || null;
+        break;
+      case "description":
+        payload.description = params.description?.trim() || null;
+        break;
+      default:
+        break;
+    }
+  }
+  return payload;
+}
+
+function toCommonMasterRecord(row: CommonMasterRow): CommonMasterRecord {
+  return {
+    id: Number(row.id),
+    code: row.code ?? null,
+    name: row.name ?? null,
+    description: row.description ?? null,
+    isActive: Boolean(row.is_active),
+    createdAt: toDate(row.created_at),
+    updatedAt: toDate(row.updated_at),
+    deletedAt: row.deleted_at ? toDate(row.deleted_at) : null,
+  };
+}
+
+function toDate(value: Date | string): Date {
+  return value instanceof Date ? value : new Date(value);
+}
