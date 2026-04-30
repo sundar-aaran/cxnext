@@ -2,11 +2,19 @@
 
 ## Version State
 
-- Current package version: `1.0.64`
-- Current release tag: `v-1.0.64`
+- Current package version: `1.0.65`
+- Current release tag: `v-1.0.65`
 - Versioned changelog label format: `v 1.0.<reference>`
 - Version section format: `## v-1.0.<reference>`
 - Entry format: `### [v 1.0.<reference>] YYYY-MM-DD - Title`
+
+## v-1.0.65
+
+### [v 1.0.65] 2026-04-30 - Add Final Boundary Enforcement Suite
+
+- Added final architecture coverage for strict backend/frontend module folders, adapter placement, public entrypoint size, and generated source artifacts.
+- Moved tenant frontend API calls into module-local infrastructure to complete the strict frontend boundary set.
+- Ran server, frontend, and UI typechecks plus full package lint and consolidated architecture validation.
 
 ## v-1.0.64
 

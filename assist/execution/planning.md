@@ -1,44 +1,46 @@
 # Planning
 
-Active reference: `#64`
+Active reference: `#65`
 
 ## Active
 
-- `#64` Frontend/backend route and module boundary checks
+- `#65` Final boundary enforcement suite
   - Goal:
-    - lock the newly refactored route and module boundaries with cheap architecture tests.
+    - provide a final consolidated guard for the completed boundary refactor train.
   - Scope:
-    - add architecture tests for backend controller repository access.
-    - add architecture tests for frontend route imports.
-    - update release tracking to `1.0.64`.
+    - enforce strict backend module folders.
+    - enforce strict frontend feature folders.
+    - enforce adapter placement for frontend application services.
+    - enforce public entrypoint size thresholds and generated source artifact checks.
+    - update release tracking to `1.0.65`.
   - Constraints:
     - keep checks focused and fast.
     - avoid requiring browser or database access.
-    - preserve existing route behavior.
+    - leave #66/#67 contact and product build tasks untouched.
   - Planned validation:
     - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd --filter @cxnext/server typecheck`
     - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd --filter @cxnext/frontend typecheck`
-    - targeted ESLint on changed files.
-    - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture/route-and-module-boundaries.test.ts`
-    - `node scripts/version-sync.mjs --ref 64`
-    - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture/version-sync.test.ts tests/architecture/source-tree-artifacts.test.ts`
+    - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd --filter @cxnext/ui typecheck`
+    - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd lint`
+    - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture`
+    - `node scripts/version-sync.mjs --ref 65`
     - `git diff --check`
   - Implemented:
-    - added `route-and-module-boundaries.test.ts`.
-    - checked backend controllers for direct repository token/type access.
-    - checked frontend app routes for feature infrastructure and implementation-root imports.
-    - updated release tracking to `1.0.64`.
+    - moved tenant frontend API calls into `tenant/infrastructure/tenant-api.ts`.
+    - added `final-boundary-enforcement.test.ts` for strict folders, adapter placement, entrypoint size, and source artifacts.
+    - updated release tracking to `1.0.65`.
   - Validation:
     - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd --filter @cxnext/server typecheck`.
     - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd --filter @cxnext/frontend typecheck`.
     - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd --filter @cxnext/ui typecheck`.
-    - passed targeted ESLint on the new route/module boundary test.
-    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture/route-and-module-boundaries.test.ts`.
-    - passed `node scripts/version-sync.mjs --ref 64`.
-    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture/route-and-module-boundaries.test.ts tests/architecture/backend-domain-imports.test.ts tests/architecture/frontend-feature-module-shells.test.ts tests/architecture/frontend-common-location-boundaries.test.ts tests/architecture/frontend-desk-cxsun-boundaries.test.ts tests/architecture/dashboard-shell-boundaries.test.ts tests/architecture/frontend-page-entrypoint-boundaries.test.ts tests/architecture/version-sync.test.ts tests/architecture/source-tree-artifacts.test.ts`.
+    - passed targeted ESLint on changed tenant frontend files and final architecture test.
+    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture/final-boundary-enforcement.test.ts`.
+    - passed `node scripts/version-sync.mjs --ref 65`.
+    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture` with 18 files and 53 tests.
+    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd lint` with existing warnings only: one `no-explicit-any` warning in `packages/db/src/migrations/common/common-master-migration.ts` and four `no-explicit-any` warnings in `apps/frontend/features/company/interface/pages/company-pages-root.tsx`.
     - passed `git diff --check`.
   - Residual risk:
-    - `#65` remains as the final enforcement pass for broader all-file and full-suite checks.
+    - contact and product list/show/upsert modules remain scheduled as `#66` and `#67`.
 
 ## Roadmap
 

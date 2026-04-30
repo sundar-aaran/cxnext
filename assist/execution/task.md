@@ -1,6 +1,6 @@
 # Task
 
-Active reference: `#64`
+Active reference: `#65`
 
 ## Next Agent Handoff
 
@@ -10,10 +10,10 @@ Start here before any new implementation:
 2. Keep working directly on `main` unless the user asks for a branch.
 3. Continue the current `## Active` task. If it is complete, move its completed details to `assist/documentation/CHANGELOG.md`, then promote the first unchecked item from `## Upcoming` into `## Active`.
 4. Use reference/version alignment:
-   - `#64` means package version `1.0.64`.
-   - changelog section `## v-1.0.64`.
-   - changelog entry `### [v 1.0.64] YYYY-MM-DD - Title`.
-   - commit subject starts with `#64`.
+   - `#65` means package version `1.0.65`.
+   - changelog section `## v-1.0.65`.
+   - changelog entry `### [v 1.0.65] YYYY-MM-DD - Title`.
+   - commit subject starts with `#65`.
 5. Do not copy completed task details forward. Completed history belongs in `assist/documentation/CHANGELOG.md`.
 
 Command flow:
@@ -41,17 +41,12 @@ git push origin main
 
 ## Active
 
-- [x] `#64` Add frontend/backend route and module boundary checks
-  - [x] Add architecture tests for frontend route imports and backend controller repository access.
-  - [x] Keep tests readable and cheap enough for regular local runs.
-  - [x] Run focused server/frontend typecheck and architecture tests.
+- [x] `#65` Add final boundary enforcement suite
+  - [x] Add permanent architecture coverage for strict backend folders, strict frontend folders, generated source artifacts, version sync, and file-size thresholds.
+  - [x] Run full server/frontend/UI typecheck and package lint.
+  - [x] Leave a clean final checklist for remaining modules.
 
 ## Upcoming
-
-- [ ] `#65` Add final boundary enforcement suite
-  - [ ] Add permanent architecture coverage for strict backend folders, strict frontend folders, generated source artifacts, version sync, and file-size thresholds.
-  - [ ] Run full server/frontend typecheck and focused lint.
-  - [ ] Leave a clean final checklist for any remaining modules.
 
 - [ ] `#66` Build contact list/show/upsert module from `temp/apps/core`
   - [ ] Read the contact source references in `## Contact Module Reference`.
