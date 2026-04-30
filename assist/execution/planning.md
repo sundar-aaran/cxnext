@@ -1,44 +1,42 @@
 # Planning
 
-Active reference: `#45`
+Active reference: `#46`
 
 ## Active
 
-- `#45` Refactor tenant module write boundaries and events
+- `#46` Refactor company module read boundaries
   - Goal:
-    - fix the first boundary slice by making the tenant module use application write use cases and publish domain events through the shared event bus after successful state changes.
+    - remove the company repository's direct cross-module joins to tenant and industry tables while preserving the current company API response shape.
   - Scope:
-    - add create, update, and soft-delete tenant use cases under the tenant application layer.
-    - keep tenant controllers/resolvers thin by routing writes through use cases.
-    - adapt tenant aggregate domain events to `@cxnext/event` events and publish them from the application layer.
-    - register new use cases in `TenantsModule`.
-    - validate with focused tests/typecheck and prepare a PR.
+    - add company application-layer lookup ports for tenant and industry display names.
+    - add infrastructure adapters that read display names through generic database access without importing tenant or industry module internals.
+    - update `KyselyCompanyRepository` so its base company query touches only company-owned tables.
+    - register lookup adapters in `CompaniesModule`.
+    - validate and prepare an independent branch/PR.
   - Constraints:
-    - fix one module slice first; do not refactor companies/common/industries in this batch.
-    - preserve existing tenant API response shapes and database behavior.
-    - keep domain code framework-free and avoid adding business behavior beyond current tenant CRUD semantics.
+    - fix one module slice only; do not refactor tenant/common/industry strict shapes in this batch.
+    - preserve current `CompanyRecord` fields and HTTP response shape.
+    - do not import another module's domain/application/infrastructure internals.
     - do not revert unrelated work.
   - Planned validation:
     - run `@cxnext/server` typecheck.
-    - run relevant event/core architecture tests if event bridging changes shared assumptions.
-    - run version sync for reference `#45`.
+    - run targeted ESLint for changed company files.
+    - run architecture/source artifact tests if source tree changes.
+    - sync version/changelog for `#46`.
   - Implemented:
-    - created branch `codex/refactor-tenant-boundaries-events`.
-    - added tenant create, update, and delete use cases under `apps/server/src/modules/tenants/application/use-cases`.
-    - removed direct tenant repository write injection from the HTTP controller and routed create/update/delete through application use cases.
-    - added a `DomainEventPublisher` application port and an `EventBusDomainEventPublisher` infrastructure adapter.
-    - published `tenants.tenant-created` after successful tenant creation.
-    - registered new use cases and event publisher adapter in `TenantsModule`.
-    - added focused coverage for tenant creation event publication.
-    - added changelog entry `v-1.0.45` and synchronized workspace package versions to `1.0.45`.
-    - committed and pushed branch `codex/refactor-tenant-boundaries-events`.
+    - created branch `codex/refactor-company-boundaries` from `main`.
+    - added company application ports for tenant and industry display-name lookup.
+    - added Kysely lookup adapters for tenant and industry display names without importing tenant or industry module internals.
+    - removed direct `tenants` and `industries` joins from `KyselyCompanyRepository`.
+    - preserved `tenantName` and `industryName` in `CompanyRecord`/HTTP responses by resolving names through lookup ports.
+    - registered lookup adapters in `CompaniesModule`.
+    - added a boundary regression test preventing company persistence from joining tenant or industry tables.
+    - added changelog entry `v-1.0.46` and synchronized workspace package versions to `1.0.46`.
   - Validation:
     - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd --filter @cxnext/server typecheck`.
-    - passed targeted ESLint for changed tenant files and the new tenant use-case test.
-    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/server/tenants/create-tenant-use-case.test.ts tests/architecture/source-tree-artifacts.test.ts packages/core/test/domain-primitives.test.ts packages/event/test/event-bus.test.ts`.
-    - full `@cxnext/server lint` is still blocked by pre-existing `common` module lint errors outside this tenant slice.
-    - passed `node scripts/version-sync.mjs --ref 45`.
+    - passed targeted ESLint for changed company files and the new company boundary test.
+    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/server/companies/company-boundary.test.ts tests/architecture/source-tree-artifacts.test.ts`.
+    - passed `node scripts/version-sync.mjs --ref 46`.
   - Residual risk:
-    - tenant update/delete do not publish domain events yet because no update/delete domain events are modeled in the current tenant aggregate.
-    - broader strict module-shape issues in `common`, `companies`, and `industries` remain for follow-up batches.
-    - PR creation is blocked in this shell because `gh` is not installed and no GitHub token environment variable is available; use the pushed branch URL to open the PR.
+    - the lookup adapters still read tenant and industry database tables because those modules do not yet expose formal public read contracts; this is isolated behind company-owned application ports and is the next-best boundary until tenant/industry contracts are introduced.
+    - full `@cxnext/server lint` remains blocked by existing common-module lint errors outside this company slice.

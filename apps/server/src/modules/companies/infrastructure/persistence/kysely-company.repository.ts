@@ -1,13 +1,14 @@
-import { Injectable, type OnModuleDestroy } from "@nestjs/common";
-import {
-  createDatabaseConnection,
-  loadDatabaseEnv,
-  type DatabaseConnection,
-} from "@cxnext/db";
+import { Inject, Injectable, type OnModuleDestroy } from "@nestjs/common";
+import { createDatabaseConnection, loadDatabaseEnv, type DatabaseConnection } from "@cxnext/db";
 import type {
   CompanyRepository,
   CompanyUpsertParams,
 } from "../../application/services/company.repository";
+import {
+  COMPANY_INDUSTRY_NAME_LOOKUP,
+  COMPANY_TENANT_NAME_LOOKUP,
+  type CompanyReferenceNameLookup,
+} from "../../application/services/company-reference-lookup";
 import type {
   CompanyAddressRecord,
   CompanyBankAccountRecord,
@@ -22,9 +23,7 @@ type DateValue = Date | string;
 interface CompanyBaseRow {
   readonly id: number;
   readonly tenant_id: number;
-  readonly tenant_name: string;
   readonly industry_id: number;
-  readonly industry_name: string;
   readonly name: string;
   readonly legal_name: string | null;
   readonly tagline: string | null;
@@ -48,7 +47,12 @@ interface CompanyBaseRow {
 export class KyselyCompanyRepository implements CompanyRepository, OnModuleDestroy {
   private readonly connection: DatabaseConnection;
 
-  public constructor() {
+  public constructor(
+    @Inject(COMPANY_TENANT_NAME_LOOKUP)
+    private readonly tenantNameLookup: CompanyReferenceNameLookup,
+    @Inject(COMPANY_INDUSTRY_NAME_LOOKUP)
+    private readonly industryNameLookup: CompanyReferenceNameLookup,
+  ) {
     this.connection = createDatabaseConnection(loadDatabaseEnv().env);
   }
 
@@ -61,8 +65,9 @@ export class KyselyCompanyRepository implements CompanyRepository, OnModuleDestr
       .where("companies.deleted_at", "is", null)
       .orderBy("companies.id", "asc")
       .execute();
+    const displayNames = await this.loadDisplayNames(rows);
 
-    return Promise.all(rows.map((row) => this.toCompanyRecord(row)));
+    return Promise.all(rows.map((row) => this.toCompanyRecord(row, displayNames)));
   }
 
   public async getById(companyId: string): Promise<CompanyRecord | null> {
@@ -77,7 +82,11 @@ export class KyselyCompanyRepository implements CompanyRepository, OnModuleDestr
       .where("companies.deleted_at", "is", null)
       .executeTakeFirst();
 
-    return row ? this.toCompanyRecord(row) : null;
+    if (!row) {
+      return null;
+    }
+
+    return this.toCompanyRecord(row, await this.loadDisplayNames([row]));
   }
 
   public async create(params: CompanyUpsertParams): Promise<CompanyRecord> {
@@ -156,14 +165,10 @@ export class KyselyCompanyRepository implements CompanyRepository, OnModuleDestr
   private selectCompanyBase() {
     return this.connection.db
       .selectFrom("companies")
-      .innerJoin("tenants", "tenants.id", "companies.tenant_id")
-      .innerJoin("industries", "industries.id", "companies.industry_id")
       .select([
         "companies.id",
         "companies.tenant_id",
-        "tenants.name as tenant_name",
         "companies.industry_id",
-        "industries.name as industry_name",
         "companies.name",
         "companies.legal_name",
         "companies.tagline",
@@ -184,7 +189,22 @@ export class KyselyCompanyRepository implements CompanyRepository, OnModuleDestr
       ]);
   }
 
-  private async toCompanyRecord(row: CompanyBaseRow): Promise<CompanyRecord> {
+  private async loadDisplayNames(rows: readonly CompanyBaseRow[]) {
+    const [tenantNames, industryNames] = await Promise.all([
+      this.tenantNameLookup.findNamesByIds(rows.map((row) => Number(row.tenant_id))),
+      this.industryNameLookup.findNamesByIds(rows.map((row) => Number(row.industry_id))),
+    ]);
+
+    return { tenantNames, industryNames };
+  }
+
+  private async toCompanyRecord(
+    row: CompanyBaseRow,
+    displayNames: {
+      readonly tenantNames: ReadonlyMap<number, string>;
+      readonly industryNames: ReadonlyMap<number, string>;
+    },
+  ): Promise<CompanyRecord> {
     const companyId = Number(row.id);
     const [logos, addresses, emails, phones, bankAccounts] = await Promise.all([
       this.listLogos(companyId),
@@ -197,9 +217,9 @@ export class KyselyCompanyRepository implements CompanyRepository, OnModuleDestr
     return {
       id: String(row.id),
       tenantId: String(row.tenant_id),
-      tenantName: row.tenant_name,
+      tenantName: displayNames.tenantNames.get(Number(row.tenant_id)) ?? "",
       industryId: String(row.industry_id),
-      industryName: row.industry_name,
+      industryName: displayNames.industryNames.get(Number(row.industry_id)) ?? "",
       name: row.name,
       legalName: row.legal_name,
       tagline: row.tagline,
