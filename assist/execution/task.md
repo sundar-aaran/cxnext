@@ -1,6 +1,6 @@
 # Task
 
-Active reference: `#63`
+Active reference: `#64`
 
 ## Next Agent Handoff
 
@@ -10,10 +10,10 @@ Start here before any new implementation:
 2. Keep working directly on `main` unless the user asks for a branch.
 3. Continue the current `## Active` task. If it is complete, move its completed details to `assist/documentation/CHANGELOG.md`, then promote the first unchecked item from `## Upcoming` into `## Active`.
 4. Use reference/version alignment:
-   - `#63` means package version `1.0.63`.
-   - changelog section `## v-1.0.63`.
-   - changelog entry `### [v 1.0.63] YYYY-MM-DD - Title`.
-   - commit subject starts with `#63`.
+   - `#64` means package version `1.0.64`.
+   - changelog section `## v-1.0.64`.
+   - changelog entry `### [v 1.0.64] YYYY-MM-DD - Title`.
+   - commit subject starts with `#64`.
 5. Do not copy completed task details forward. Completed history belongs in `assist/documentation/CHANGELOG.md`.
 
 Command flow:
@@ -41,17 +41,12 @@ git push origin main
 
 ## Active
 
-- [x] `#63` Split oversized frontend feature pages
-  - [x] Split tenant, company, and industry route-facing page entrypoints.
-  - [x] Keep route imports stable through existing public page files.
-  - [x] Add file-size architecture coverage for public page entrypoints.
+- [x] `#64` Add frontend/backend route and module boundary checks
+  - [x] Add architecture tests for frontend route imports and backend controller repository access.
+  - [x] Keep tests readable and cheap enough for regular local runs.
+  - [x] Run focused server/frontend typecheck and architecture tests.
 
 ## Upcoming
-
-- [ ] `#64` Add frontend/backend route and module boundary checks
-  - [ ] Add architecture tests for frontend route imports, backend controller repository access, and domain framework imports.
-  - [ ] Keep tests readable and cheap enough for regular local runs.
-  - [ ] Run focused server/frontend typecheck and architecture tests.
 
 - [ ] `#65` Add final boundary enforcement suite
   - [ ] Add permanent architecture coverage for strict backend folders, strict frontend folders, generated source artifacts, version sync, and file-size thresholds.

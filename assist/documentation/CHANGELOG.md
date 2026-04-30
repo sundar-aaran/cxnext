@@ -2,11 +2,19 @@
 
 ## Version State
 
-- Current package version: `1.0.63`
-- Current release tag: `v-1.0.63`
+- Current package version: `1.0.64`
+- Current release tag: `v-1.0.64`
 - Versioned changelog label format: `v 1.0.<reference>`
 - Version section format: `## v-1.0.<reference>`
 - Entry format: `### [v 1.0.<reference>] YYYY-MM-DD - Title`
+
+## v-1.0.64
+
+### [v 1.0.64] 2026-04-30 - Add Route And Module Boundary Checks
+
+- Added architecture coverage that keeps backend HTTP controllers from directly injecting repositories.
+- Added frontend route boundary checks that prevent app routes from importing feature infrastructure or implementation root files.
+- Ran server/frontend typechecks and the consolidated boundary validation suite.
 
 ## v-1.0.63
 

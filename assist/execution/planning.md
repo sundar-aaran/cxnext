@@ -1,41 +1,44 @@
 # Planning
 
-Active reference: `#63`
+Active reference: `#64`
 
 ## Active
 
-- `#63` Frontend page file split
+- `#64` Frontend/backend route and module boundary checks
   - Goal:
-    - reduce oversized frontend feature page entrypoints while preserving route imports.
+    - lock the newly refactored route and module boundaries with cheap architecture tests.
   - Scope:
-    - split tenant, company, and industry public page files into small entrypoints and implementation roots.
-    - keep common pages below the threshold after the `#60` helper split.
-    - update release tracking to `1.0.63`.
+    - add architecture tests for backend controller repository access.
+    - add architecture tests for frontend route imports.
+    - update release tracking to `1.0.64`.
   - Constraints:
-    - preserve existing page export names.
-    - keep route imports stable.
-    - avoid behavior changes.
+    - keep checks focused and fast.
+    - avoid requiring browser or database access.
+    - preserve existing route behavior.
   - Planned validation:
+    - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd --filter @cxnext/server typecheck`
     - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd --filter @cxnext/frontend typecheck`
     - targeted ESLint on changed files.
-    - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture/frontend-page-entrypoint-boundaries.test.ts`
-    - `node scripts/version-sync.mjs --ref 63`
+    - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture/route-and-module-boundaries.test.ts`
+    - `node scripts/version-sync.mjs --ref 64`
     - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture/version-sync.test.ts tests/architecture/source-tree-artifacts.test.ts`
     - `git diff --check`
   - Implemented:
-    - moved tenant, company, and industry existing implementations into `*-pages-root.tsx`.
-    - replaced public page files with small client re-export entrypoints.
-    - added page entrypoint boundary tests for size and export stability.
-    - updated release tracking to `1.0.63`.
+    - added `route-and-module-boundaries.test.ts`.
+    - checked backend controllers for direct repository token/type access.
+    - checked frontend app routes for feature infrastructure and implementation-root imports.
+    - updated release tracking to `1.0.64`.
   - Validation:
+    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd --filter @cxnext/server typecheck`.
     - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd --filter @cxnext/frontend typecheck`.
-    - passed targeted ESLint on changed page entrypoints and the architecture test.
-    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture/frontend-page-entrypoint-boundaries.test.ts`.
-    - passed `node scripts/version-sync.mjs --ref 63`.
-    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture/frontend-page-entrypoint-boundaries.test.ts tests/architecture/version-sync.test.ts tests/architecture/source-tree-artifacts.test.ts`.
+    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd --filter @cxnext/ui typecheck`.
+    - passed targeted ESLint on the new route/module boundary test.
+    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture/route-and-module-boundaries.test.ts`.
+    - passed `node scripts/version-sync.mjs --ref 64`.
+    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture/route-and-module-boundaries.test.ts tests/architecture/backend-domain-imports.test.ts tests/architecture/frontend-feature-module-shells.test.ts tests/architecture/frontend-common-location-boundaries.test.ts tests/architecture/frontend-desk-cxsun-boundaries.test.ts tests/architecture/dashboard-shell-boundaries.test.ts tests/architecture/frontend-page-entrypoint-boundaries.test.ts tests/architecture/version-sync.test.ts tests/architecture/source-tree-artifacts.test.ts`.
     - passed `git diff --check`.
   - Residual risk:
-    - deeper list/show/upsert internal decomposition remains a future cleanup if strict all-file thresholds are enforced beyond public route entrypoints.
+    - `#65` remains as the final enforcement pass for broader all-file and full-suite checks.
 
 ## Roadmap
 
