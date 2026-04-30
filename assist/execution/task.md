@@ -1,6 +1,6 @@
 # Task
 
-Active reference: `#59`
+Active reference: `#60`
 
 ## Next Agent Handoff
 
@@ -10,10 +10,10 @@ Start here before any new implementation:
 2. Keep working directly on `main` unless the user asks for a branch.
 3. Continue the current `## Active` task. If it is complete, move its completed details to `assist/documentation/CHANGELOG.md`, then promote the first unchecked item from `## Upcoming` into `## Active`.
 4. Use reference/version alignment:
-   - `#59` means package version `1.0.59`.
-   - changelog section `## v-1.0.59`.
-   - changelog entry `### [v 1.0.59] YYYY-MM-DD - Title`.
-   - commit subject starts with `#59`.
+   - `#60` means package version `1.0.60`.
+   - changelog section `## v-1.0.60`.
+   - changelog entry `### [v 1.0.60] YYYY-MM-DD - Title`.
+   - commit subject starts with `#60`.
 5. Do not copy completed task details forward. Completed history belongs in `assist/documentation/CHANGELOG.md`.
 
 Command flow:
@@ -41,17 +41,12 @@ git push origin main
 
 ## Active
 
-- [x] `#59` Refactor frontend feature module shells
-  - [x] Add missing `domain`/`infrastructure` folders to `common`, `company`, and `industry`.
-  - [x] Move feature API/browser adapters out of application service files.
-  - [x] Add structure tests for frontend bounded contexts.
+- [x] `#60` Refactor frontend common and location features
+  - [x] Split common master page helpers out of the public page component.
+  - [x] Move common location API/reference adapter code into infrastructure.
+  - [x] Add tests for the nested common location frontend boundary.
 
 ## Upcoming
-
-- [ ] `#60` Refactor frontend common and location features
-  - [ ] Split common master pages and location pages into smaller application/interface units.
-  - [ ] Keep routes importing only from `features/<module>/interface/pages`.
-  - [ ] Add tests or static checks for route import boundaries.
 
 - [ ] `#61` Refactor frontend desk and cxsun features
   - [ ] Move `desk` and `cxsun` from flat feature folders into `domain`, `application`, `infrastructure`, and `interface/pages`.

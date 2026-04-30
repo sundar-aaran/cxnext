@@ -1,43 +1,43 @@
 # Planning
 
-Active reference: `#59`
+Active reference: `#60`
 
 ## Active
 
-- `#59` Frontend feature module shells
+- `#60` Frontend common and location features
   - Goal:
-    - make `common`, `company`, and `industry` frontend features match `domain/application/infrastructure/interface/pages`.
+    - split common list and location page/service composition into smaller bounded-context files.
   - Scope:
-    - move fetch/browser adapter code into `infrastructure`.
-    - keep route imports stable from existing `application` and `interface/pages` modules.
-    - add structure tests for frontend bounded contexts.
-    - update release tracking to `1.0.59`.
+    - keep common-list UI behavior stable.
+    - move common location API/reference mapping into infrastructure.
+    - preserve route imports through `features/<module>/interface/pages`.
+    - update release tracking to `1.0.60`.
   - Constraints:
-    - preserve all existing page imports and behavior.
-    - avoid touching desk navigation in this task.
+    - avoid changing menu behavior or route names.
     - keep fetch/process environment access inside infrastructure files.
+    - keep the public `CommonListPage` and `CommonLocationListPage` exports stable.
   - Planned validation:
     - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd --filter @cxnext/frontend typecheck`
     - targeted ESLint on changed files.
-    - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture/frontend-feature-module-shells.test.ts`
-    - `node scripts/version-sync.mjs --ref 59`
+    - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture/frontend-common-location-boundaries.test.ts tests/architecture/frontend-feature-module-shells.test.ts`
+    - `node scripts/version-sync.mjs --ref 60`
     - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture/version-sync.test.ts tests/architecture/source-tree-artifacts.test.ts`
     - `git diff --check`
   - Implemented:
-    - added `common/domain/common-master.ts`.
-    - moved common, company, and industry HTTP adapters into feature-local infrastructure files.
-    - preserved current application service imports through re-exports.
-    - added frontend feature module shell architecture tests.
-    - updated release tracking to `1.0.59`.
+    - split common list page helper functions into `common-page-helpers.tsx`.
+    - moved common location fetch, detail, upsert, delete, and reference enrichment into `common-location-api.ts`.
+    - kept common/location application services free of direct fetch and environment access.
+    - added nested common location architecture tests.
+    - updated release tracking to `1.0.60`.
   - Validation:
     - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd --filter @cxnext/frontend typecheck`.
-    - passed targeted ESLint on changed frontend feature files and the architecture test.
-    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture/frontend-feature-module-shells.test.ts`.
-    - passed `node scripts/version-sync.mjs --ref 59`.
-    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture/frontend-feature-module-shells.test.ts tests/architecture/version-sync.test.ts tests/architecture/source-tree-artifacts.test.ts`.
+    - passed targeted ESLint on changed common/location files and the architecture test.
+    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture/frontend-common-location-boundaries.test.ts tests/architecture/frontend-feature-module-shells.test.ts`.
+    - passed `node scripts/version-sync.mjs --ref 60`.
+    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture/frontend-common-location-boundaries.test.ts tests/architecture/frontend-feature-module-shells.test.ts tests/architecture/version-sync.test.ts tests/architecture/source-tree-artifacts.test.ts`.
     - passed `git diff --check`.
   - Residual risk:
-    - common/location still has application-level fetch code and is scheduled for `#60`.
+    - visual browser smoke testing is deferred until the larger UI file split completes.
 
 ## Roadmap
 

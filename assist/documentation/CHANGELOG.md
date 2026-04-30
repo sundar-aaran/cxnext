@@ -2,11 +2,19 @@
 
 ## Version State
 
-- Current package version: `1.0.59`
-- Current release tag: `v-1.0.59`
+- Current package version: `1.0.60`
+- Current release tag: `v-1.0.60`
 - Versioned changelog label format: `v 1.0.<reference>`
 - Version section format: `## v-1.0.<reference>`
 - Entry format: `### [v 1.0.<reference>] YYYY-MM-DD - Title`
+
+## v-1.0.60
+
+### [v 1.0.60] 2026-04-30 - Refactor Frontend Common Location Boundaries
+
+- Split common list page helper logic into a module-local helper file while preserving the public page export.
+- Moved common location HTTP and reference enrichment adapters into `common/location/infrastructure`.
+- Added architecture coverage for the nested common location frontend boundary.
 
 ## v-1.0.59
 
