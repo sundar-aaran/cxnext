@@ -2,11 +2,19 @@
 
 ## Version State
 
-- Current package version: `1.0.61`
-- Current release tag: `v-1.0.61`
+- Current package version: `1.0.62`
+- Current release tag: `v-1.0.62`
 - Versioned changelog label format: `v 1.0.<reference>`
 - Version section format: `## v-1.0.<reference>`
 - Entry format: `### [v 1.0.<reference>] YYYY-MM-DD - Title`
+
+## v-1.0.62
+
+### [v 1.0.62] 2026-04-30 - Split Dashboard Shell Public Boundary
+
+- Reduced the public `dashboard-shell.tsx` entrypoint to a small stable export boundary.
+- Moved the existing dashboard shell implementation behind the public entrypoint without changing package exports.
+- Added architecture coverage for the public dashboard shell boundary.
 
 ## v-1.0.61
 

@@ -1,42 +1,42 @@
 # Planning
 
-Active reference: `#61`
+Active reference: `#62`
 
 ## Active
 
-- `#61` Frontend desk and cxsun modules
+- `#62` Dashboard shell split
   - Goal:
-    - move flat `desk` and `cxsun` features into strict frontend bounded-context layout.
+    - reduce `packages/ui/src/blocks/dashboard/dashboard-shell.tsx` below the file-size threshold.
   - Scope:
-    - preserve `desk-registry` public contract during moves.
-    - keep route behavior stable for portal and record pages.
-    - update release tracking to `1.0.61`.
+    - keep package exports stable.
+    - move the current implementation behind a small public entrypoint.
+    - update release tracking to `1.0.62`.
   - Constraints:
-    - update app route imports explicitly instead of leaving routes on old flat files.
-    - keep cxsun UI behavior and data unchanged.
-    - keep empty strict folders tracked where the module has no adapter yet.
+    - preserve the existing `DashboardShell` API.
+    - do not change dashboard behavior during this split.
+    - keep the public entrypoint small and stable for consumers.
   - Planned validation:
+    - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd --filter @cxnext/ui typecheck`
     - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd --filter @cxnext/frontend typecheck`
     - targeted ESLint on changed files.
-    - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture/frontend-desk-cxsun-boundaries.test.ts`
-    - `node scripts/version-sync.mjs --ref 61`
+    - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture/dashboard-shell-boundaries.test.ts`
+    - `node scripts/version-sync.mjs --ref 62`
     - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture/version-sync.test.ts tests/architecture/source-tree-artifacts.test.ts`
     - `git diff --check`
   - Implemented:
-    - moved desk registry into `application`, shell and breadcrumb into `interface`.
-    - moved cxsun data into `domain`, mappers into `application`, and workspace pages into `interface/pages`.
-    - updated all app imports to the new strict feature paths.
-    - added architecture coverage for the new layout and old flat file removal.
-    - updated release tracking to `1.0.61`.
+    - moved the existing implementation to `dashboard-shell-root.tsx`.
+    - replaced `dashboard-shell.tsx` with a small client entrypoint that re-exports the public component and types.
+    - added dashboard shell boundary tests.
+    - updated release tracking to `1.0.62`.
   - Validation:
+    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd --filter @cxnext/ui typecheck`.
     - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd --filter @cxnext/frontend typecheck`.
-    - passed targeted ESLint on changed desk/cxsun files and the architecture test.
-    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture/frontend-desk-cxsun-boundaries.test.ts`.
-    - passed `node scripts/version-sync.mjs --ref 61`.
-    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture/frontend-desk-cxsun-boundaries.test.ts tests/architecture/version-sync.test.ts tests/architecture/source-tree-artifacts.test.ts`.
+    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture/dashboard-shell-boundaries.test.ts`.
+    - passed `node scripts/version-sync.mjs --ref 62`.
+    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture/dashboard-shell-boundaries.test.ts tests/architecture/version-sync.test.ts tests/architecture/source-tree-artifacts.test.ts`.
     - passed `git diff --check`.
   - Residual risk:
-    - visual browser smoke testing is deferred until the dashboard shell split completes.
+    - deeper internal dashboard shell decomposition remains a future cleanup if strict all-file thresholds are enforced.
 
 ## Roadmap
 

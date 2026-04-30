@@ -1,6 +1,6 @@
 # Task
 
-Active reference: `#61`
+Active reference: `#62`
 
 ## Next Agent Handoff
 
@@ -10,10 +10,10 @@ Start here before any new implementation:
 2. Keep working directly on `main` unless the user asks for a branch.
 3. Continue the current `## Active` task. If it is complete, move its completed details to `assist/documentation/CHANGELOG.md`, then promote the first unchecked item from `## Upcoming` into `## Active`.
 4. Use reference/version alignment:
-   - `#61` means package version `1.0.61`.
-   - changelog section `## v-1.0.61`.
-   - changelog entry `### [v 1.0.61] YYYY-MM-DD - Title`.
-   - commit subject starts with `#61`.
+   - `#62` means package version `1.0.62`.
+   - changelog section `## v-1.0.62`.
+   - changelog entry `### [v 1.0.62] YYYY-MM-DD - Title`.
+   - commit subject starts with `#62`.
 5. Do not copy completed task details forward. Completed history belongs in `assist/documentation/CHANGELOG.md`.
 
 Command flow:
@@ -41,17 +41,12 @@ git push origin main
 
 ## Active
 
-- [x] `#61` Refactor frontend desk and cxsun features
-  - [x] Move `desk` and `cxsun` from flat feature folders into strict feature folders.
-  - [x] Preserve route behavior and portal registry contracts through updated imports.
-  - [x] Add structure tests for both feature folders.
+- [x] `#62` Split oversized dashboard shell UI
+  - [x] Reduce `dashboard-shell.tsx` into a small public entrypoint.
+  - [x] Keep public exports stable from `packages/ui`.
+  - [x] Add focused typecheck/lint validation.
 
 ## Upcoming
-
-- [ ] `#62` Split oversized dashboard shell UI
-  - [ ] Decompose `packages/ui/src/blocks/dashboard/dashboard-shell.tsx` into smaller shell, navigation, header, content, and utility modules.
-  - [ ] Keep public exports stable from `packages/ui`.
-  - [ ] Add focused typecheck/lint validation.
 
 - [ ] `#63` Split oversized frontend feature pages
   - [ ] Split `tenant-pages.tsx`, `company-pages.tsx`, `industry-pages.tsx`, and `common-pages.tsx` into list/show/upsert/helpers modules.
