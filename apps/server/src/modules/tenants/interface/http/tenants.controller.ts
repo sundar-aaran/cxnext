@@ -9,9 +9,11 @@ import {
   Patch,
   Post,
 } from "@nestjs/common";
+import { CreateTenantUseCase } from "../../application/use-cases/create-tenant.use-case";
+import { DeleteTenantUseCase } from "../../application/use-cases/delete-tenant.use-case";
 import { GetTenantUseCase } from "../../application/use-cases/get-tenant.use-case";
 import { ListTenantsUseCase } from "../../application/use-cases/list-tenants.use-case";
-import { TENANT_REPOSITORY, type TenantRepository } from "../../application/services/tenant.repository";
+import { UpdateTenantUseCase } from "../../application/use-cases/update-tenant.use-case";
 import { toTenantResponse } from "./tenant-response";
 
 interface TenantUpsertRequest {
@@ -27,8 +29,12 @@ export class TenantsController {
     private readonly listTenantsUseCase: ListTenantsUseCase,
     @Inject(GetTenantUseCase)
     private readonly getTenantUseCase: GetTenantUseCase,
-    @Inject(TENANT_REPOSITORY)
-    private readonly tenantRepository: TenantRepository,
+    @Inject(CreateTenantUseCase)
+    private readonly createTenantUseCase: CreateTenantUseCase,
+    @Inject(UpdateTenantUseCase)
+    private readonly updateTenantUseCase: UpdateTenantUseCase,
+    @Inject(DeleteTenantUseCase)
+    private readonly deleteTenantUseCase: DeleteTenantUseCase,
   ) {}
 
   @Get()
@@ -50,13 +56,13 @@ export class TenantsController {
 
   @Post()
   public async create(@Body() body: TenantUpsertRequest) {
-    const tenant = await this.tenantRepository.create(parseTenantRequest(body));
+    const tenant = await this.createTenantUseCase.execute(parseTenantRequest(body));
     return toTenantResponse(tenant);
   }
 
   @Patch(":tenantId")
   public async update(@Param("tenantId") tenantId: string, @Body() body: TenantUpsertRequest) {
-    const tenant = await this.tenantRepository.update(tenantId, parseTenantRequest(body));
+    const tenant = await this.updateTenantUseCase.execute(tenantId, parseTenantRequest(body));
 
     if (!tenant) {
       throw new NotFoundException(`Tenant "${tenantId}" was not found.`);
@@ -67,7 +73,7 @@ export class TenantsController {
 
   @Delete(":tenantId")
   public async softDelete(@Param("tenantId") tenantId: string) {
-    const wasDeleted = await this.tenantRepository.softDelete(tenantId);
+    const wasDeleted = await this.deleteTenantUseCase.execute(tenantId);
 
     if (!wasDeleted) {
       throw new NotFoundException(`Tenant "${tenantId}" was not found.`);
