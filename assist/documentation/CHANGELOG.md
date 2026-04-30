@@ -2,11 +2,19 @@
 
 ## Version State
 
-- Current package version: `1.0.47`
-- Current release tag: `v-1.0.47`
+- Current package version: `1.0.48`
+- Current release tag: `v-1.0.48`
 - Versioned changelog label format: `v 1.0.<reference>`
 - Version section format: `## v-1.0.<reference>`
 - Entry format: `### [v 1.0.<reference>] YYYY-MM-DD - Title`
+
+## v-1.0.48
+
+### [v 1.0.48] 2026-04-30 - Refactor Common Module Boundary Shell
+
+- Registered the common bounded context through the module registry.
+- Added strict root module folder surfaces for common domain, application, infrastructure, interface, and database ownership.
+- Added module-local common migration and seeder re-exports plus focused boundary coverage for the common shell.
 
 ## v-1.0.47
 
