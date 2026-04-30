@@ -2,6 +2,161 @@
 
 Active reference: `#51`
 
+## Next Agent Handoff
+
+Start here before doing any new implementation:
+
+1. Read `assist/Readme.md`, `assist/agent.md`, `assist/rules/execution-tracking.md`, `assist/rules/strict-module-structure.md`, `assist/rules/module-boundaries.md`, `assist/rules/import-restrictions.md`, `assist/rules/versioning-and-releases.md`, `assist/standards/ddd.md`, `assist/standards/event-driven.md`, and `assist/standards/modular-monolith.md`.
+2. Keep working directly on `main` unless the user asks for a branch.
+3. Pick the first unchecked item under `## Upcoming`.
+4. Before implementation, replace `## Active` in this file and `assist/execution/planning.md` with only that selected task. Keep future unchecked items under `## Upcoming`.
+5. Use reference/version alignment:
+   - `#52` means package version `1.0.52`.
+   - changelog section `## v-1.0.52`.
+   - changelog entry `### [v 1.0.52] YYYY-MM-DD - Title`.
+   - commit subject starts with `#52`.
+6. Do not copy completed task details forward. Completed history belongs in `assist/documentation/CHANGELOG.md`.
+
+Command flow for the next implementation batch:
+
+```powershell
+git status --short
+Get-Content assist/Readme.md
+Get-Content assist/agent.md
+Get-Content assist/rules/execution-tracking.md
+Get-Content assist/rules/strict-module-structure.md
+Get-Content assist/rules/module-boundaries.md
+Get-Content assist/rules/import-restrictions.md
+Get-Content assist/rules/versioning-and-releases.md
+Get-Content assist/standards/ddd.md
+Get-Content assist/standards/event-driven.md
+Get-Content assist/standards/modular-monolith.md
+```
+
+After implementation and release metadata:
+
+```powershell
+node scripts/version-sync.mjs --ref <reference>
+C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd --filter @cxnext/server typecheck
+C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run <focused-tests> tests/architecture/version-sync.test.ts tests/architecture/source-tree-artifacts.test.ts
+git diff --check
+git add <changed-files>
+git commit -m "#<reference> <type>(<scope>): <summary>"
+git push origin main
+```
+
+Backend common master target shape:
+
+```text
+apps/server/src/modules/common/
+  domain/
+    entities/
+      common-master-record.ts
+      common-location-record.ts
+    value-objects/
+      common-master-definition.ts
+      common-location-definition.ts
+    events/
+      common-master-record-created.event.ts
+      common-master-record-updated.event.ts
+      common-master-record-deleted.event.ts
+  application/
+    services/
+      common-master.repository.ts
+      common-location.repository.ts
+      domain-event-publisher.ts
+    use-cases/
+      <group-name>/
+        list-<group-name>-records.use-case.ts
+        get-<group-name>-record.use-case.ts
+        create-<group-name>-record.use-case.ts
+        update-<group-name>-record.use-case.ts
+        delete-<group-name>-record.use-case.ts
+  infrastructure/
+    persistence/
+      kysely-<group-name>.repository.ts
+    adapters/
+      event-bus-domain-event-publisher.ts
+    <group-name>.providers.ts
+  interface/
+    http/
+      <group-name>-controller.ts
+```
+
+Concrete examples:
+
+```text
+apps/server/src/modules/common/application/use-cases/contact-masters/list-contact-master-records.use-case.ts
+apps/server/src/modules/common/infrastructure/persistence/kysely-contact-master.repository.ts
+apps/server/src/modules/common/interface/http/contact-master-controller.ts
+tests/architecture/common-contact-master-boundaries.test.ts
+tests/server/common/contact-master-use-cases.test.ts
+```
+
+Per-module controller rule:
+
+```ts
+// apps/server/src/modules/common/contact-groups/contact-groups.controller.ts
+@Controller("common/contact-groups")
+export class ContactGroupsController extends ContactMasterControllerBase {
+  public constructor(
+    @Inject(ListContactMasterRecordsUseCase)
+    listUseCase: ListContactMasterRecordsUseCase,
+    @Inject(GetContactMasterRecordUseCase)
+    getUseCase: GetContactMasterRecordUseCase,
+    @Inject(CreateContactMasterRecordUseCase)
+    createUseCase: CreateContactMasterRecordUseCase,
+    @Inject(UpdateContactMasterRecordUseCase)
+    updateUseCase: UpdateContactMasterRecordUseCase,
+    @Inject(DeleteContactMasterRecordUseCase)
+    deleteUseCase: DeleteContactMasterRecordUseCase,
+  ) {
+    super("contactGroups", listUseCase, getUseCase, createUseCase, updateUseCase, deleteUseCase);
+  }
+}
+```
+
+Repository and event rules for every upcoming backend slice:
+
+- Controllers must not inject repositories directly.
+- Controllers call application use cases only.
+- Application use cases depend on repository/event publisher ports only.
+- Kysely code stays in `infrastructure/persistence`.
+- Event bus adapters stay in `infrastructure/adapters`.
+- Domain files must not import NestJS, Kysely, HTTP, GraphQL, Next.js, or Electron.
+- Write use cases publish domain events only after successful persistence.
+- Preserve existing HTTP routes and response shape unless the user explicitly asks for an API change.
+- Add architecture tests that fail if a migrated controller imports a repository again.
+
+Frontend target shape:
+
+```text
+apps/frontend/features/<module-name>/
+  domain/
+  application/
+  infrastructure/
+  interface/
+    pages/
+```
+
+Frontend rules for upcoming slices:
+
+- App routes under `apps/frontend/app/` should import pages only from `features/<module>/interface/pages`.
+- Browser/network/storage adapters belong in `infrastructure`.
+- Filtering, mapping, and use-case style orchestration belong in `application`.
+- Types, constants, and module concepts belong in `domain`.
+- Keep existing route behavior stable while moving files.
+
+Validation checklist for each implementation batch:
+
+- `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd --filter @cxnext/server typecheck` for backend work.
+- `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd --filter @cxnext/frontend typecheck` for frontend work.
+- Targeted ESLint on changed files.
+- Focused Vitest coverage for the migrated module.
+- `tests/architecture/version-sync.test.ts`.
+- `tests/architecture/source-tree-artifacts.test.ts`.
+- Optional browser smoke test only after frontend UI behavior changes.
+
 ## Active
 
 - [x] `#51` Plan remaining modular boundary refactors
