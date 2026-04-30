@@ -1,42 +1,41 @@
 # Planning
 
-Active reference: `#62`
+Active reference: `#63`
 
 ## Active
 
-- `#62` Dashboard shell split
+- `#63` Frontend page file split
   - Goal:
-    - reduce `packages/ui/src/blocks/dashboard/dashboard-shell.tsx` below the file-size threshold.
+    - reduce oversized frontend feature page entrypoints while preserving route imports.
   - Scope:
-    - keep package exports stable.
-    - move the current implementation behind a small public entrypoint.
-    - update release tracking to `1.0.62`.
+    - split tenant, company, and industry public page files into small entrypoints and implementation roots.
+    - keep common pages below the threshold after the `#60` helper split.
+    - update release tracking to `1.0.63`.
   - Constraints:
-    - preserve the existing `DashboardShell` API.
-    - do not change dashboard behavior during this split.
-    - keep the public entrypoint small and stable for consumers.
+    - preserve existing page export names.
+    - keep route imports stable.
+    - avoid behavior changes.
   - Planned validation:
-    - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd --filter @cxnext/ui typecheck`
     - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd --filter @cxnext/frontend typecheck`
     - targeted ESLint on changed files.
-    - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture/dashboard-shell-boundaries.test.ts`
-    - `node scripts/version-sync.mjs --ref 62`
+    - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture/frontend-page-entrypoint-boundaries.test.ts`
+    - `node scripts/version-sync.mjs --ref 63`
     - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture/version-sync.test.ts tests/architecture/source-tree-artifacts.test.ts`
     - `git diff --check`
   - Implemented:
-    - moved the existing implementation to `dashboard-shell-root.tsx`.
-    - replaced `dashboard-shell.tsx` with a small client entrypoint that re-exports the public component and types.
-    - added dashboard shell boundary tests.
-    - updated release tracking to `1.0.62`.
+    - moved tenant, company, and industry existing implementations into `*-pages-root.tsx`.
+    - replaced public page files with small client re-export entrypoints.
+    - added page entrypoint boundary tests for size and export stability.
+    - updated release tracking to `1.0.63`.
   - Validation:
-    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd --filter @cxnext/ui typecheck`.
     - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd --filter @cxnext/frontend typecheck`.
-    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture/dashboard-shell-boundaries.test.ts`.
-    - passed `node scripts/version-sync.mjs --ref 62`.
-    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture/dashboard-shell-boundaries.test.ts tests/architecture/version-sync.test.ts tests/architecture/source-tree-artifacts.test.ts`.
+    - passed targeted ESLint on changed page entrypoints and the architecture test.
+    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture/frontend-page-entrypoint-boundaries.test.ts`.
+    - passed `node scripts/version-sync.mjs --ref 63`.
+    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture/frontend-page-entrypoint-boundaries.test.ts tests/architecture/version-sync.test.ts tests/architecture/source-tree-artifacts.test.ts`.
     - passed `git diff --check`.
   - Residual risk:
-    - deeper internal dashboard shell decomposition remains a future cleanup if strict all-file thresholds are enforced.
+    - deeper list/show/upsert internal decomposition remains a future cleanup if strict all-file thresholds are enforced beyond public route entrypoints.
 
 ## Roadmap
 

@@ -1,6 +1,6 @@
 # Task
 
-Active reference: `#62`
+Active reference: `#63`
 
 ## Next Agent Handoff
 
@@ -10,10 +10,10 @@ Start here before any new implementation:
 2. Keep working directly on `main` unless the user asks for a branch.
 3. Continue the current `## Active` task. If it is complete, move its completed details to `assist/documentation/CHANGELOG.md`, then promote the first unchecked item from `## Upcoming` into `## Active`.
 4. Use reference/version alignment:
-   - `#62` means package version `1.0.62`.
-   - changelog section `## v-1.0.62`.
-   - changelog entry `### [v 1.0.62] YYYY-MM-DD - Title`.
-   - commit subject starts with `#62`.
+   - `#63` means package version `1.0.63`.
+   - changelog section `## v-1.0.63`.
+   - changelog entry `### [v 1.0.63] YYYY-MM-DD - Title`.
+   - commit subject starts with `#63`.
 5. Do not copy completed task details forward. Completed history belongs in `assist/documentation/CHANGELOG.md`.
 
 Command flow:
@@ -41,17 +41,12 @@ git push origin main
 
 ## Active
 
-- [x] `#62` Split oversized dashboard shell UI
-  - [x] Reduce `dashboard-shell.tsx` into a small public entrypoint.
-  - [x] Keep public exports stable from `packages/ui`.
-  - [x] Add focused typecheck/lint validation.
+- [x] `#63` Split oversized frontend feature pages
+  - [x] Split tenant, company, and industry route-facing page entrypoints.
+  - [x] Keep route imports stable through existing public page files.
+  - [x] Add file-size architecture coverage for public page entrypoints.
 
 ## Upcoming
-
-- [ ] `#63` Split oversized frontend feature pages
-  - [ ] Split `tenant-pages.tsx`, `company-pages.tsx`, `industry-pages.tsx`, and `common-pages.tsx` into list/show/upsert/helpers modules.
-  - [ ] Keep route imports stable through page barrels or existing public page files.
-  - [ ] Add file-size architecture coverage.
 
 - [ ] `#64` Add frontend/backend route and module boundary checks
   - [ ] Add architecture tests for frontend route imports, backend controller repository access, and domain framework imports.

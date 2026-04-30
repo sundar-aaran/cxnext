@@ -2,11 +2,19 @@
 
 ## Version State
 
-- Current package version: `1.0.62`
-- Current release tag: `v-1.0.62`
+- Current package version: `1.0.63`
+- Current release tag: `v-1.0.63`
 - Versioned changelog label format: `v 1.0.<reference>`
 - Version section format: `## v-1.0.<reference>`
 - Entry format: `### [v 1.0.<reference>] YYYY-MM-DD - Title`
+
+## v-1.0.63
+
+### [v 1.0.63] 2026-04-30 - Split Frontend Page Entrypoints
+
+- Reduced tenant, company, and industry public page entrypoints to small route-facing export files.
+- Moved existing page implementations behind stable module-local root files without changing route imports.
+- Added architecture coverage for public feature page entrypoint size and export stability.
 
 ## v-1.0.62
 
