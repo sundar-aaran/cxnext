@@ -1,11 +1,33 @@
-import { Controller, Get, Param } from "@nestjs/common";
-import { CommonLocationControllerBase } from "../shared/common-location-controller";
-import { CommonLocationRepository } from "../shared/common-location.repository";
+import { Controller, Get, Inject, Param } from "@nestjs/common";
+import { CreateCommonLocationRecordUseCase } from "../application/use-cases/location/create-common-location-record.use-case";
+import { DeleteCommonLocationRecordUseCase } from "../application/use-cases/location/delete-common-location-record.use-case";
+import { GetCommonLocationRecordUseCase } from "../application/use-cases/location/get-common-location-record.use-case";
+import { ListCommonLocationRecordsUseCase } from "../application/use-cases/location/list-common-location-records.use-case";
+import { UpdateCommonLocationRecordUseCase } from "../application/use-cases/location/update-common-location-record.use-case";
+import { CommonLocationControllerBase } from "../interface/http/common-location-controller";
 
 @Controller("common/pincodes")
 export class PincodesController extends CommonLocationControllerBase {
-  public constructor(repository: CommonLocationRepository) {
-    super(repository, "pincodes");
+  public constructor(
+    @Inject(ListCommonLocationRecordsUseCase)
+    listCommonLocationRecordsUseCase: ListCommonLocationRecordsUseCase,
+    @Inject(GetCommonLocationRecordUseCase)
+    getCommonLocationRecordUseCase: GetCommonLocationRecordUseCase,
+    @Inject(CreateCommonLocationRecordUseCase)
+    createCommonLocationRecordUseCase: CreateCommonLocationRecordUseCase,
+    @Inject(UpdateCommonLocationRecordUseCase)
+    updateCommonLocationRecordUseCase: UpdateCommonLocationRecordUseCase,
+    @Inject(DeleteCommonLocationRecordUseCase)
+    deleteCommonLocationRecordUseCase: DeleteCommonLocationRecordUseCase,
+  ) {
+    super(
+      "pincodes",
+      listCommonLocationRecordsUseCase,
+      getCommonLocationRecordUseCase,
+      createCommonLocationRecordUseCase,
+      updateCommonLocationRecordUseCase,
+      deleteCommonLocationRecordUseCase,
+    );
   }
 
   @Get()

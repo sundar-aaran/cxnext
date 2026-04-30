@@ -1,10 +1,16 @@
 import { Injectable, type OnModuleDestroy } from "@nestjs/common";
 import { createDatabaseConnection, loadDatabaseEnv, type DatabaseConnection } from "@cxnext/db";
-import type { CommonLocationDefinition, CommonLocationModuleKey } from "./common-location-definition";
-import { getCommonLocationDefinition } from "./common-location-definition";
-import type { CommonLocationRecord, CommonLocationUpsertParams } from "./common-location-record";
+import type { CommonLocationRepository } from "../../application/services/common-location.repository";
+import type {
+  CommonLocationRecord,
+  CommonLocationUpsertParams,
+} from "../../domain/entities/common-location-record";
+import type {
+  CommonLocationDefinition,
+  CommonLocationModuleKey,
+} from "../../domain/value-objects/common-location-definition";
+import { getCommonLocationDefinition } from "../../domain/value-objects/common-location-definition";
 
-type DynamicDatabase = Record<string, Record<string, unknown>>;
 type CommonRow = Record<string, unknown> & {
   readonly id: number;
   readonly code: string;
@@ -15,8 +21,24 @@ type CommonRow = Record<string, unknown> & {
   readonly deleted_at: Date | string | null;
 };
 
+interface DynamicQueryBuilder {
+  selectAll(): DynamicQueryBuilder;
+  where(column: string, operator: string, value: unknown): DynamicQueryBuilder;
+  orderBy(column: string, direction: "asc" | "desc"): DynamicQueryBuilder;
+  values(payload: Record<string, unknown>): DynamicQueryBuilder;
+  set(payload: Record<string, unknown>): DynamicQueryBuilder;
+  execute(): Promise<Record<string, unknown>[]>;
+  executeTakeFirst(): Promise<Record<string, unknown>>;
+}
+
+interface DynamicQueryDatabase {
+  selectFrom(tableName: string): DynamicQueryBuilder;
+  insertInto(tableName: string): DynamicQueryBuilder;
+  updateTable(tableName: string): DynamicQueryBuilder;
+}
+
 @Injectable()
-export class CommonLocationRepository implements OnModuleDestroy {
+export class KyselyCommonLocationRepository implements CommonLocationRepository, OnModuleDestroy {
   private readonly connection: DatabaseConnection;
 
   public constructor() {
@@ -40,7 +62,10 @@ export class CommonLocationRepository implements OnModuleDestroy {
     return (rows as CommonRow[]).map((row: CommonRow) => toCommonLocationRecord(row));
   }
 
-  public async getById(moduleKey: CommonLocationModuleKey, id: string): Promise<CommonLocationRecord | null> {
+  public async getById(
+    moduleKey: CommonLocationModuleKey,
+    id: string,
+  ): Promise<CommonLocationRecord | null> {
     const recordId = Number(id);
     const definition = getCommonLocationDefinition(moduleKey);
     const row = await this.queryDatabase()
@@ -53,7 +78,10 @@ export class CommonLocationRepository implements OnModuleDestroy {
     return row ? toCommonLocationRecord(row as CommonRow) : null;
   }
 
-  public async create(moduleKey: CommonLocationModuleKey, params: CommonLocationUpsertParams): Promise<CommonLocationRecord> {
+  public async create(
+    moduleKey: CommonLocationModuleKey,
+    params: CommonLocationUpsertParams,
+  ): Promise<CommonLocationRecord> {
     const definition = getCommonLocationDefinition(moduleKey);
     const now = new Date();
 
@@ -67,12 +95,20 @@ export class CommonLocationRepository implements OnModuleDestroy {
       })
       .execute();
 
-    const record = await this.getById(moduleKey, String(result.insertId));
-    if (!record) throw new Error(`${definition.label} record was created but could not be read back.`);
+    const record = await this.getById(moduleKey, String(result?.insertId ?? ""));
+
+    if (!record) {
+      throw new Error(`${definition.label} record was created but could not be read back.`);
+    }
+
     return record;
   }
 
-  public async update(moduleKey: CommonLocationModuleKey, id: string, params: CommonLocationUpsertParams): Promise<CommonLocationRecord | null> {
+  public async update(
+    moduleKey: CommonLocationModuleKey,
+    id: string,
+    params: CommonLocationUpsertParams,
+  ): Promise<CommonLocationRecord | null> {
     const recordId = Number(id);
     const definition = getCommonLocationDefinition(moduleKey);
     await this.queryDatabase()
@@ -105,15 +141,14 @@ export class CommonLocationRepository implements OnModuleDestroy {
   }
 
   private queryDatabase() {
-    return this.connection.db as unknown as {
-      selectFrom(tableName: string): any;
-      insertInto(tableName: string): any;
-      updateTable(tableName: string): any;
-    };
+    return this.connection.db as unknown as DynamicQueryDatabase;
   }
 }
 
-function toDatabasePayload(definition: CommonLocationDefinition, params: CommonLocationUpsertParams) {
+function toDatabasePayload(
+  definition: CommonLocationDefinition,
+  params: CommonLocationUpsertParams,
+) {
   const payload: Record<string, unknown> = {};
   for (const column of definition.writableColumns) {
     switch (column) {

@@ -14,4 +14,7 @@ export interface CommonLocationRecord {
   readonly deletedAt: Date | null;
 }
 
-export type CommonLocationUpsertParams = Omit<CommonLocationRecord, "id" | "createdAt" | "updatedAt" | "deletedAt">;
+export type CommonLocationUpsertParams = Omit<
+  CommonLocationRecord,
+  "id" | "createdAt" | "updatedAt" | "deletedAt"
+>;

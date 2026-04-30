@@ -56,7 +56,15 @@ export const commonLocationDefinitions = {
     tableName: "common_pincodes",
     label: "Pincodes",
     listOrder: ["code", "asc"],
-    writableColumns: ["countryId", "stateId", "districtId", "cityId", "code", "areaName", "isActive"],
+    writableColumns: [
+      "countryId",
+      "stateId",
+      "districtId",
+      "cityId",
+      "code",
+      "areaName",
+      "isActive",
+    ],
   },
 } as const satisfies Record<CommonLocationModuleKey, CommonLocationDefinition>;
 

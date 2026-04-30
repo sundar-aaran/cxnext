@@ -1,9 +1,9 @@
 import { Module } from "@nestjs/common";
-import { CommonLocationRepository } from "../shared/common-location.repository";
+import { commonLocationProviders } from "../infrastructure/common-location.providers";
 import { StatesController } from "./states.controller";
 
 @Module({
   controllers: [StatesController],
-  providers: [CommonLocationRepository],
+  providers: [...commonLocationProviders],
 })
 export class StatesModule {}

@@ -2,11 +2,19 @@
 
 ## Version State
 
-- Current package version: `1.0.49`
-- Current release tag: `v-1.0.49`
+- Current package version: `1.0.50`
+- Current release tag: `v-1.0.50`
 - Versioned changelog label format: `v 1.0.<reference>`
 - Version section format: `## v-1.0.<reference>`
 - Entry format: `### [v 1.0.<reference>] YYYY-MM-DD - Title`
+
+## v-1.0.50
+
+### [v 1.0.50] 2026-04-30 - Refactor Common Location Boundaries
+
+- Moved common location definitions, records, and write events into the common domain layer.
+- Routed countries, states, districts, cities, and pincodes HTTP flows through common location application use cases.
+- Moved common location Kysely persistence and event-bus publication behind application ports, with focused boundary and event coverage.
 
 ## v-1.0.49
 
