@@ -1,6 +1,6 @@
 # Task
 
-Active reference: `#60`
+Active reference: `#61`
 
 ## Next Agent Handoff
 
@@ -10,10 +10,10 @@ Start here before any new implementation:
 2. Keep working directly on `main` unless the user asks for a branch.
 3. Continue the current `## Active` task. If it is complete, move its completed details to `assist/documentation/CHANGELOG.md`, then promote the first unchecked item from `## Upcoming` into `## Active`.
 4. Use reference/version alignment:
-   - `#60` means package version `1.0.60`.
-   - changelog section `## v-1.0.60`.
-   - changelog entry `### [v 1.0.60] YYYY-MM-DD - Title`.
-   - commit subject starts with `#60`.
+   - `#61` means package version `1.0.61`.
+   - changelog section `## v-1.0.61`.
+   - changelog entry `### [v 1.0.61] YYYY-MM-DD - Title`.
+   - commit subject starts with `#61`.
 5. Do not copy completed task details forward. Completed history belongs in `assist/documentation/CHANGELOG.md`.
 
 Command flow:
@@ -41,17 +41,12 @@ git push origin main
 
 ## Active
 
-- [x] `#60` Refactor frontend common and location features
-  - [x] Split common master page helpers out of the public page component.
-  - [x] Move common location API/reference adapter code into infrastructure.
-  - [x] Add tests for the nested common location frontend boundary.
+- [x] `#61` Refactor frontend desk and cxsun features
+  - [x] Move `desk` and `cxsun` from flat feature folders into strict feature folders.
+  - [x] Preserve route behavior and portal registry contracts through updated imports.
+  - [x] Add structure tests for both feature folders.
 
 ## Upcoming
-
-- [ ] `#61` Refactor frontend desk and cxsun features
-  - [ ] Move `desk` and `cxsun` from flat feature folders into `domain`, `application`, `infrastructure`, and `interface/pages`.
-  - [ ] Preserve route behavior and portal registry contracts.
-  - [ ] Add structure tests for both feature folders.
 
 - [ ] `#62` Split oversized dashboard shell UI
   - [ ] Decompose `packages/ui/src/blocks/dashboard/dashboard-shell.tsx` into smaller shell, navigation, header, content, and utility modules.

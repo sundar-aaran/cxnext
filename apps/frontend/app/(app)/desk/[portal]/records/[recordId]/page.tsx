@@ -1,7 +1,10 @@
 import { notFound } from "next/navigation";
-import { cxsunRecords } from "../../../../../../features/cxsun/data";
-import { CxsunRecordDetailPage } from "../../../../../../features/cxsun/cxsun-workspace";
-import { getDeskPortal, type DeskPortalId } from "../../../../../../features/desk/desk-registry";
+import { cxsunRecords } from "../../../../../../features/cxsun/domain/data";
+import { CxsunRecordDetailPage } from "../../../../../../features/cxsun/interface/pages/cxsun-workspace";
+import {
+  getDeskPortal,
+  type DeskPortalId,
+} from "../../../../../../features/desk/application/desk-registry";
 
 export function generateStaticParams() {
   return cxsunRecords.map((record) => ({

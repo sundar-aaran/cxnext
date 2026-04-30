@@ -2,11 +2,19 @@
 
 ## Version State
 
-- Current package version: `1.0.60`
-- Current release tag: `v-1.0.60`
+- Current package version: `1.0.61`
+- Current release tag: `v-1.0.61`
 - Versioned changelog label format: `v 1.0.<reference>`
 - Version section format: `## v-1.0.<reference>`
 - Entry format: `### [v 1.0.<reference>] YYYY-MM-DD - Title`
+
+## v-1.0.61
+
+### [v 1.0.61] 2026-04-30 - Refactor Desk And Cxsun Frontend Boundaries
+
+- Moved desk registry, shell, and breadcrumb files into strict application/interface feature folders.
+- Moved cxsun data, mappers, and pages into domain/application/interface folders.
+- Updated app route imports and added architecture coverage that prevents the old flat feature entry files from returning.
 
 ## v-1.0.60
 

@@ -1,10 +1,13 @@
 import { notFound } from "next/navigation";
-import { CxsunQueuePage, CxsunRecordsPage } from "../../../../../features/cxsun/cxsun-workspace";
+import {
+  CxsunQueuePage,
+  CxsunRecordsPage,
+} from "../../../../../features/cxsun/interface/pages/cxsun-workspace";
 import {
   deskPortals,
   getDeskPortal,
   type DeskPortalId,
-} from "../../../../../features/desk/desk-registry";
+} from "../../../../../features/desk/application/desk-registry";
 
 const cxsunSections = ["records", "queue"] as const;
 

@@ -27,14 +27,14 @@ import {
   Label,
   Separator,
 } from "@cxnext/ui";
-import { cxsunQueueItems, cxsunRecords } from "./data";
+import { cxsunQueueItems, cxsunRecords } from "../../domain/data";
 import {
   getPriorityBadgeClass,
   getPriorityLabel,
   getRecordMetrics,
   getStatusBadgeClass,
   getStatusLabel,
-} from "./mappers";
+} from "../../application/mappers";
 
 export function CxsunOverviewPage() {
   const metrics = getRecordMetrics(cxsunRecords);

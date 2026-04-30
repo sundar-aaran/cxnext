@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@cxnext/ui";
-import { deskPortals, type DeskPortalDefinition } from "./desk-registry";
+import { deskPortals, type DeskPortalDefinition } from "../../application/desk-registry";
 
 export function DeskBreadcrumb({ activePortal }: { readonly activePortal: DeskPortalDefinition }) {
   return (

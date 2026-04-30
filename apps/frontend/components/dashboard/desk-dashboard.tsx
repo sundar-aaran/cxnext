@@ -10,7 +10,7 @@ import {
   UserRoundSearch,
 } from "lucide-react";
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@cxnext/ui";
-import { deskPortals, type DeskPortalDefinition } from "../../features/desk/desk-registry";
+import { deskPortals, type DeskPortalDefinition } from "../../features/desk/application/desk-registry";
 
 const cards = [
   { title: "Module Readiness", value: "Foundation", detail: "No business domains installed" },

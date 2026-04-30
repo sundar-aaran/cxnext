@@ -13,9 +13,9 @@ import {
   Users,
   WalletCards,
 } from "lucide-react";
-import rootPackage from "../../../../package.json";
-import { commonMenuGroups, commonMenuLabels } from "../common/application/common-service";
-import { getDeskPortal } from "./desk-registry";
+import rootPackage from "../../../../../../package.json";
+import { commonMenuGroups, commonMenuLabels } from "../../../common/application/common-service";
+import { getDeskPortal } from "../../application/desk-registry";
 
 const organisationNavItems = [
   {

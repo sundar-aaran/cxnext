@@ -1,4 +1,4 @@
-import type { CxsunRecord, CxsunRecordPriority, CxsunRecordStatus } from "./data";
+import type { CxsunRecord, CxsunRecordPriority, CxsunRecordStatus } from "../domain/data";
 
 export function getStatusLabel(status: CxsunRecordStatus) {
   return {
