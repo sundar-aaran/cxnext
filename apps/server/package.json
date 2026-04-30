@@ -1,6 +1,6 @@
 {
   "name": "@cxnext/server",
-  "version": "1.0.44",
+  "version": "1.0.47",
   "private": true,
   "scripts": {
     "dev": "nest start --watch",

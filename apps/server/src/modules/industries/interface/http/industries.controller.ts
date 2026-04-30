@@ -9,9 +9,11 @@ import {
   Patch,
   Post,
 } from "@nestjs/common";
-import { INDUSTRY_REPOSITORY, type IndustryRepository } from "../../application/services/industry.repository";
+import { CreateIndustryUseCase } from "../../application/use-cases/create-industry.use-case";
+import { DeleteIndustryUseCase } from "../../application/use-cases/delete-industry.use-case";
 import { GetIndustryUseCase } from "../../application/use-cases/get-industry.use-case";
 import { ListIndustriesUseCase } from "../../application/use-cases/list-industries.use-case";
+import { UpdateIndustryUseCase } from "../../application/use-cases/update-industry.use-case";
 import { toIndustryResponse } from "./industry-response";
 
 interface IndustryUpsertRequest {
@@ -26,8 +28,12 @@ export class IndustriesController {
     private readonly listIndustriesUseCase: ListIndustriesUseCase,
     @Inject(GetIndustryUseCase)
     private readonly getIndustryUseCase: GetIndustryUseCase,
-    @Inject(INDUSTRY_REPOSITORY)
-    private readonly industryRepository: IndustryRepository,
+    @Inject(CreateIndustryUseCase)
+    private readonly createIndustryUseCase: CreateIndustryUseCase,
+    @Inject(UpdateIndustryUseCase)
+    private readonly updateIndustryUseCase: UpdateIndustryUseCase,
+    @Inject(DeleteIndustryUseCase)
+    private readonly deleteIndustryUseCase: DeleteIndustryUseCase,
   ) {}
 
   @Get()
@@ -49,13 +55,19 @@ export class IndustriesController {
 
   @Post()
   public async create(@Body() body: IndustryUpsertRequest) {
-    const industry = await this.industryRepository.create(parseIndustryRequest(body));
+    const industry = await this.createIndustryUseCase.execute(parseIndustryRequest(body));
     return toIndustryResponse(industry);
   }
 
   @Patch(":industryId")
-  public async update(@Param("industryId") industryId: string, @Body() body: IndustryUpsertRequest) {
-    const industry = await this.industryRepository.update(industryId, parseIndustryRequest(body));
+  public async update(
+    @Param("industryId") industryId: string,
+    @Body() body: IndustryUpsertRequest,
+  ) {
+    const industry = await this.updateIndustryUseCase.execute(
+      industryId,
+      parseIndustryRequest(body),
+    );
 
     if (!industry) {
       throw new NotFoundException(`Industry "${industryId}" was not found.`);
@@ -66,7 +78,7 @@ export class IndustriesController {
 
   @Delete(":industryId")
   public async softDelete(@Param("industryId") industryId: string) {
-    const wasDeleted = await this.industryRepository.softDelete(industryId);
+    const wasDeleted = await this.deleteIndustryUseCase.execute(industryId);
 
     if (!wasDeleted) {
       throw new NotFoundException(`Industry "${industryId}" was not found.`);
