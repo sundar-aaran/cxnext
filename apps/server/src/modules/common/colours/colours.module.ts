@@ -1,9 +1,9 @@
 import { Module } from "@nestjs/common";
+import { commonMasterProviders } from "../infrastructure/common-master.providers";
 import { ColoursController } from "./colours.controller";
-import { ColoursRepository } from "./colours.repository";
 
 @Module({
   controllers: [ColoursController],
-  providers: [ColoursRepository],
+  providers: [...commonMasterProviders],
 })
 export class ColoursModule {}

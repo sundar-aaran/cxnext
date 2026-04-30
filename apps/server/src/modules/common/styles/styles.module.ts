@@ -1,9 +1,9 @@
 import { Module } from "@nestjs/common";
+import { commonMasterProviders } from "../infrastructure/common-master.providers";
 import { StylesController } from "./styles.controller";
-import { StylesRepository } from "./styles.repository";
 
 @Module({
   controllers: [StylesController],
-  providers: [StylesRepository],
+  providers: [...commonMasterProviders],
 })
 export class StylesModule {}

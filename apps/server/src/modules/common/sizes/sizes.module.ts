@@ -1,9 +1,9 @@
 import { Module } from "@nestjs/common";
+import { commonMasterProviders } from "../infrastructure/common-master.providers";
 import { SizesController } from "./sizes.controller";
-import { SizesRepository } from "./sizes.repository";
 
 @Module({
   controllers: [SizesController],
-  providers: [SizesRepository],
+  providers: [...commonMasterProviders],
 })
 export class SizesModule {}

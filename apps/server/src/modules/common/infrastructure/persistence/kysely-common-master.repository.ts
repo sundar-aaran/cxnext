@@ -18,6 +18,9 @@ type CommonMasterRow = Record<string, unknown> & {
   readonly description: string | null;
   readonly image?: string | null;
   readonly position_order?: number | string | null;
+  readonly sort_order?: number | string | null;
+  readonly hex_code?: string | null;
+  readonly symbol?: string | null;
   readonly show_on_storefront_top_menu?: boolean | number | null;
   readonly show_on_storefront_catalog?: boolean | number | null;
   readonly is_active: boolean | number;
@@ -190,6 +193,18 @@ function toDatabasePayload(
             ? 0
             : Number(params.positionOrder);
         break;
+      case "sortOrder":
+        payload.sort_order =
+          params.sortOrder === null || params.sortOrder === undefined
+            ? 0
+            : Number(params.sortOrder);
+        break;
+      case "hexCode":
+        payload.hex_code = params.hexCode?.trim() || null;
+        break;
+      case "symbol":
+        payload.symbol = params.symbol?.trim() || null;
+        break;
       case "showOnStorefrontTopMenu":
         payload.show_on_storefront_top_menu = Boolean(params.showOnStorefrontTopMenu);
         break;
@@ -214,6 +229,10 @@ function toCommonMasterRecord(row: CommonMasterRow): CommonMasterRecord {
       row.position_order === null || row.position_order === undefined
         ? null
         : Number(row.position_order),
+    sortOrder:
+      row.sort_order === null || row.sort_order === undefined ? null : Number(row.sort_order),
+    hexCode: row.hex_code ?? null,
+    symbol: row.symbol ?? null,
     showOnStorefrontTopMenu:
       row.show_on_storefront_top_menu === null ||
       row.show_on_storefront_top_menu === undefined

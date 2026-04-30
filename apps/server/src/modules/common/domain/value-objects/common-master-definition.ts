@@ -5,7 +5,12 @@ export type CommonMasterModuleKey =
   | "bankNames"
   | "productGroups"
   | "productCategories"
-  | "productTypes";
+  | "productTypes"
+  | "brands"
+  | "colours"
+  | "sizes"
+  | "styles"
+  | "units";
 
 export type CommonMasterColumnKey =
   | "code"
@@ -13,6 +18,9 @@ export type CommonMasterColumnKey =
   | "description"
   | "image"
   | "positionOrder"
+  | "sortOrder"
+  | "hexCode"
+  | "symbol"
   | "showOnStorefrontTopMenu"
   | "showOnStorefrontCatalog"
   | "isActive";
@@ -83,6 +91,41 @@ export const commonMasterDefinitions = {
     label: "Product Types",
     listOrder: ["name", "asc"],
     writableColumns: ["code", "name", "description", "isActive"],
+  },
+  brands: {
+    key: "brands",
+    tableName: "common_brands",
+    label: "Brands",
+    listOrder: ["name", "asc"],
+    writableColumns: ["code", "name", "description", "isActive"],
+  },
+  colours: {
+    key: "colours",
+    tableName: "common_colours",
+    label: "Colours",
+    listOrder: ["name", "asc"],
+    writableColumns: ["code", "name", "description", "hexCode", "isActive"],
+  },
+  sizes: {
+    key: "sizes",
+    tableName: "common_sizes",
+    label: "Sizes",
+    listOrder: ["sort_order", "asc"],
+    writableColumns: ["code", "name", "description", "sortOrder", "isActive"],
+  },
+  styles: {
+    key: "styles",
+    tableName: "common_styles",
+    label: "Styles",
+    listOrder: ["name", "asc"],
+    writableColumns: ["code", "name", "description", "isActive"],
+  },
+  units: {
+    key: "units",
+    tableName: "common_units",
+    label: "Units",
+    listOrder: ["name", "asc"],
+    writableColumns: ["code", "name", "symbol", "description", "isActive"],
   },
 } as const satisfies Record<CommonMasterModuleKey, CommonMasterDefinition>;
 

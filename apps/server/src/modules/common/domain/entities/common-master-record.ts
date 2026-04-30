@@ -5,6 +5,9 @@ export interface CommonMasterRecord {
   readonly description: string | null;
   readonly image?: string | null;
   readonly positionOrder?: number | null;
+  readonly sortOrder?: number | null;
+  readonly hexCode?: string | null;
+  readonly symbol?: string | null;
   readonly showOnStorefrontTopMenu?: boolean | null;
   readonly showOnStorefrontCatalog?: boolean | null;
   readonly isActive: boolean;

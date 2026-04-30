@@ -2,11 +2,19 @@
 
 ## Version State
 
-- Current package version: `1.0.53`
-- Current release tag: `v-1.0.53`
+- Current package version: `1.0.54`
+- Current release tag: `v-1.0.54`
 - Versioned changelog label format: `v 1.0.<reference>`
 - Version section format: `## v-1.0.<reference>`
 - Entry format: `### [v 1.0.<reference>] YYYY-MM-DD - Title`
+
+## v-1.0.54
+
+### [v 1.0.54] 2026-04-30 - Refactor Common Product Attribute Boundaries
+
+- Moved brands, colours, sizes, styles, and units behind the shared common master use cases, repository port, and infrastructure providers.
+- Extended common master definitions and persistence mapping for colour hex codes, size sort order, and unit symbols.
+- Removed direct repository injection from product attribute controllers and added focused boundary and event coverage.
 
 ## v-1.0.53
 

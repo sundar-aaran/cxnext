@@ -1,6 +1,6 @@
 # Task
 
-Active reference: `#53`
+Active reference: `#54`
 
 ## Next Agent Handoff
 
@@ -10,10 +10,10 @@ Start here before any new implementation:
 2. Keep working directly on `main` unless the user asks for a branch.
 3. Continue the current `## Active` task. If it is complete, move its completed details to `assist/documentation/CHANGELOG.md`, then promote the first unchecked item from `## Upcoming` into `## Active`.
 4. Use reference/version alignment:
-   - `#53` means package version `1.0.53`.
-   - changelog section `## v-1.0.53`.
-   - changelog entry `### [v 1.0.53] YYYY-MM-DD - Title`.
-   - commit subject starts with `#53`.
+   - `#54` means package version `1.0.54`.
+   - changelog section `## v-1.0.54`.
+   - changelog entry `### [v 1.0.54] YYYY-MM-DD - Title`.
+   - commit subject starts with `#54`.
 5. Do not copy completed task details forward. Completed history belongs in `assist/documentation/CHANGELOG.md`.
 
 Command flow:
@@ -41,18 +41,13 @@ git push origin main
 
 ## Active
 
-- [x] `#53` Refactor common product taxonomy masters
-  - [x] Move `product-groups`, `product-categories`, and `product-types` behind common master use cases and repository ports.
-  - [x] Preserve product taxonomy field mapping and list response shape.
+- [x] `#54` Refactor common product attribute masters
+  - [x] Move `brands`, `colours`, `sizes`, `styles`, and `units` behind the common master DDD/application flow.
+  - [x] Preserve attribute-specific field mapping and list response shape.
   - [x] Add create/update/delete domain events and event-bus publication.
   - [x] Add focused boundary and event tests.
 
 ## Upcoming
-
-- [ ] `#54` Refactor common product attribute masters
-  - [ ] Move `brands`, `colours`, `sizes`, `styles`, and `units` behind the common master DDD/application flow.
-  - [ ] Keep controllers thin and share only common master interface helpers.
-  - [ ] Add focused boundary and event tests.
 
 - [ ] `#55` Refactor common compliance masters
   - [ ] Move `hsn-codes` and `taxes` behind use cases, ports, and infrastructure adapters.

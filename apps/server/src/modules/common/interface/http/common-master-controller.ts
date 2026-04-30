@@ -15,6 +15,11 @@ export interface CommonMasterUpsertRequest {
   readonly image?: unknown;
   readonly positionOrder?: unknown;
   readonly position_order?: unknown;
+  readonly sortOrder?: unknown;
+  readonly sort_order?: unknown;
+  readonly hexCode?: unknown;
+  readonly hex_code?: unknown;
+  readonly symbol?: unknown;
   readonly showOnStorefrontTopMenu?: unknown;
   readonly show_on_storefront_top_menu?: unknown;
   readonly showOnStorefrontCatalog?: unknown;
@@ -102,6 +107,9 @@ function parseCommonMasterRequest(body: CommonMasterUpsertRequest): CommonMaster
     description: toNullableStringValue(body.description),
     image: toNullableStringValue(body.image),
     positionOrder: toNumberValue(body.positionOrder ?? body.position_order),
+    sortOrder: toNumberValue(body.sortOrder ?? body.sort_order),
+    hexCode: toNullableStringValue(body.hexCode ?? body.hex_code),
+    symbol: toNullableStringValue(body.symbol),
     showOnStorefrontTopMenu: toBooleanValue(
       body.showOnStorefrontTopMenu ?? body.show_on_storefront_top_menu,
     ),
