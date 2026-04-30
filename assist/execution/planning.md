@@ -1,48 +1,45 @@
 # Planning
 
-Active reference: `#57`
+Active reference: `#58`
 
 ## Active
 
-- `#55-#57` Refactor remaining common masters
+- `#58` Backend domain hardening
   - Goal:
-    - move compliance, logistics/order, finance, and terms common masters out of controller/repository CRUD and into common master domain/application/infrastructure/interface layering.
+    - replace placeholder DDD folders with useful domain code and strengthen event publication across backend write flows.
   - Scope:
-    - extend the common master definition/repository/use-case flow for HSN codes, taxes, warehouses, transports, destinations, order types, stock rejection types, currencies, and payment terms.
-    - preserve specialized field mapping for taxes, warehouses, currencies, and payment terms.
-    - rewrite each controller to extend the common master controller base and inject use cases instead of repositories.
-    - rewrite each module to import shared infrastructure providers.
-    - remove direct controller-to-repository access from the migrated controllers.
-    - add architecture and use-case coverage for the remaining common master boundary.
-    - update release tracking to `1.0.57`.
+    - start with `industries` and `companies` because they had record types but little real domain model.
+    - add create/update/delete events where they represent meaningful domain facts.
+    - keep event publisher abstractions module-local.
+    - update release tracking to `1.0.58`.
   - Constraints:
-    - preserve current HTTP routes and response shape.
-    - preserve current response shape and soft-delete/force-delete behavior.
-    - keep Kysely inside `infrastructure/persistence`.
+    - preserve current HTTP and GraphQL response shape.
+    - publish events only after repository writes succeed.
+    - keep repositories inside `infrastructure/persistence`.
     - keep event bus integration inside `infrastructure/adapters`.
     - keep domain files framework-free.
   - Planned validation:
     - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd --filter @cxnext/server typecheck`
     - targeted ESLint on changed files.
-    - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/server/common/remaining-master-use-cases.test.ts tests/architecture/common-remaining-master-boundaries.test.ts`
-    - `node scripts/version-sync.mjs --ref 57`
+    - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/server/companies/company-domain-events.test.ts tests/server/industries/industry-domain-events.test.ts tests/architecture/backend-domain-imports.test.ts tests/architecture/companies-module-boundaries.test.ts tests/architecture/industries-module-boundaries.test.ts`
+    - `node scripts/version-sync.mjs --ref 58`
     - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture/version-sync.test.ts tests/architecture/source-tree-artifacts.test.ts`
     - `git diff --check`
   - Implemented:
-    - extended common master definitions for the nine remaining common master modules.
-    - preserved specialized field mapping for `taxType`, `ratePercent`, warehouse address fields, `decimalPlaces`, and `dueDays`.
-    - rewired remaining common master controllers/modules to the shared common master boundary.
-    - removed the old per-child repository files.
-    - added boundary and use-case tests for repository-free controllers, provider wiring, removed repository files, specialized definitions, and write-event publication.
-    - updated release tracking to `1.0.57`.
+    - added company and industry domain entities, aggregates, value objects, and create/update/delete domain events.
+    - added module-local domain event publisher ports and event-bus adapters.
+    - updated company and industry create/update/delete use cases to publish events after successful persistence.
+    - added domain import-boundary and event publication tests.
+    - updated release tracking to `1.0.58`.
   - Validation:
     - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd --filter @cxnext/server typecheck`.
-    - passed targeted ESLint on changed common master source and test files.
-    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/server/common/remaining-master-use-cases.test.ts tests/architecture/common-remaining-master-boundaries.test.ts tests/server/common/product-attribute-use-cases.test.ts tests/architecture/common-product-attribute-boundaries.test.ts tests/server/common/product-taxonomy-use-cases.test.ts tests/architecture/common-product-taxonomy-boundaries.test.ts tests/server/common/contact-master-use-cases.test.ts tests/architecture/common-contact-master-boundaries.test.ts tests/architecture/version-sync.test.ts tests/architecture/source-tree-artifacts.test.ts`.
-    - passed `node scripts/version-sync.mjs --ref 57`.
+    - passed targeted ESLint on changed backend domain, application, infrastructure, and test files.
+    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/server/companies/company-domain-events.test.ts tests/server/industries/industry-domain-events.test.ts tests/architecture/backend-domain-imports.test.ts tests/architecture/companies-module-boundaries.test.ts tests/architecture/industries-module-boundaries.test.ts`.
+    - passed `node scripts/version-sync.mjs --ref 58`.
+    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/server/companies/company-domain-events.test.ts tests/server/industries/industry-domain-events.test.ts tests/architecture/backend-domain-imports.test.ts tests/architecture/companies-module-boundaries.test.ts tests/architecture/industries-module-boundaries.test.ts tests/architecture/version-sync.test.ts tests/architecture/source-tree-artifacts.test.ts`.
     - passed `git diff --check`.
   - Residual risk:
-    - full server lint is still blocked by unrelated common modules that are scheduled for later roadmap tasks and still use older repository/controller patterns.
+    - full final validation is deferred until the `#64` boundary-check task after the frontend refactors land.
 
 ## Roadmap
 

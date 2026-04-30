@@ -2,11 +2,19 @@
 
 ## Version State
 
-- Current package version: `1.0.57`
-- Current release tag: `v-1.0.57`
+- Current package version: `1.0.58`
+- Current release tag: `v-1.0.58`
 - Versioned changelog label format: `v 1.0.<reference>`
 - Version section format: `## v-1.0.<reference>`
 - Entry format: `### [v 1.0.<reference>] YYYY-MM-DD - Title`
+
+## v-1.0.58
+
+### [v 1.0.58] 2026-04-30 - Harden Backend Domain Models
+
+- Added concrete company and industry domain entities, aggregates, value objects, and create/update/delete domain events.
+- Routed company and industry write use cases through module-local domain event publishers after persistence succeeds.
+- Added focused event publication and backend domain import-boundary coverage.
 
 ## v-1.0.57
 

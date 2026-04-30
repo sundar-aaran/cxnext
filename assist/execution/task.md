@@ -1,6 +1,6 @@
 # Task
 
-Active reference: `#57`
+Active reference: `#58`
 
 ## Next Agent Handoff
 
@@ -10,10 +10,10 @@ Start here before any new implementation:
 2. Keep working directly on `main` unless the user asks for a branch.
 3. Continue the current `## Active` task. If it is complete, move its completed details to `assist/documentation/CHANGELOG.md`, then promote the first unchecked item from `## Upcoming` into `## Active`.
 4. Use reference/version alignment:
-   - `#57` means package version `1.0.57`.
-   - changelog section `## v-1.0.57`.
-   - changelog entry `### [v 1.0.57] YYYY-MM-DD - Title`.
-   - commit subject starts with `#57`.
+   - `#58` means package version `1.0.58`.
+   - changelog section `## v-1.0.58`.
+   - changelog entry `### [v 1.0.58] YYYY-MM-DD - Title`.
+   - commit subject starts with `#58`.
 5. Do not copy completed task details forward. Completed history belongs in `assist/documentation/CHANGELOG.md`.
 
 Command flow:
@@ -41,18 +41,12 @@ git push origin main
 
 ## Active
 
-- [x] `#55-#57` Refactor remaining common masters
-  - [x] Move compliance, logistics/order, finance, and terms masters behind common master boundaries.
-  - [x] Preserve specialized field mapping and list response shape.
-  - [x] Add create/update/delete domain events and event-bus publication.
-  - [x] Add focused boundary and event tests.
+- [x] `#58` Harden backend domain models
+  - [x] Replace placeholder backend DDD folders in `companies` and `industries` with small real domain entities, aggregates, and value objects.
+  - [x] Add create/update/delete domain events for company and industry write use cases.
+  - [x] Add architecture tests that prevent framework imports in backend domain folders.
 
 ## Upcoming
-
-- [ ] `#58` Harden backend domain models
-  - [ ] Replace placeholder backend DDD folders in `companies`, `industries`, and applicable common areas with small real domain entities/value objects where useful.
-  - [ ] Add update/delete domain events where write use cases currently publish only create events or no events.
-  - [ ] Add architecture tests that prevent framework imports in domain folders.
 
 - [ ] `#59` Refactor frontend feature module shells
   - [ ] Add missing `infrastructure` folders to `common`, `company`, and `industry`.
