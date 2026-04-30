@@ -9,9 +9,11 @@ import {
   Patch,
   Post,
 } from "@nestjs/common";
-import { COMPANY_REPOSITORY, type CompanyRepository } from "../../application/services/company.repository";
+import { CreateCompanyUseCase } from "../../application/use-cases/create-company.use-case";
+import { DeleteCompanyUseCase } from "../../application/use-cases/delete-company.use-case";
 import { GetCompanyUseCase } from "../../application/use-cases/get-company.use-case";
 import { ListCompaniesUseCase } from "../../application/use-cases/list-companies.use-case";
+import { UpdateCompanyUseCase } from "../../application/use-cases/update-company.use-case";
 import { toCompanyResponse } from "./company-response";
 
 interface CompanyUpsertRequest {
@@ -40,8 +42,12 @@ export class CompaniesController {
     private readonly listCompaniesUseCase: ListCompaniesUseCase,
     @Inject(GetCompanyUseCase)
     private readonly getCompanyUseCase: GetCompanyUseCase,
-    @Inject(COMPANY_REPOSITORY)
-    private readonly companyRepository: CompanyRepository,
+    @Inject(CreateCompanyUseCase)
+    private readonly createCompanyUseCase: CreateCompanyUseCase,
+    @Inject(UpdateCompanyUseCase)
+    private readonly updateCompanyUseCase: UpdateCompanyUseCase,
+    @Inject(DeleteCompanyUseCase)
+    private readonly deleteCompanyUseCase: DeleteCompanyUseCase,
   ) {}
 
   @Get()
@@ -63,13 +69,13 @@ export class CompaniesController {
 
   @Post()
   public async create(@Body() body: CompanyUpsertRequest) {
-    const company = await this.companyRepository.create(parseCompanyRequest(body));
+    const company = await this.createCompanyUseCase.execute(parseCompanyRequest(body));
     return toCompanyResponse(company);
   }
 
   @Patch(":companyId")
   public async update(@Param("companyId") companyId: string, @Body() body: CompanyUpsertRequest) {
-    const company = await this.companyRepository.update(companyId, parseCompanyRequest(body));
+    const company = await this.updateCompanyUseCase.execute(companyId, parseCompanyRequest(body));
 
     if (!company) {
       throw new NotFoundException(`Company "${companyId}" was not found.`);
@@ -80,7 +86,7 @@ export class CompaniesController {
 
   @Delete(":companyId")
   public async softDelete(@Param("companyId") companyId: string) {
-    const wasDeleted = await this.companyRepository.softDelete(companyId);
+    const wasDeleted = await this.deleteCompanyUseCase.execute(companyId);
 
     if (!wasDeleted) {
       throw new NotFoundException(`Company "${companyId}" was not found.`);

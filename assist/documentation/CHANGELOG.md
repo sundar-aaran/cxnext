@@ -2,11 +2,19 @@
 
 ## Version State
 
-- Current package version: `1.0.48`
-- Current release tag: `v-1.0.48`
+- Current package version: `1.0.49`
+- Current release tag: `v-1.0.49`
 - Versioned changelog label format: `v 1.0.<reference>`
 - Version section format: `## v-1.0.<reference>`
 - Entry format: `### [v 1.0.<reference>] YYYY-MM-DD - Title`
+
+## v-1.0.49
+
+### [v 1.0.49] 2026-04-30 - Refactor Companies Module Boundaries
+
+- Registered the companies bounded context through the module registry.
+- Routed companies HTTP writes through application use cases instead of direct repository access from controllers.
+- Added companies GraphQL read interface, module-local database migration/seeder exports, and focused architecture coverage for the strict backend module shape.
 
 ## v-1.0.48
 
