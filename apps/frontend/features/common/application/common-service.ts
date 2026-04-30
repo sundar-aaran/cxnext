@@ -1,32 +1,27 @@
-export type CommonColumnType = "string" | "number" | "boolean";
+import { listCommonRecords } from "../infrastructure/common-api";
+import type {
+  CommonColumnDefinition,
+  CommonModuleDefinition,
+  CommonRecord,
+  CommonReferenceLookupMap,
+} from "../domain/common-master";
 
-export interface CommonColumnDefinition {
-  readonly key: string;
-  readonly label: string;
-  readonly type: CommonColumnType;
-  readonly required?: boolean;
-  readonly nullable?: boolean;
-}
-
-export interface CommonModuleDefinition {
-  readonly key: string;
-  readonly label: string;
-  readonly tableName: string;
-  readonly defaultSortKey: string;
-  readonly idPrefix: string;
-  readonly columns: readonly CommonColumnDefinition[];
-}
-
-export type CommonRecord = Record<string, unknown> & {
-  readonly id: number;
-  readonly isActive: boolean;
-  readonly createdAt: string;
-  readonly updatedAt: string;
-  readonly deletedAt: string | null;
-};
-
-export type CommonReferenceLookupMap = Record<string, ReadonlyMap<string, string>>;
+export type {
+  CommonColumnDefinition,
+  CommonColumnType,
+  CommonModuleDefinition,
+  CommonRecord,
+  CommonReferenceLookupMap,
+} from "../domain/common-master";
 type ReferenceModuleKey = "countries" | "states" | "districts" | "cities";
+export {
+  createCommonRecord,
+  dropCommonRecord,
+  forceDeleteCommonRecord,
+  listCommonModules,
+  listCommonRecords,
+  updateCommonRecord,
+} from "../infrastructure/common-api";
 
 export const commonMenuGroups = [
   { label: "Location", items: ["countries", "states", "districts", "cities", "pincodes"] },
@@ -82,35 +77,6 @@ export const commonMenuLabels: Record<string, string> = {
   stockRejectionTypes: "Stock Rejection Types",
   storefrontTemplates: "Storefront Templates",
   sliderThemes: "Slider Themes",
-};
-
-const commonEndpointByKey: Record<string, string> = {
-  countries: "countries",
-  states: "states",
-  districts: "districts",
-  cities: "cities",
-  pincodes: "pincodes",
-  contactGroups: "contact-groups",
-  contactTypes: "contact-types",
-  addressTypes: "address-types",
-  bankNames: "bank-names",
-  productGroups: "product-groups",
-  productCategories: "product-categories",
-  productTypes: "product-types",
-  brands: "brands",
-  colours: "colours",
-  sizes: "sizes",
-  styles: "styles",
-  units: "units",
-  hsnCodes: "hsn-codes",
-  taxes: "taxes",
-  warehouses: "warehouses",
-  transports: "transports",
-  destinations: "destinations",
-  orderTypes: "order-types",
-  stockRejectionTypes: "stock-rejection-types",
-  currencies: "currencies",
-  paymentTerms: "payment-terms",
 };
 
 const codeNameDescription = [
@@ -376,28 +342,6 @@ export const fallbackCommonModules: readonly CommonModuleDefinition[] = [
   },
 ];
 
-export async function listCommonModules(options?: { readonly signal?: AbortSignal }) {
-  const response = await fetch(`${getApiBaseUrl()}/common/modules`, {
-    cache: "no-store",
-    signal: options?.signal,
-  });
-  if (!response.ok)
-    throw new Error(`Common metadata request failed with status ${response.status}.`);
-  return (await response.json()) as CommonModuleDefinition[];
-}
-
-export async function listCommonRecords(
-  moduleKey: string,
-  options?: { readonly signal?: AbortSignal },
-) {
-  const response = await fetch(`${getApiBaseUrl()}/common/${getCommonEndpoint(moduleKey)}`, {
-    cache: "no-store",
-    signal: options?.signal,
-  });
-  if (!response.ok) throw new Error(`Common list request failed with status ${response.status}.`);
-  return (await response.json()) as CommonRecord[];
-}
-
 export async function listCommonReferenceLookups(
   definition: CommonModuleDefinition,
   options?: { readonly signal?: AbortSignal },
@@ -415,67 +359,11 @@ export async function listCommonReferenceLookups(
   return Object.fromEntries(lookupEntries);
 }
 
-export async function createCommonRecord(moduleKey: string, payload: Record<string, unknown>) {
-  const response = await fetch(
-    `${getApiBaseUrl()}/common/${getCommonEndpoint(moduleKey)}`,
-    request("POST", payload),
-  );
-  if (!response.ok) throw new Error(`Common create request failed with status ${response.status}.`);
-  return (await response.json()) as CommonRecord;
-}
-
-export async function updateCommonRecord(
-  moduleKey: string,
-  id: number,
-  payload: Record<string, unknown>,
-) {
-  const response = await fetch(
-    `${getApiBaseUrl()}/common/${getCommonEndpoint(moduleKey)}/${encodeURIComponent(String(id))}`,
-    request("PATCH", payload),
-  );
-  if (!response.ok) throw new Error(`Common update request failed with status ${response.status}.`);
-  return (await response.json()) as CommonRecord;
-}
-
-export async function dropCommonRecord(moduleKey: string, id: number) {
-  const response = await fetch(
-    `${getApiBaseUrl()}/common/${getCommonEndpoint(moduleKey)}/${encodeURIComponent(String(id))}`,
-    { cache: "no-store", method: "DELETE" },
-  );
-  if (!response.ok) throw new Error(`Common drop request failed with status ${response.status}.`);
-}
-
-export async function forceDeleteCommonRecord(moduleKey: string, id: number) {
-  const response = await fetch(
-    `${getApiBaseUrl()}/common/${getCommonEndpoint(moduleKey)}/${encodeURIComponent(String(id))}?force=true`,
-    { cache: "no-store", method: "DELETE" },
-  );
-  if (!response.ok)
-    throw new Error(`Common force delete request failed with status ${response.status}.`);
-}
-
 export function formatCommonDate(value: unknown) {
   if (!value || typeof value !== "string") return "-";
   return new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeStyle: "short" }).format(
     new Date(value),
   );
-}
-
-function request(method: "POST" | "PATCH", payload: Record<string, unknown>) {
-  return {
-    body: JSON.stringify(payload),
-    cache: "no-store" as const,
-    headers: { Accept: "application/json", "Content-Type": "application/json" },
-    method,
-  };
-}
-
-function getApiBaseUrl() {
-  return process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
-}
-
-function getCommonEndpoint(moduleKey: string) {
-  return commonEndpointByKey[moduleKey] ?? moduleKey;
 }
 
 function getReferenceModuleKey(columnKey: string): ReferenceModuleKey | null {

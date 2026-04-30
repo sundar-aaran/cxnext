@@ -1,6 +1,6 @@
 # Task
 
-Active reference: `#58`
+Active reference: `#59`
 
 ## Next Agent Handoff
 
@@ -10,10 +10,10 @@ Start here before any new implementation:
 2. Keep working directly on `main` unless the user asks for a branch.
 3. Continue the current `## Active` task. If it is complete, move its completed details to `assist/documentation/CHANGELOG.md`, then promote the first unchecked item from `## Upcoming` into `## Active`.
 4. Use reference/version alignment:
-   - `#58` means package version `1.0.58`.
-   - changelog section `## v-1.0.58`.
-   - changelog entry `### [v 1.0.58] YYYY-MM-DD - Title`.
-   - commit subject starts with `#58`.
+   - `#59` means package version `1.0.59`.
+   - changelog section `## v-1.0.59`.
+   - changelog entry `### [v 1.0.59] YYYY-MM-DD - Title`.
+   - commit subject starts with `#59`.
 5. Do not copy completed task details forward. Completed history belongs in `assist/documentation/CHANGELOG.md`.
 
 Command flow:
@@ -41,17 +41,12 @@ git push origin main
 
 ## Active
 
-- [x] `#58` Harden backend domain models
-  - [x] Replace placeholder backend DDD folders in `companies` and `industries` with small real domain entities, aggregates, and value objects.
-  - [x] Add create/update/delete domain events for company and industry write use cases.
-  - [x] Add architecture tests that prevent framework imports in backend domain folders.
+- [x] `#59` Refactor frontend feature module shells
+  - [x] Add missing `domain`/`infrastructure` folders to `common`, `company`, and `industry`.
+  - [x] Move feature API/browser adapters out of application service files.
+  - [x] Add structure tests for frontend bounded contexts.
 
 ## Upcoming
-
-- [ ] `#59` Refactor frontend feature module shells
-  - [ ] Add missing `infrastructure` folders to `common`, `company`, and `industry`.
-  - [ ] Move feature API/browser adapters out of application/interface files.
-  - [ ] Add structure tests for frontend bounded contexts.
 
 - [ ] `#60` Refactor frontend common and location features
   - [ ] Split common master pages and location pages into smaller application/interface units.

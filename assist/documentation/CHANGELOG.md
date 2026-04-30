@@ -2,11 +2,19 @@
 
 ## Version State
 
-- Current package version: `1.0.58`
-- Current release tag: `v-1.0.58`
+- Current package version: `1.0.59`
+- Current release tag: `v-1.0.59`
 - Versioned changelog label format: `v 1.0.<reference>`
 - Version section format: `## v-1.0.<reference>`
 - Entry format: `### [v 1.0.<reference>] YYYY-MM-DD - Title`
+
+## v-1.0.59
+
+### [v 1.0.59] 2026-04-30 - Refactor Frontend Feature Module Shells
+
+- Added strict frontend `domain/application/infrastructure/interface/pages` shells for common, company, and industry.
+- Moved common, company, and industry HTTP fetch adapters into module-local infrastructure files while preserving application service imports.
+- Added architecture coverage that keeps frontend API/browser adapters out of application services.
 
 ## v-1.0.58
 

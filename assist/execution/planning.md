@@ -1,45 +1,43 @@
 # Planning
 
-Active reference: `#58`
+Active reference: `#59`
 
 ## Active
 
-- `#58` Backend domain hardening
+- `#59` Frontend feature module shells
   - Goal:
-    - replace placeholder DDD folders with useful domain code and strengthen event publication across backend write flows.
+    - make `common`, `company`, and `industry` frontend features match `domain/application/infrastructure/interface/pages`.
   - Scope:
-    - start with `industries` and `companies` because they had record types but little real domain model.
-    - add create/update/delete events where they represent meaningful domain facts.
-    - keep event publisher abstractions module-local.
-    - update release tracking to `1.0.58`.
+    - move fetch/browser adapter code into `infrastructure`.
+    - keep route imports stable from existing `application` and `interface/pages` modules.
+    - add structure tests for frontend bounded contexts.
+    - update release tracking to `1.0.59`.
   - Constraints:
-    - preserve current HTTP and GraphQL response shape.
-    - publish events only after repository writes succeed.
-    - keep repositories inside `infrastructure/persistence`.
-    - keep event bus integration inside `infrastructure/adapters`.
-    - keep domain files framework-free.
+    - preserve all existing page imports and behavior.
+    - avoid touching desk navigation in this task.
+    - keep fetch/process environment access inside infrastructure files.
   - Planned validation:
-    - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd --filter @cxnext/server typecheck`
+    - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd --filter @cxnext/frontend typecheck`
     - targeted ESLint on changed files.
-    - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/server/companies/company-domain-events.test.ts tests/server/industries/industry-domain-events.test.ts tests/architecture/backend-domain-imports.test.ts tests/architecture/companies-module-boundaries.test.ts tests/architecture/industries-module-boundaries.test.ts`
-    - `node scripts/version-sync.mjs --ref 58`
+    - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture/frontend-feature-module-shells.test.ts`
+    - `node scripts/version-sync.mjs --ref 59`
     - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture/version-sync.test.ts tests/architecture/source-tree-artifacts.test.ts`
     - `git diff --check`
   - Implemented:
-    - added company and industry domain entities, aggregates, value objects, and create/update/delete domain events.
-    - added module-local domain event publisher ports and event-bus adapters.
-    - updated company and industry create/update/delete use cases to publish events after successful persistence.
-    - added domain import-boundary and event publication tests.
-    - updated release tracking to `1.0.58`.
+    - added `common/domain/common-master.ts`.
+    - moved common, company, and industry HTTP adapters into feature-local infrastructure files.
+    - preserved current application service imports through re-exports.
+    - added frontend feature module shell architecture tests.
+    - updated release tracking to `1.0.59`.
   - Validation:
-    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd --filter @cxnext/server typecheck`.
-    - passed targeted ESLint on changed backend domain, application, infrastructure, and test files.
-    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/server/companies/company-domain-events.test.ts tests/server/industries/industry-domain-events.test.ts tests/architecture/backend-domain-imports.test.ts tests/architecture/companies-module-boundaries.test.ts tests/architecture/industries-module-boundaries.test.ts`.
-    - passed `node scripts/version-sync.mjs --ref 58`.
-    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/server/companies/company-domain-events.test.ts tests/server/industries/industry-domain-events.test.ts tests/architecture/backend-domain-imports.test.ts tests/architecture/companies-module-boundaries.test.ts tests/architecture/industries-module-boundaries.test.ts tests/architecture/version-sync.test.ts tests/architecture/source-tree-artifacts.test.ts`.
+    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd --filter @cxnext/frontend typecheck`.
+    - passed targeted ESLint on changed frontend feature files and the architecture test.
+    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture/frontend-feature-module-shells.test.ts`.
+    - passed `node scripts/version-sync.mjs --ref 59`.
+    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture/frontend-feature-module-shells.test.ts tests/architecture/version-sync.test.ts tests/architecture/source-tree-artifacts.test.ts`.
     - passed `git diff --check`.
   - Residual risk:
-    - full final validation is deferred until the `#64` boundary-check task after the frontend refactors land.
+    - common/location still has application-level fetch code and is scheduled for `#60`.
 
 ## Roadmap
 
