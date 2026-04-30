@@ -2,11 +2,19 @@
 
 ## Version State
 
-- Current package version: `1.0.46`
-- Current release tag: `v-1.0.46`
+- Current package version: `1.0.47`
+- Current release tag: `v-1.0.47`
 - Versioned changelog label format: `v 1.0.<reference>`
 - Version section format: `## v-1.0.<reference>`
 - Entry format: `### [v 1.0.<reference>] YYYY-MM-DD - Title`
+
+## v-1.0.47
+
+### [v 1.0.47] 2026-04-30 - Refactor Industries Module Boundaries
+
+- Registered the industries bounded context through the module registry.
+- Routed industries HTTP writes through application use cases instead of direct repository access from controllers.
+- Added industries GraphQL read interface, module-local database migration/seeder exports, and focused architecture coverage for the strict backend module shape.
 
 ## v-1.0.46
 

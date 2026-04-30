@@ -1,9 +1,5 @@
 import { Injectable, type OnModuleDestroy } from "@nestjs/common";
-import {
-  createDatabaseConnection,
-  loadDatabaseEnv,
-  type DatabaseConnection,
-} from "@cxnext/db";
+import { createDatabaseConnection, loadDatabaseEnv, type DatabaseConnection } from "@cxnext/db";
 import type {
   IndustryRepository,
   IndustryUpsertParams,
