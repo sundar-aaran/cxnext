@@ -10,7 +10,16 @@ export type CommonMasterModuleKey =
   | "colours"
   | "sizes"
   | "styles"
-  | "units";
+  | "units"
+  | "hsnCodes"
+  | "taxes"
+  | "warehouses"
+  | "transports"
+  | "destinations"
+  | "orderTypes"
+  | "stockRejectionTypes"
+  | "currencies"
+  | "paymentTerms";
 
 export type CommonMasterColumnKey =
   | "code"
@@ -21,6 +30,18 @@ export type CommonMasterColumnKey =
   | "sortOrder"
   | "hexCode"
   | "symbol"
+  | "taxType"
+  | "ratePercent"
+  | "isDefaultLocation"
+  | "country"
+  | "state"
+  | "district"
+  | "city"
+  | "pincode"
+  | "addressLine1"
+  | "addressLine2"
+  | "decimalPlaces"
+  | "dueDays"
   | "showOnStorefrontTopMenu"
   | "showOnStorefrontCatalog"
   | "isActive";
@@ -126,6 +147,82 @@ export const commonMasterDefinitions = {
     label: "Units",
     listOrder: ["name", "asc"],
     writableColumns: ["code", "name", "symbol", "description", "isActive"],
+  },
+  hsnCodes: {
+    key: "hsnCodes",
+    tableName: "common_hsn_codes",
+    label: "HSN Codes",
+    listOrder: ["code", "asc"],
+    writableColumns: ["code", "name", "description", "isActive"],
+  },
+  taxes: {
+    key: "taxes",
+    tableName: "common_taxes",
+    label: "Taxes",
+    listOrder: ["name", "asc"],
+    writableColumns: ["code", "name", "taxType", "ratePercent", "description", "isActive"],
+  },
+  warehouses: {
+    key: "warehouses",
+    tableName: "common_warehouses",
+    label: "Warehouses",
+    listOrder: ["name", "asc"],
+    writableColumns: [
+      "code",
+      "name",
+      "isDefaultLocation",
+      "country",
+      "state",
+      "district",
+      "city",
+      "pincode",
+      "addressLine1",
+      "addressLine2",
+      "description",
+      "isActive",
+    ],
+  },
+  transports: {
+    key: "transports",
+    tableName: "common_transports",
+    label: "Transports",
+    listOrder: ["name", "asc"],
+    writableColumns: ["code", "name", "description", "isActive"],
+  },
+  destinations: {
+    key: "destinations",
+    tableName: "common_destinations",
+    label: "Destinations",
+    listOrder: ["name", "asc"],
+    writableColumns: ["code", "name", "description", "isActive"],
+  },
+  orderTypes: {
+    key: "orderTypes",
+    tableName: "common_order_types",
+    label: "Order Types",
+    listOrder: ["name", "asc"],
+    writableColumns: ["code", "name", "description", "isActive"],
+  },
+  stockRejectionTypes: {
+    key: "stockRejectionTypes",
+    tableName: "common_stock_rejection_types",
+    label: "Stock Rejection Types",
+    listOrder: ["name", "asc"],
+    writableColumns: ["code", "name", "description", "isActive"],
+  },
+  currencies: {
+    key: "currencies",
+    tableName: "common_currencies",
+    label: "Currencies",
+    listOrder: ["code", "asc"],
+    writableColumns: ["code", "name", "symbol", "decimalPlaces", "isActive"],
+  },
+  paymentTerms: {
+    key: "paymentTerms",
+    tableName: "common_payment_terms",
+    label: "Payment Terms",
+    listOrder: ["name", "asc"],
+    writableColumns: ["code", "name", "description", "dueDays", "isActive"],
   },
 } as const satisfies Record<CommonMasterModuleKey, CommonMasterDefinition>;
 

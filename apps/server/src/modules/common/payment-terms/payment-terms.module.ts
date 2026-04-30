@@ -1,9 +1,9 @@
 import { Module } from "@nestjs/common";
+import { commonMasterProviders } from "../infrastructure/common-master.providers";
 import { PaymentTermsController } from "./payment-terms.controller";
-import { PaymentTermsRepository } from "./payment-terms.repository";
 
 @Module({
   controllers: [PaymentTermsController],
-  providers: [PaymentTermsRepository],
+  providers: [...commonMasterProviders],
 })
 export class PaymentTermsModule {}

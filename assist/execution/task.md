@@ -1,6 +1,6 @@
 # Task
 
-Active reference: `#54`
+Active reference: `#57`
 
 ## Next Agent Handoff
 
@@ -10,10 +10,10 @@ Start here before any new implementation:
 2. Keep working directly on `main` unless the user asks for a branch.
 3. Continue the current `## Active` task. If it is complete, move its completed details to `assist/documentation/CHANGELOG.md`, then promote the first unchecked item from `## Upcoming` into `## Active`.
 4. Use reference/version alignment:
-   - `#54` means package version `1.0.54`.
-   - changelog section `## v-1.0.54`.
-   - changelog entry `### [v 1.0.54] YYYY-MM-DD - Title`.
-   - commit subject starts with `#54`.
+   - `#57` means package version `1.0.57`.
+   - changelog section `## v-1.0.57`.
+   - changelog entry `### [v 1.0.57] YYYY-MM-DD - Title`.
+   - commit subject starts with `#57`.
 5. Do not copy completed task details forward. Completed history belongs in `assist/documentation/CHANGELOG.md`.
 
 Command flow:
@@ -41,27 +41,13 @@ git push origin main
 
 ## Active
 
-- [x] `#54` Refactor common product attribute masters
-  - [x] Move `brands`, `colours`, `sizes`, `styles`, and `units` behind the common master DDD/application flow.
-  - [x] Preserve attribute-specific field mapping and list response shape.
+- [x] `#55-#57` Refactor remaining common masters
+  - [x] Move compliance, logistics/order, finance, and terms masters behind common master boundaries.
+  - [x] Preserve specialized field mapping and list response shape.
   - [x] Add create/update/delete domain events and event-bus publication.
   - [x] Add focused boundary and event tests.
 
 ## Upcoming
-
-- [ ] `#55` Refactor common compliance masters
-  - [ ] Move `hsn-codes` and `taxes` behind use cases, ports, and infrastructure adapters.
-  - [ ] Keep tax-specific fields out of generic controller code.
-  - [ ] Add focused tests for tax/HSN persistence mapping and write events.
-
-- [ ] `#56` Refactor common order and logistics masters
-  - [ ] Move `warehouses`, `transports`, `destinations`, `order-types`, and `stock-rejection-types` behind common master boundaries.
-  - [ ] Preserve current API shape while moving orchestration into application use cases.
-  - [ ] Add focused boundary and event tests.
-
-- [ ] `#57` Refactor common finance and terms masters
-  - [ ] Move `currencies` and `payment-terms` behind common master boundaries.
-  - [ ] Add write events and tests for expected status/delete behavior.
 
 - [ ] `#58` Harden backend domain models
   - [ ] Replace placeholder backend DDD folders in `companies`, `industries`, and applicable common areas with small real domain entities/value objects where useful.

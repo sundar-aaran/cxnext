@@ -21,6 +21,18 @@ type CommonMasterRow = Record<string, unknown> & {
   readonly sort_order?: number | string | null;
   readonly hex_code?: string | null;
   readonly symbol?: string | null;
+  readonly tax_type?: string | null;
+  readonly rate_percent?: number | string | null;
+  readonly is_default_location?: boolean | number | null;
+  readonly country?: string | null;
+  readonly state?: string | null;
+  readonly district?: string | null;
+  readonly city?: string | null;
+  readonly pincode?: string | null;
+  readonly address_line1?: string | null;
+  readonly address_line2?: string | null;
+  readonly decimal_places?: number | string | null;
+  readonly due_days?: number | string | null;
   readonly show_on_storefront_top_menu?: boolean | number | null;
   readonly show_on_storefront_catalog?: boolean | number | null;
   readonly is_active: boolean | number;
@@ -205,6 +217,49 @@ function toDatabasePayload(
       case "symbol":
         payload.symbol = params.symbol?.trim() || null;
         break;
+      case "taxType":
+        payload.tax_type = params.taxType?.trim() || null;
+        break;
+      case "ratePercent":
+        payload.rate_percent =
+          params.ratePercent === null || params.ratePercent === undefined
+            ? 0
+            : Number(params.ratePercent);
+        break;
+      case "isDefaultLocation":
+        payload.is_default_location = Boolean(params.isDefaultLocation);
+        break;
+      case "country":
+        payload.country = params.country?.trim() || null;
+        break;
+      case "state":
+        payload.state = params.state?.trim() || null;
+        break;
+      case "district":
+        payload.district = params.district?.trim() || null;
+        break;
+      case "city":
+        payload.city = params.city?.trim() || null;
+        break;
+      case "pincode":
+        payload.pincode = params.pincode?.trim() || null;
+        break;
+      case "addressLine1":
+        payload.address_line1 = params.addressLine1?.trim() || null;
+        break;
+      case "addressLine2":
+        payload.address_line2 = params.addressLine2?.trim() || null;
+        break;
+      case "decimalPlaces":
+        payload.decimal_places =
+          params.decimalPlaces === null || params.decimalPlaces === undefined
+            ? 0
+            : Number(params.decimalPlaces);
+        break;
+      case "dueDays":
+        payload.due_days =
+          params.dueDays === null || params.dueDays === undefined ? 0 : Number(params.dueDays);
+        break;
       case "showOnStorefrontTopMenu":
         payload.show_on_storefront_top_menu = Boolean(params.showOnStorefrontTopMenu);
         break;
@@ -233,6 +288,27 @@ function toCommonMasterRecord(row: CommonMasterRow): CommonMasterRecord {
       row.sort_order === null || row.sort_order === undefined ? null : Number(row.sort_order),
     hexCode: row.hex_code ?? null,
     symbol: row.symbol ?? null,
+    taxType: row.tax_type ?? null,
+    ratePercent:
+      row.rate_percent === null || row.rate_percent === undefined
+        ? null
+        : Number(row.rate_percent),
+    isDefaultLocation:
+      row.is_default_location === null || row.is_default_location === undefined
+        ? null
+        : Boolean(row.is_default_location),
+    country: row.country ?? null,
+    state: row.state ?? null,
+    district: row.district ?? null,
+    city: row.city ?? null,
+    pincode: row.pincode ?? null,
+    addressLine1: row.address_line1 ?? null,
+    addressLine2: row.address_line2 ?? null,
+    decimalPlaces:
+      row.decimal_places === null || row.decimal_places === undefined
+        ? null
+        : Number(row.decimal_places),
+    dueDays: row.due_days === null || row.due_days === undefined ? null : Number(row.due_days),
     showOnStorefrontTopMenu:
       row.show_on_storefront_top_menu === null ||
       row.show_on_storefront_top_menu === undefined

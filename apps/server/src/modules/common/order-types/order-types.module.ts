@@ -1,9 +1,9 @@
 import { Module } from "@nestjs/common";
+import { commonMasterProviders } from "../infrastructure/common-master.providers";
 import { OrderTypesController } from "./order-types.controller";
-import { OrderTypesRepository } from "./order-types.repository";
 
 @Module({
   controllers: [OrderTypesController],
-  providers: [OrderTypesRepository],
+  providers: [...commonMasterProviders],
 })
 export class OrderTypesModule {}

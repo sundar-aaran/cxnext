@@ -20,6 +20,25 @@ export interface CommonMasterUpsertRequest {
   readonly hexCode?: unknown;
   readonly hex_code?: unknown;
   readonly symbol?: unknown;
+  readonly taxType?: unknown;
+  readonly tax_type?: unknown;
+  readonly ratePercent?: unknown;
+  readonly rate_percent?: unknown;
+  readonly isDefaultLocation?: unknown;
+  readonly is_default_location?: unknown;
+  readonly country?: unknown;
+  readonly state?: unknown;
+  readonly district?: unknown;
+  readonly city?: unknown;
+  readonly pincode?: unknown;
+  readonly addressLine1?: unknown;
+  readonly address_line1?: unknown;
+  readonly addressLine2?: unknown;
+  readonly address_line2?: unknown;
+  readonly decimalPlaces?: unknown;
+  readonly decimal_places?: unknown;
+  readonly dueDays?: unknown;
+  readonly due_days?: unknown;
   readonly showOnStorefrontTopMenu?: unknown;
   readonly show_on_storefront_top_menu?: unknown;
   readonly showOnStorefrontCatalog?: unknown;
@@ -110,6 +129,18 @@ function parseCommonMasterRequest(body: CommonMasterUpsertRequest): CommonMaster
     sortOrder: toNumberValue(body.sortOrder ?? body.sort_order),
     hexCode: toNullableStringValue(body.hexCode ?? body.hex_code),
     symbol: toNullableStringValue(body.symbol),
+    taxType: toNullableStringValue(body.taxType ?? body.tax_type),
+    ratePercent: toNumberValue(body.ratePercent ?? body.rate_percent),
+    isDefaultLocation: toBooleanValue(body.isDefaultLocation ?? body.is_default_location),
+    country: toNullableStringValue(body.country),
+    state: toNullableStringValue(body.state),
+    district: toNullableStringValue(body.district),
+    city: toNullableStringValue(body.city),
+    pincode: toNullableStringValue(body.pincode),
+    addressLine1: toNullableStringValue(body.addressLine1 ?? body.address_line1),
+    addressLine2: toNullableStringValue(body.addressLine2 ?? body.address_line2),
+    decimalPlaces: toNumberValue(body.decimalPlaces ?? body.decimal_places),
+    dueDays: toNumberValue(body.dueDays ?? body.due_days),
     showOnStorefrontTopMenu: toBooleanValue(
       body.showOnStorefrontTopMenu ?? body.show_on_storefront_top_menu,
     ),

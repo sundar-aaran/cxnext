@@ -1,9 +1,9 @@
 import { Module } from "@nestjs/common";
+import { commonMasterProviders } from "../infrastructure/common-master.providers";
 import { HsnCodesController } from "./hsn-codes.controller";
-import { HsnCodesRepository } from "./hsn-codes.repository";
 
 @Module({
   controllers: [HsnCodesController],
-  providers: [HsnCodesRepository],
+  providers: [...commonMasterProviders],
 })
 export class HsnCodesModule {}

@@ -1,23 +1,22 @@
 # Planning
 
-Active reference: `#54`
+Active reference: `#57`
 
 ## Active
 
-- `#54` Refactor common product attribute masters
+- `#55-#57` Refactor remaining common masters
   - Goal:
-    - move `brands`, `colours`, `sizes`, `styles`, and `units` out of controller/repository CRUD and into common master domain/application/infrastructure/interface layering.
+    - move compliance, logistics/order, finance, and terms common masters out of controller/repository CRUD and into common master domain/application/infrastructure/interface layering.
   - Scope:
-    - extend or reuse the common master definition/repository/use-case flow from `#52` and `#53`.
-    - preserve attribute master writable fields and response shape, including colour and unit-specific fields.
-    - rewrite each attribute controller to extend the common master controller base and inject use cases instead of repositories.
-    - rewrite each attribute module to import shared infrastructure providers.
-    - remove direct controller-to-repository access from product attribute controllers.
-    - add architecture tests that verify no attribute controller imports a repository directly and domain files stay framework-free.
-    - add use-case or boundary coverage for attribute event publication and field mapping.
-    - update release tracking to `1.0.54`.
+    - extend the common master definition/repository/use-case flow for HSN codes, taxes, warehouses, transports, destinations, order types, stock rejection types, currencies, and payment terms.
+    - preserve specialized field mapping for taxes, warehouses, currencies, and payment terms.
+    - rewrite each controller to extend the common master controller base and inject use cases instead of repositories.
+    - rewrite each module to import shared infrastructure providers.
+    - remove direct controller-to-repository access from the migrated controllers.
+    - add architecture and use-case coverage for the remaining common master boundary.
+    - update release tracking to `1.0.57`.
   - Constraints:
-    - preserve current HTTP routes: `common/brands`, `common/colours`, `common/sizes`, `common/styles`, and `common/units`.
+    - preserve current HTTP routes and response shape.
     - preserve current response shape and soft-delete/force-delete behavior.
     - keep Kysely inside `infrastructure/persistence`.
     - keep event bus integration inside `infrastructure/adapters`.
@@ -25,24 +24,22 @@ Active reference: `#54`
   - Planned validation:
     - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd --filter @cxnext/server typecheck`
     - targeted ESLint on changed files.
-    - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/server/common/product-attribute-use-cases.test.ts tests/architecture/common-product-attribute-boundaries.test.ts`
-    - `node scripts/version-sync.mjs --ref 54`
+    - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/server/common/remaining-master-use-cases.test.ts tests/architecture/common-remaining-master-boundaries.test.ts`
+    - `node scripts/version-sync.mjs --ref 57`
     - `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/architecture/version-sync.test.ts tests/architecture/source-tree-artifacts.test.ts`
     - `git diff --check`
   - Implemented:
-    - extended common master definitions to include brands, colours, sizes, styles, and units.
-    - preserved colour `hexCode`, size `sortOrder`, and unit `symbol` field mapping.
-    - rewired product attribute controllers to extend the shared common master controller base and inject use cases.
-    - rewired product attribute modules to use shared common master infrastructure providers.
-    - removed the old per-child product attribute repository files.
-    - added boundary and use-case tests for repository-free controllers, provider wiring, removed repository files, attribute field definitions, and write-event publication.
-    - updated release tracking to `1.0.54`.
+    - extended common master definitions for the nine remaining common master modules.
+    - preserved specialized field mapping for `taxType`, `ratePercent`, warehouse address fields, `decimalPlaces`, and `dueDays`.
+    - rewired remaining common master controllers/modules to the shared common master boundary.
+    - removed the old per-child repository files.
+    - added boundary and use-case tests for repository-free controllers, provider wiring, removed repository files, specialized definitions, and write-event publication.
+    - updated release tracking to `1.0.57`.
   - Validation:
     - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd --filter @cxnext/server typecheck`.
-    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/server/common/product-attribute-use-cases.test.ts tests/architecture/common-product-attribute-boundaries.test.ts tests/server/common/product-taxonomy-use-cases.test.ts tests/architecture/common-product-taxonomy-boundaries.test.ts tests/server/common/contact-master-use-cases.test.ts tests/architecture/common-contact-master-boundaries.test.ts`.
-    - passed `node scripts/version-sync.mjs --ref 54`.
-    - passed targeted ESLint on changed `#54` source and test files.
-    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/server/common/product-attribute-use-cases.test.ts tests/architecture/common-product-attribute-boundaries.test.ts tests/server/common/product-taxonomy-use-cases.test.ts tests/architecture/common-product-taxonomy-boundaries.test.ts tests/server/common/contact-master-use-cases.test.ts tests/architecture/common-contact-master-boundaries.test.ts tests/architecture/version-sync.test.ts tests/architecture/source-tree-artifacts.test.ts`.
+    - passed targeted ESLint on changed common master source and test files.
+    - passed `C:\Users\sunda\AppData\Roaming\npm\pnpm.cmd exec vitest run tests/server/common/remaining-master-use-cases.test.ts tests/architecture/common-remaining-master-boundaries.test.ts tests/server/common/product-attribute-use-cases.test.ts tests/architecture/common-product-attribute-boundaries.test.ts tests/server/common/product-taxonomy-use-cases.test.ts tests/architecture/common-product-taxonomy-boundaries.test.ts tests/server/common/contact-master-use-cases.test.ts tests/architecture/common-contact-master-boundaries.test.ts tests/architecture/version-sync.test.ts tests/architecture/source-tree-artifacts.test.ts`.
+    - passed `node scripts/version-sync.mjs --ref 57`.
     - passed `git diff --check`.
   - Residual risk:
     - full server lint is still blocked by unrelated common modules that are scheduled for later roadmap tasks and still use older repository/controller patterns.

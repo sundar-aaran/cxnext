@@ -2,11 +2,19 @@
 
 ## Version State
 
-- Current package version: `1.0.54`
-- Current release tag: `v-1.0.54`
+- Current package version: `1.0.57`
+- Current release tag: `v-1.0.57`
 - Versioned changelog label format: `v 1.0.<reference>`
 - Version section format: `## v-1.0.<reference>`
 - Entry format: `### [v 1.0.<reference>] YYYY-MM-DD - Title`
+
+## v-1.0.57
+
+### [v 1.0.57] 2026-04-30 - Refactor Remaining Common Master Boundaries
+
+- Moved HSN codes, taxes, warehouses, transports, destinations, order types, stock rejection types, currencies, and payment terms behind the shared common master use cases, repository port, and infrastructure providers.
+- Extended common master definitions and persistence mapping for compliance, warehouse address, currency decimal, and payment due-day fields.
+- Removed direct repository injection from the remaining common master controllers and added focused boundary and event coverage.
 
 ## v-1.0.54
 
