@@ -1,12 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { AnimatedTabs, Button, Input, Label, Separator } from "@cxnext/ui";
 import { calculateSalesTotals, formatMoney } from "../../application/sales-service";
 import {
   defaultSalesItem,
+  getSalesIndustryKind,
   type SalesInput,
+  type SalesIndustryKind,
   type SalesItemInput,
   type SalesLookupOption,
 } from "../../domain/sales";
@@ -19,11 +21,13 @@ export const salesTypeOptions = [
 export function SalesVoucherTabs({
   contacts,
   form,
+  industryName,
   products,
   setForm,
 }: {
   readonly contacts: readonly SalesLookupOption[];
   readonly form: SalesInput;
+  readonly industryName?: string | null;
   readonly products: readonly SalesLookupOption[];
   readonly setForm: (value: SalesInput) => void;
 }) {
@@ -44,6 +48,7 @@ export function SalesVoucherTabs({
             <DetailsTab
               contacts={contacts}
               form={form}
+              industryKind={getSalesIndustryKind(industryName)}
               itemDraft={itemDraft}
               products={products}
               setForm={setForm}
@@ -71,6 +76,7 @@ export function SalesVoucherTabs({
 function DetailsTab({
   contacts,
   form,
+  industryKind,
   itemDraft,
   products,
   setForm,
@@ -79,6 +85,7 @@ function DetailsTab({
 }: {
   readonly contacts: readonly SalesLookupOption[];
   readonly form: SalesInput;
+  readonly industryKind: SalesIndustryKind;
   readonly itemDraft: SalesItemInput;
   readonly products: readonly SalesLookupOption[];
   readonly setForm: (value: SalesInput) => void;
@@ -150,7 +157,12 @@ function DetailsTab({
         <h2 className="text-lg font-semibold text-primary underline underline-offset-4">
           Sales Items
         </h2>
-        <div className="grid gap-3 lg:grid-cols-[1.3fr_1fr_0.5fr_0.5fr_auto]">
+        <div className="grid gap-3 lg:grid-cols-[repeat(6,minmax(0,1fr))_auto]">
+          <IndustryItemDraftFields
+            itemDraft={itemDraft}
+            kind={industryKind}
+            setItemDraft={setItemDraft}
+          />
           <LookupField
             label="Product name"
             options={products}
@@ -161,14 +173,6 @@ function DetailsTab({
             }
             onValueChange={(value) => setItemDraft({ ...itemDraft, productName: value })}
           />
-          <Field label="Description">
-            <Input
-              className="h-11 rounded-md"
-              placeholder="description"
-              value={itemDraft.description ?? ""}
-              onChange={(event) => setItemDraft({ ...itemDraft, description: event.target.value })}
-            />
-          </Field>
           <Field label="Quantity">
             <Input
               className="h-11 rounded-md"
@@ -196,7 +200,7 @@ function DetailsTab({
             Add
           </Button>
         </div>
-        <SalesItemsTable form={form} setForm={setForm} />
+        <SalesItemsTable form={form} industryKind={industryKind} setForm={setForm} />
         <TotalsFooter form={form} setForm={setForm} totals={totals} />
       </section>
     </div>
@@ -205,24 +209,27 @@ function DetailsTab({
 
 function SalesItemsTable({
   form,
+  industryKind,
   setForm,
 }: {
   readonly form: SalesInput;
+  readonly industryKind: SalesIndustryKind;
   readonly setForm: (value: SalesInput) => void;
 }) {
   const totals = calculateSalesTotals(form.items, form.roundOff);
+  const headers = getItemTableHeaders(industryKind);
 
   return (
     <div className="overflow-x-auto rounded-md border border-border/70">
       <table className="w-full min-w-[900px] border-collapse text-sm">
         <thead className="bg-muted/45 text-muted-foreground">
           <tr>
-            {itemTableHeaders.map((header) => (
+            {headers.map((header) => (
               <th
-                key={header}
+                key={header.id}
                 className="border-b border-border/70 px-3 py-2.5 text-center font-medium"
               >
-                {header}
+                {header.label}
               </th>
             ))}
           </tr>
@@ -237,14 +244,11 @@ function SalesItemsTable({
                 className="border-b border-border/60 last:border-b-0"
               >
                 <td className="px-3 py-2.5 text-center text-muted-foreground">{index + 1}</td>
-                <td className="px-3 py-2.5">{item.productName}</td>
-                <td className="px-3 py-2.5 text-muted-foreground">{item.description ?? "-"}</td>
-                <td className="px-3 py-2.5 text-center">{item.quantity}</td>
-                <td className="px-3 py-2.5 text-right">{formatMoney(item.rate)}</td>
-                <td className="px-3 py-2.5 text-right">{formatMoney(taxable)}</td>
-                <td className="px-3 py-2.5 text-center">{item.taxRate}</td>
-                <td className="px-3 py-2.5 text-right">{formatMoney(gst)}</td>
-                <td className="px-3 py-2.5 text-right">{formatMoney(taxable + gst)}</td>
+                {headers.slice(1, -1).map((header) => (
+                  <td key={header.id} className="px-3 py-2.5">
+                    {itemTableValue(header.id, item, taxable, gst)}
+                  </td>
+                ))}
                 <td className="px-3 py-2.5 text-center">
                   <Button
                     type="button"
@@ -265,7 +269,7 @@ function SalesItemsTable({
             );
           })}
           <tr className="bg-muted/20 font-medium">
-            <td className="px-3 py-2.5 text-center" colSpan={3}>
+            <td className="px-3 py-2.5 text-center" colSpan={Math.max(1, headers.length - 7)}>
               TOTALS.
             </td>
             <td className="px-3 py-2.5 text-center">
@@ -312,6 +316,77 @@ function TotalsFooter({
   );
 }
 
+function IndustryItemDraftFields({
+  itemDraft,
+  kind,
+  setItemDraft,
+}: {
+  readonly itemDraft: SalesItemInput;
+  readonly kind: SalesIndustryKind;
+  readonly setItemDraft: (value: SalesItemInput) => void;
+}) {
+  if (kind === "offset") {
+    return (
+      <>
+        <Field label="PO no">
+          <Input
+            className="h-11 rounded-md"
+            value={itemDraft.poNo ?? ""}
+            onChange={(event) => setItemDraft({ ...itemDraft, poNo: event.target.value })}
+          />
+        </Field>
+        <Field label="DC no">
+          <Input
+            className="h-11 rounded-md"
+            value={itemDraft.dcNo ?? ""}
+            onChange={(event) => setItemDraft({ ...itemDraft, dcNo: event.target.value })}
+          />
+        </Field>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <Field label="Description">
+        <Input
+          className="h-11 rounded-md"
+          value={itemDraft.description ?? ""}
+          onChange={(event) => setItemDraft({ ...itemDraft, description: event.target.value })}
+        />
+      </Field>
+      <Field label="Size">
+        <Input
+          className="h-11 rounded-md"
+          value={itemDraft.size ?? ""}
+          onChange={(event) => setItemDraft({ ...itemDraft, size: event.target.value })}
+        />
+      </Field>
+      {kind === "garment" ? (
+        <Field label="Colour">
+          <Input
+            className="h-11 rounded-md"
+            value={itemDraft.colour ?? ""}
+            onChange={(event) => setItemDraft({ ...itemDraft, colour: event.target.value })}
+          />
+        </Field>
+      ) : (
+        <Field label="Area sq">
+          <Input
+            className="h-11 rounded-md"
+            min="0"
+            type="number"
+            value={itemDraft.areaSq}
+            onChange={(event) =>
+              setItemDraft({ ...itemDraft, areaSq: Number(event.target.value || 0) })
+            }
+          />
+        </Field>
+      )}
+    </>
+  );
+}
+
 function AddressTab({
   form,
   setForm,
@@ -354,6 +429,21 @@ function EwayTab({
           type="date"
           value={form.dueDate ?? ""}
           onChange={(event) => setForm({ ...form, dueDate: event.target.value })}
+        />
+      </Field>
+      <Field label="E-way bill no">
+        <Input
+          className="h-11 rounded-md"
+          value={form.ewayBillNo ?? ""}
+          onChange={(event) => setForm({ ...form, ewayBillNo: event.target.value })}
+        />
+      </Field>
+      <Field label="E-way bill date">
+        <Input
+          className="h-11 rounded-md"
+          type="date"
+          value={form.ewayBillDate ?? ""}
+          onChange={(event) => setForm({ ...form, ewayBillDate: event.target.value })}
         />
       </Field>
       <Field label="Notes">
@@ -474,15 +564,96 @@ function SummaryRow({
   );
 }
 
-const itemTableHeaders = [
-  "#",
-  "Items",
-  "Description",
-  "Quantity",
-  "Rate",
-  "Taxable",
-  "GST Percent",
-  "GST",
-  "Sub Total",
-  "Action",
-] as const;
+type ItemTableColumnId =
+  | "action"
+  | "areaSq"
+  | "colour"
+  | "dcNo"
+  | "description"
+  | "gst"
+  | "hsnCode"
+  | "particulars"
+  | "poNo"
+  | "price"
+  | "quantity"
+  | "serialNo"
+  | "size"
+  | "subTotal"
+  | "taxPercent"
+  | "taxableAmount";
+
+function getItemTableHeaders(kind: SalesIndustryKind) {
+  const amountHeaders = [
+    header("quantity", "Quantity"),
+    header("price", "Rate"),
+    header("taxableAmount", "Taxable"),
+    header("taxPercent", "GST Percent"),
+    header("gst", "GST"),
+    header("subTotal", "Sub Total"),
+    header("action", "Action"),
+  ];
+
+  if (kind === "garment") {
+    return [
+      header("serialNo", "#"),
+      header("hsnCode", "HSN Code"),
+      header("particulars", "Particulars"),
+      header("description", "Description"),
+      header("size", "Size"),
+      header("colour", "Colour"),
+      ...amountHeaders,
+    ];
+  }
+
+  if (kind === "upvc") {
+    return [
+      header("serialNo", "#"),
+      header("particulars", "Particulars"),
+      header("description", "Description"),
+      header("size", "Size"),
+      header("areaSq", "Area sq"),
+      ...amountHeaders,
+    ];
+  }
+
+  return [
+    header("serialNo", "#"),
+    header("poNo", "PO no"),
+    header("dcNo", "DC no"),
+    header("particulars", "Particulars"),
+    header("hsnCode", "HSN Code"),
+    ...amountHeaders,
+  ];
+}
+
+function header(id: ItemTableColumnId, label: string) {
+  return { id, label };
+}
+
+function itemTableValue(
+  columnId: ItemTableColumnId,
+  item: SalesItemInput,
+  taxable: number,
+  gst: number,
+) {
+  const values: Record<ItemTableColumnId, ReactNode> = {
+    action: "",
+    areaSq: item.areaSq || "-",
+    colour: item.colour ?? "-",
+    dcNo: item.dcNo ?? "-",
+    description: item.description ?? "-",
+    gst: formatMoney(gst),
+    hsnCode: item.hsnCodeId ?? "-",
+    particulars: item.productName,
+    poNo: item.poNo ?? "-",
+    price: formatMoney(item.rate),
+    quantity: item.quantity,
+    serialNo: "",
+    size: item.size ?? "-",
+    subTotal: formatMoney(taxable + gst),
+    taxPercent: item.taxRate,
+    taxableAmount: formatMoney(taxable),
+  };
+
+  return values[columnId];
+}

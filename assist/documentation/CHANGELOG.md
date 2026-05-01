@@ -10,6 +10,13 @@
 
 ## v-1.0.69
 
+### [v 1.0.69] 2026-05-01 - Calibrate Sales Invoice Print Lines
+
+- Added a pure Sales print line-planning helper with PO/DC wrapping, particulars counting, and focused tests.
+- Locked Sales invoice item grids to the calibrated 27-line page-fit budget.
+- Added a screen-only Sales show diagnostic panel that reports item lines, blank lines, budget, and template status.
+- Captured `SAL-LINE-005` as the reference fit case: 7 item lines and 20 blank lines.
+
 ### [v 1.0.69] 2026-04-30 - Refine Sales Invoice Print Layout
 
 - Reworked the Sales print invoice header with a centered top `TAX INVOICE` label, right-aligned original-copy marker, and larger portal-style QR area.

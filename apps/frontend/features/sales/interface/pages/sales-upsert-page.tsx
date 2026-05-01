@@ -20,6 +20,7 @@ import {
   prepareSalesInput,
   upsertSales,
 } from "../../application/sales-service";
+import { listCompanies } from "../../../company/application/company-service";
 import { defaultSalesInput, type SalesInput, type SalesLookupOption } from "../../domain/sales";
 import { SalesVoucherTabs, salesTypeOptions } from "../components/sales-voucher-form";
 
@@ -29,6 +30,7 @@ export function SalesUpsertPage({ salesId }: { readonly salesId?: number }) {
   const isEdit = Boolean(salesId);
   const [form, setForm] = useState<SalesInput>(createSalesVoucherInput());
   const [contacts, setContacts] = useState<readonly SalesLookupOption[]>([]);
+  const [industryName, setIndustryName] = useState<string | null>(null);
   const [products, setProducts] = useState<readonly SalesLookupOption[]>([]);
 
   useEffect(() => {
@@ -39,6 +41,12 @@ export function SalesUpsertPage({ salesId }: { readonly salesId?: number }) {
     void listSalesProductLookups({ signal: controller.signal })
       .then(setProducts)
       .catch(() => setProducts([]));
+    void listCompanies({ signal: controller.signal })
+      .then((companies) => {
+        const company = companies.find((item) => item.isPrimary) ?? companies[0] ?? null;
+        setIndustryName(company?.industryName ?? null);
+      })
+      .catch(() => setIndustryName(null));
     return () => controller.abort();
   }, []);
 
@@ -52,6 +60,7 @@ export function SalesUpsertPage({ salesId }: { readonly salesId?: number }) {
           ...defaultSalesInput(),
           ...record,
           documentDate: record.documentDate.slice(0, 10),
+          ewayBillDate: record.ewayBillDate ? record.ewayBillDate.slice(0, 10) : null,
           placeOfSupply: record.placeOfSupply ?? salesTypeOptions[0].value,
         });
       })
@@ -95,6 +104,7 @@ export function SalesUpsertPage({ salesId }: { readonly salesId?: number }) {
               <SalesVoucherTabs
                 contacts={contacts}
                 form={form}
+                industryName={industryName}
                 products={products}
                 setForm={setForm}
               />

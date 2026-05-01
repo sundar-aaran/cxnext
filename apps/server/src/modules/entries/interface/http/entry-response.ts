@@ -5,6 +5,7 @@ export function toBillingEntryResponse(entry: BillingEntryRecord) {
     ...entry,
     documentDate: entry.documentDate.toISOString(),
     dueDate: entry.dueDate?.toISOString() ?? null,
+    ewayBillDate: entry.ewayBillDate?.toISOString() ?? null,
     supplierInvoiceDate: entry.supplierInvoiceDate?.toISOString() ?? null,
     createdAt: entry.createdAt.toISOString(),
     updatedAt: entry.updatedAt.toISOString(),

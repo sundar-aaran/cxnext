@@ -317,6 +317,8 @@ export interface SalesTable extends BillingEntryTable {
   readonly customer_name: string;
   readonly shipping_address: string | null;
   readonly price_list_id: string | null;
+  readonly eway_bill_no: string | null;
+  readonly eway_bill_date: NullableTimestampColumn;
 }
 
 export interface PurchasesTable extends BillingEntryTable {
@@ -333,7 +335,12 @@ interface BillingItemTable {
   readonly product_id: string | null;
   readonly product_name: string;
   readonly product_sku: string | null;
+  readonly po_no: string | null;
+  readonly dc_no: string | null;
   readonly description: string | null;
+  readonly size: string | null;
+  readonly colour: string | null;
+  readonly area_sq: ColumnType<number, number | string | undefined, number | string>;
   readonly hsn_code_id: string | null;
   readonly unit_id: string | null;
   readonly quantity: ColumnType<number, number | string | undefined, number | string>;

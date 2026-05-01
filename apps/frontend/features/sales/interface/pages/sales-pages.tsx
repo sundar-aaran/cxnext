@@ -26,15 +26,18 @@ import {
   prepareSalesInput,
   upsertSales,
 } from "../../application/sales-service";
+import { listCompanies } from "../../../company/application/company-service";
 import {
   defaultSalesInput,
   defaultSalesColumnVisibility,
+  getSalesIndustryKind,
   salesStatusFilters,
   type SalesColumnId,
   type SalesRecord,
   type SalesStatusFilter,
 } from "../../domain/sales";
 import { SalesInvoiceDocument } from "./sales-print-page";
+import { getSalesPrintLinePlan } from "./sales-print-line-plan";
 
 export { SalesUpsertPage } from "./sales-upsert-page";
 
@@ -104,6 +107,7 @@ export function SalesListPage() {
           ...record,
           documentDate: record.documentDate.slice(0, 10),
           dueDate: record.dueDate ? record.dueDate.slice(0, 10) : null,
+          ewayBillDate: record.ewayBillDate ? record.ewayBillDate.slice(0, 10) : null,
           isActive: true,
         }),
         record.id,
@@ -252,6 +256,7 @@ export function SalesShowPage({
 }) {
   const { show } = useGlobalLoader();
   const [record, setRecord] = useState<SalesRecord | null>(null);
+  const [industryName, setIndustryName] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -266,6 +271,17 @@ export function SalesShowPage({
       hide();
     };
   }, [salesId, show]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    listCompanies({ signal: controller.signal })
+      .then((companies) => {
+        const company = companies.find((item) => item.isPrimary) ?? companies[0] ?? null;
+        setIndustryName(company?.industryName ?? null);
+      })
+      .catch(() => setIndustryName(null));
+    return () => controller.abort();
+  }, []);
 
   useEffect(() => {
     if (!record || !shouldPrint) return;
@@ -288,6 +304,13 @@ export function SalesShowPage({
   }
 
   const previousSalesId = salesId > 1 ? salesId - 1 : null;
+  const salesPrintLinePlan = getSalesPrintLinePlan(
+    record.items,
+    getSalesIndustryKind(industryName),
+  );
+  const itemLineRows = salesPrintLinePlan.rows.filter((row) => row.kind === "item");
+  const usedItemLines = itemLineRows.reduce((total, row) => total + row.lineCount, 0);
+  const blankLineCount = salesPrintLinePlan.rows.filter((row) => row.kind === "blank").length;
 
   return (
     <main className="theme-shell mx-auto min-h-screen w-[94%] pb-8 pt-8 text-black sm:w-[92%] lg:w-[90%] print:fixed print:inset-0 print:z-[9999] print:min-h-0 print:w-full print:overflow-visible print:bg-white print:p-0">
@@ -336,9 +359,34 @@ export function SalesShowPage({
           </Button>
         </div>
       </div>
+      <div className="mx-auto mb-3 w-fit max-w-full rounded-md border border-border/70 bg-card/95 p-3 text-sm text-foreground shadow-sm print:hidden">
+        <div className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+          <span className="font-medium">Invoice print lines</span>
+          <span>Items: {usedItemLines}</span>
+          <span>Blank: {blankLineCount}</span>
+          <span>Budget: {salesPrintLinePlan.lineBudget}</span>
+          <span>
+            Template:{" "}
+            {salesPrintLinePlan.requiresTwoPageTemplate ? "two-page required" : "single-page"}
+          </span>
+        </div>
+        <div className="grid gap-1 text-xs text-muted-foreground">
+          {itemLineRows.map((row) => (
+            <div key={row.index} className="grid grid-cols-[42px_1fr_auto] gap-3">
+              <span>#{row.index + 1}</span>
+              <span className="truncate">
+                {row.item.productName}
+                {row.item.poNo ? ` | PO ${row.item.poNo.length} chars` : ""}
+                {row.item.dcNo ? ` | DC ${row.item.dcNo.length} chars` : ""}
+              </span>
+              <span className="font-medium text-foreground">{row.lineCount} line(s)</span>
+            </div>
+          ))}
+        </div>
+      </div>
       <section className="mx-auto w-fit max-w-full overflow-hidden rounded-md border border-border/70 bg-card shadow-sm print:contents">
         <div className="overflow-x-auto p-3 print:contents sm:p-4">
-          <SalesInvoiceDocument record={record} />
+          <SalesInvoiceDocument industryName={industryName} record={record} />
         </div>
       </section>
     </main>

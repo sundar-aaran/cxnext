@@ -5,6 +5,7 @@ import { createCommonLocationMigration } from "./004-create-common-location";
 import { createContactsMigration } from "./005-create-contacts";
 import { createProductsMigration } from "./006-create-products";
 import { createEntriesMigration } from "./007-create-entries";
+import { extendSalesIndustryFieldsMigration } from "./008-extend-sales-industry-fields";
 import {
   contactsCommonMigrations,
   locationCommonMigrations,
@@ -21,6 +22,7 @@ export const databaseMigrations = [
   createContactsMigration,
   createProductsMigration,
   createEntriesMigration,
+  extendSalesIndustryFieldsMigration,
   ...locationCommonMigrations,
   ...contactsCommonMigrations,
   ...productCommonMigrations,
@@ -35,6 +37,7 @@ export { createCommonLocationMigration };
 export { createContactsMigration };
 export { createProductsMigration };
 export { createEntriesMigration };
+export { extendSalesIndustryFieldsMigration };
 export {
   contactsCommonMigrations,
   locationCommonMigrations,

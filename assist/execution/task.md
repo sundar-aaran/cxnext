@@ -1,128 +1,26 @@
 # Task
 
-Active reference: `#128`
+Active reference: `#141`
 
 ## Active
 
-- [x] `#110` Widen Sales invoice print and print QR
-  - [x] Phase 1: update print sizing and QR rendering
-    - [x] Make the printable invoice a little wider and centered.
-    - [x] Render the QR as printable vector shapes instead of background cells.
+- [x] `#141` Remove Sales print reserve lines
+  - [x] Phase 1: line budget
+    - [x] Remove the repeated PO/DC reserve from Sales print line planning.
+    - [x] Restore blank filler rows based on pure content-line count.
   - [x] Phase 2: validation
-    - [x] Run formatter and frontend typecheck or document any gap.
+    - [x] Recalculate sample invoice item-area lines.
+    - [x] Run formatter and frontend typecheck.
+  - [x] Phase 3: fixed 27-line invoice calibration
+    - [x] Lock Sales print item grid to a fixed 27-line budget for every invoice.
+    - [x] Keep `SAL-LINE-005` as the reference case: 7 item lines, 20 blank lines, 27 budget.
+    - [x] Keep the screen-only `Invoice print lines` diagnostic visible on Sales show pages.
+    - [x] Validate the line-count helper with focused frontend tests.
 
-- [x] `#111` Fix Sales invoice print horizontal centering
-  - [x] Phase 1: update print centering box
-    - [x] Remove fixed A4 body width from print styles.
-    - [x] Center the invoice inside the actual printable page area.
-  - [x] Phase 2: validation
-    - [x] Run formatter and frontend typecheck or document any gap.
+## Notes For Next Agent
 
-- [x] `#112` Expand Sales invoice item test rows
-  - [x] Phase 1: update item rows
-    - [x] Remove PO sample data from rendered item rows.
-    - [x] Add 12 single-line dummy rows for PO, DC, and particulars layout testing.
-  - [x] Phase 2: validation
-    - [x] Run formatter and frontend typecheck or document any gap.
-
-- [x] `#113` Stress-test Sales invoice item columns
-  - [x] Phase 1: update dummy item row data
-    - [x] Add 6 more dummy item rows.
-    - [x] Fill every item column with wide test values.
-  - [x] Phase 2: validation
-    - [x] Run formatter and frontend typecheck or document any gap.
-
-- [x] `#114` Update Sales invoice dummy particulars
-  - [x] Phase 1: update dummy particulars layout
-    - [x] Alternate the two requested particulars descriptions.
-    - [x] Left-align dummy particulars cells.
-  - [x] Phase 2: validation
-    - [x] Run formatter and frontend typecheck or document any gap.
-
-- [x] `#115` Adjust Sales invoice dummy item count
-  - [x] Phase 1: update print item rows
-    - [x] Hide the real first item row from the layout stress view.
-    - [x] Reduce dummy item rows to 15.
-  - [x] Phase 2: validation
-    - [x] Run formatter and frontend typecheck or document any gap.
-
-- [x] `#116` Reduce Sales invoice dummy rows
-  - [x] Phase 1: update item row count
-    - [x] Reduce dummy item rows from 15 to 13.
-  - [x] Phase 2: validation
-    - [x] Run formatter and frontend typecheck or document any gap.
-
-- [x] `#117` Tighten Sales invoice item rows
-  - [x] Phase 1: update item row height
-    - [x] Reduce item row height slightly.
-  - [x] Phase 2: validation
-    - [x] Run formatter and frontend typecheck or document any gap.
-
-- [x] `#118` Rebuild Sales invoice dummy rows
-  - [x] Phase 1: update item stress data
-    - [x] Replace current item stress data with 24 generated dummy rows.
-    - [x] Use 1 to 3 line particulars per row.
-  - [x] Phase 2: validation
-    - [x] Run formatter and frontend typecheck or document any gap.
-
-- [x] `#119` Fix Sales dummy item initialization
-  - [x] Phase 1: fix runtime error
-    - [x] Move dummy source arrays before generated dummy rows.
-  - [x] Phase 2: validation
-    - [x] Run formatter and frontend typecheck or document any gap.
-
-- [x] `#120` Fit Sales dummy rows to 24 lines
-  - [x] Phase 1: update dummy row count
-    - [x] Reduce generated dummy rows to 12 so 1/2/3 line particulars total 24 lines.
-  - [x] Phase 2: validation
-    - [x] Run formatter and frontend typecheck or document any gap.
-
-- [x] `#121` Add one 3-line Sales dummy row
-  - [x] Phase 1: update dummy row pattern
-    - [x] Add one more generated dummy row with 3 particulars lines.
-  - [x] Phase 2: validation
-    - [x] Run formatter and frontend typecheck or document any gap.
-
-- [x] `#122` Normalize Sales item table font size
-  - [x] Phase 1: update item table font sizes
-    - [x] Make header, item rows, and total row use the same font size.
-  - [x] Phase 2: validation
-    - [x] Run formatter and frontend typecheck or document any gap.
-
-- [x] `#123` Clamp Sales item particulars lines
-  - [x] Phase 1: update particulars overflow
-    - [x] Limit Particulars text to 3 lines with ellipsis.
-    - [x] Prevent rows from growing beyond the 3-line cap.
-  - [x] Phase 2: validation
-    - [x] Run formatter and frontend typecheck or document any gap.
-
-- [x] `#124` Improve Sales item table header
-  - [x] Phase 1: update item header styling
-    - [x] Vertically center header labels.
-    - [x] Add a double border below the header row.
-  - [x] Phase 2: validation
-    - [x] Run formatter and frontend typecheck or document any gap.
-
-- [x] `#125` Slightly narrow Sales invoice print width
-  - [x] Phase 1: update print width
-    - [x] Reduce invoice print width slightly and keep it centered.
-  - [x] Phase 2: validation
-    - [x] Run formatter and frontend typecheck or document any gap.
-
-- [x] `#126` Set Sales invoice print width to 198mm
-  - [x] Phase 1: update print width
-    - [x] Reduce invoice print width to 198mm and keep it centered.
-  - [x] Phase 2: validation
-    - [x] Run formatter and frontend typecheck or document any gap.
-
-- [x] `#127` Align Sales invoice IRN divider
-  - [x] Phase 1: update invoice band split
-    - [x] Align IRN divider with Ship To left border.
-  - [x] Phase 2: validation
-    - [x] Run formatter and frontend typecheck or document any gap.
-
-- [x] `#128` Center Sales invoice print body
-  - [x] Phase 1: update print centering
-    - [x] Make print body center the invoice wrapper.
-  - [x] Phase 2: validation
-    - [x] Run formatter and frontend typecheck or document any gap.
+- Sales invoice print fitting is calibrated around a fixed `27` item-line budget in `apps/frontend/features/sales/interface/pages/sales-print-line-plan.ts`.
+- `SAL-LINE-005` is the known-good visual reference: `Items: 7`, `Blank: 20`, `Budget: 27`, `Template: single-page`.
+- Do not reintroduce adaptive budgets above 27; simple invoices must also stay inside the same 27-line page-fit ceiling.
+- The `Invoice print lines` panel on Sales show pages is diagnostic and `print:hidden`; keep it until print fitting is fully signed off.
+- PO/DC wrapping uses 6 characters per printed line. Offset particulars currently use 32 characters per line.

@@ -8,7 +8,12 @@ export interface BillingItemRecord {
   readonly productId: string | null;
   readonly productName: string;
   readonly productSku: string | null;
+  readonly poNo: string | null;
+  readonly dcNo: string | null;
   readonly description: string | null;
+  readonly size: string | null;
+  readonly colour: string | null;
+  readonly areaSq: number;
   readonly hsnCodeId: string | null;
   readonly unitId: string | null;
   readonly quantity: number;
@@ -41,6 +46,8 @@ export interface BillingEntryRecord {
   readonly priceListId: string | null;
   readonly referenceNo: string | null;
   readonly dueDate: Date | null;
+  readonly ewayBillNo: string | null;
+  readonly ewayBillDate: Date | null;
   readonly supplierInvoiceNo: string | null;
   readonly supplierInvoiceDate: Date | null;
   readonly subtotal: number;

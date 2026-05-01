@@ -69,6 +69,12 @@ export function prepareSalesInput(input: SalesInput): SalesInput {
       .map((item, index) => ({
         ...item,
         productName: item.productName.trim(),
+        poNo: item.poNo?.trim() || null,
+        dcNo: item.dcNo?.trim() || null,
+        description: item.description?.trim() || null,
+        size: item.size?.trim() || null,
+        colour: item.colour?.trim() || null,
+        areaSq: Number(item.areaSq || 0),
         quantity: Number(item.quantity || 0),
         rate: Number(item.rate || 0),
         taxRate: Number(item.taxRate || 0),

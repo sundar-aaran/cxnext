@@ -4,7 +4,12 @@ export interface SalesItemInput {
   readonly productId: string | null;
   readonly productName: string;
   readonly productSku: string | null;
+  readonly poNo: string | null;
+  readonly dcNo: string | null;
   readonly description: string | null;
+  readonly size: string | null;
+  readonly colour: string | null;
+  readonly areaSq: number;
   readonly hsnCodeId: string | null;
   readonly unitId: string | null;
   readonly quantity: number;
@@ -38,6 +43,8 @@ export interface SalesRecord {
   readonly placeOfSupply: string | null;
   readonly referenceNo: string | null;
   readonly dueDate: string | null;
+  readonly ewayBillNo: string | null;
+  readonly ewayBillDate: string | null;
   readonly roundOff: number;
   readonly grandTotal: number;
   readonly balanceAmount: number;
@@ -60,6 +67,8 @@ export interface SalesInput {
   readonly placeOfSupply: string | null;
   readonly referenceNo: string | null;
   readonly dueDate: string | null;
+  readonly ewayBillNo: string | null;
+  readonly ewayBillDate: string | null;
   readonly roundOff: number;
   readonly status: string;
   readonly paymentStatus: string;
@@ -81,6 +90,14 @@ export type SalesColumnId =
 
 export type SalesStatusFilter = "all" | "draft" | "posted" | "cancelled";
 export type SalesColumnOption = MasterListColumnOption;
+export type SalesIndustryKind = "offset" | "garment" | "upvc";
+
+export function getSalesIndustryKind(industryName: string | null | undefined): SalesIndustryKind {
+  const normalized = industryName?.toLowerCase() ?? "";
+  if (normalized.includes("upvc") || normalized.includes("u pvc")) return "upvc";
+  if (normalized.includes("garment") || normalized.includes("textile")) return "garment";
+  return "offset";
+}
 
 export const salesColumnCatalog: readonly {
   readonly id: SalesColumnId;
@@ -125,6 +142,8 @@ export function defaultSalesInput(): SalesInput {
     placeOfSupply: null,
     referenceNo: null,
     dueDate: null,
+    ewayBillNo: null,
+    ewayBillDate: null,
     roundOff: 0,
     status: "draft",
     paymentStatus: "unpaid",
@@ -140,7 +159,12 @@ export function defaultSalesItem(): SalesItemInput {
     productId: null,
     productName: "",
     productSku: null,
+    poNo: null,
+    dcNo: null,
     description: null,
+    size: null,
+    colour: null,
+    areaSq: 0,
     hsnCodeId: null,
     unitId: null,
     quantity: 1,

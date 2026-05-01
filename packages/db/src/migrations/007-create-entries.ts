@@ -59,12 +59,20 @@ async function createBillingTable(
     .addColumn("notes", "text")
     .addColumn("terms", "text")
     .addColumn("is_active", "boolean", (column) => column.notNull().defaultTo(true))
-    .addColumn("created_at", "datetime", (column) => column.notNull().defaultTo(sql`CURRENT_TIMESTAMP`))
-    .addColumn("updated_at", "datetime", (column) => column.notNull().defaultTo(sql`CURRENT_TIMESTAMP`))
+    .addColumn("created_at", "datetime", (column) =>
+      column.notNull().defaultTo(sql`CURRENT_TIMESTAMP`),
+    )
+    .addColumn("updated_at", "datetime", (column) =>
+      column.notNull().defaultTo(sql`CURRENT_TIMESTAMP`),
+    )
     .addColumn("deleted_at", "datetime");
 
   if (table === "sales") {
-    builder = builder.addColumn("shipping_address", "text").addColumn("price_list_id", "varchar(120)");
+    builder = builder
+      .addColumn("shipping_address", "text")
+      .addColumn("price_list_id", "varchar(120)")
+      .addColumn("eway_bill_no", "varchar(120)")
+      .addColumn("eway_bill_date", "datetime");
   } else {
     builder = builder
       .addColumn("supplier_invoice_no", "varchar(120)")
@@ -81,7 +89,11 @@ async function createBillingTable(
     .execute();
 }
 
-async function createBillingItemsTable(db: Kysely<DynamicDatabase>, table: string, parentColumn: string) {
+async function createBillingItemsTable(
+  db: Kysely<DynamicDatabase>,
+  table: string,
+  parentColumn: string,
+) {
   await db.schema
     .createTable(table)
     .ifNotExists()
@@ -90,7 +102,12 @@ async function createBillingItemsTable(db: Kysely<DynamicDatabase>, table: strin
     .addColumn("product_id", "varchar(120)")
     .addColumn("product_name", "varchar(220)", (column) => column.notNull())
     .addColumn("product_sku", "varchar(120)")
+    .addColumn("po_no", "varchar(120)")
+    .addColumn("dc_no", "varchar(120)")
     .addColumn("description", "text")
+    .addColumn("size", "varchar(120)")
+    .addColumn("colour", "varchar(120)")
+    .addColumn("area_sq", sql`double`, (column) => column.notNull().defaultTo(0))
     .addColumn("hsn_code_id", "varchar(120)")
     .addColumn("unit_id", "varchar(120)")
     .addColumn("quantity", sql`double`, (column) => column.notNull().defaultTo(0))
@@ -107,8 +124,12 @@ async function createBillingItemsTable(db: Kysely<DynamicDatabase>, table: strin
     .addColumn("line_total", sql`double`, (column) => column.notNull().defaultTo(0))
     .addColumn("sort_order", "integer", (column) => column.notNull().defaultTo(0))
     .addColumn("is_active", "boolean", (column) => column.notNull().defaultTo(true))
-    .addColumn("created_at", "datetime", (column) => column.notNull().defaultTo(sql`CURRENT_TIMESTAMP`))
-    .addColumn("updated_at", "datetime", (column) => column.notNull().defaultTo(sql`CURRENT_TIMESTAMP`))
+    .addColumn("created_at", "datetime", (column) =>
+      column.notNull().defaultTo(sql`CURRENT_TIMESTAMP`),
+    )
+    .addColumn("updated_at", "datetime", (column) =>
+      column.notNull().defaultTo(sql`CURRENT_TIMESTAMP`),
+    )
     .execute();
 }
 
@@ -145,13 +166,21 @@ async function createMoneyTable(
     .addColumn("status", "varchar(40)", (column) => column.notNull())
     .addColumn("notes", "text")
     .addColumn("is_active", "boolean", (column) => column.notNull().defaultTo(true))
-    .addColumn("created_at", "datetime", (column) => column.notNull().defaultTo(sql`CURRENT_TIMESTAMP`))
-    .addColumn("updated_at", "datetime", (column) => column.notNull().defaultTo(sql`CURRENT_TIMESTAMP`))
+    .addColumn("created_at", "datetime", (column) =>
+      column.notNull().defaultTo(sql`CURRENT_TIMESTAMP`),
+    )
+    .addColumn("updated_at", "datetime", (column) =>
+      column.notNull().defaultTo(sql`CURRENT_TIMESTAMP`),
+    )
     .addColumn("deleted_at", "datetime")
     .execute();
 }
 
-async function createAllocationsTable(db: Kysely<DynamicDatabase>, table: string, parentColumn: string) {
+async function createAllocationsTable(
+  db: Kysely<DynamicDatabase>,
+  table: string,
+  parentColumn: string,
+) {
   await db.schema
     .createTable(table)
     .ifNotExists()
@@ -166,7 +195,11 @@ async function createAllocationsTable(db: Kysely<DynamicDatabase>, table: string
     .addColumn("allocated_amount", sql`double`, (column) => column.notNull().defaultTo(0))
     .addColumn("balance_after_allocation", sql`double`, (column) => column.notNull().defaultTo(0))
     .addColumn("sort_order", "integer", (column) => column.notNull().defaultTo(0))
-    .addColumn("created_at", "datetime", (column) => column.notNull().defaultTo(sql`CURRENT_TIMESTAMP`))
-    .addColumn("updated_at", "datetime", (column) => column.notNull().defaultTo(sql`CURRENT_TIMESTAMP`))
+    .addColumn("created_at", "datetime", (column) =>
+      column.notNull().defaultTo(sql`CURRENT_TIMESTAMP`),
+    )
+    .addColumn("updated_at", "datetime", (column) =>
+      column.notNull().defaultTo(sql`CURRENT_TIMESTAMP`),
+    )
     .execute();
 }
