@@ -1,11 +1,13 @@
 import type { ProductRecord, ProductUpsertInput } from "../domain/product";
+import { getRequiredPublicApiUrl } from "@/lib/runtime-env";
+import { authFetch } from "../../auth/infrastructure/auth-api";
 
 interface ProductApiRecord extends Omit<ProductRecord, "id"> {
   readonly id: string;
 }
 
 export async function listProducts(options?: { readonly signal?: AbortSignal }) {
-  const response = await fetch(`${getApiBaseUrl()}/products`, {
+  const response = await authFetch(`${getApiBaseUrl()}/products`, {
     cache: "no-store",
     headers: { Accept: "application/json" },
     signal: options?.signal,
@@ -19,7 +21,7 @@ export async function listProducts(options?: { readonly signal?: AbortSignal }) 
 }
 
 export async function getProduct(productId: number, options?: { readonly signal?: AbortSignal }) {
-  const response = await fetch(`${getApiBaseUrl()}/products/${productId}`, {
+  const response = await authFetch(`${getApiBaseUrl()}/products/${productId}`, {
     cache: "no-store",
     headers: { Accept: "application/json" },
     signal: options?.signal,
@@ -37,7 +39,7 @@ export async function getProduct(productId: number, options?: { readonly signal?
 }
 
 export async function upsertProduct(input: ProductUpsertInput, productId?: number) {
-  const response = await fetch(`${getApiBaseUrl()}/products${productId ? `/${productId}` : ""}`, {
+  const response = await authFetch(`${getApiBaseUrl()}/products${productId ? `/${productId}` : ""}`, {
     body: JSON.stringify(input),
     cache: "no-store",
     headers: {
@@ -55,7 +57,7 @@ export async function upsertProduct(input: ProductUpsertInput, productId?: numbe
 }
 
 export async function softDeleteProduct(productId: number) {
-  const response = await fetch(`${getApiBaseUrl()}/products/${productId}`, {
+  const response = await authFetch(`${getApiBaseUrl()}/products/${productId}`, {
     cache: "no-store",
     headers: { Accept: "application/json" },
     method: "DELETE",
@@ -67,7 +69,7 @@ export async function softDeleteProduct(productId: number) {
 }
 
 function getApiBaseUrl() {
-  return process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+  return getRequiredPublicApiUrl();
 }
 
 function toProductRecord(record: ProductApiRecord): ProductRecord {

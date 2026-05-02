@@ -1,4 +1,6 @@
 import type { IndustryRecord, IndustryUpsertInput } from "../domain/industry";
+import { getRequiredPublicApiUrl } from "@/lib/runtime-env";
+import { authFetch } from "../../auth/infrastructure/auth-api";
 
 interface IndustryApiRecord {
   readonly id: string;
@@ -10,7 +12,7 @@ interface IndustryApiRecord {
 }
 
 export async function listIndustries(options?: { readonly signal?: AbortSignal }) {
-  const response = await fetch(`${getApiBaseUrl()}/industries`, {
+  const response = await authFetch(`${getApiBaseUrl()}/industries`, {
     cache: "no-store",
     headers: {
       Accept: "application/json",
@@ -27,7 +29,7 @@ export async function listIndustries(options?: { readonly signal?: AbortSignal }
 }
 
 export async function getIndustry(industryId: number, options?: { readonly signal?: AbortSignal }) {
-  const response = await fetch(`${getApiBaseUrl()}/industries/${industryId}`, {
+  const response = await authFetch(`${getApiBaseUrl()}/industries/${industryId}`, {
     cache: "no-store",
     headers: {
       Accept: "application/json",
@@ -47,7 +49,7 @@ export async function getIndustry(industryId: number, options?: { readonly signa
 }
 
 export async function upsertIndustry(input: IndustryUpsertInput, industryId?: number) {
-  const response = await fetch(
+  const response = await authFetch(
     `${getApiBaseUrl()}/industries${industryId ? `/${industryId}` : ""}`,
     {
       body: JSON.stringify(input),
@@ -68,7 +70,7 @@ export async function upsertIndustry(input: IndustryUpsertInput, industryId?: nu
 }
 
 export async function softDeleteIndustry(industryId: number) {
-  const response = await fetch(`${getApiBaseUrl()}/industries/${industryId}`, {
+  const response = await authFetch(`${getApiBaseUrl()}/industries/${industryId}`, {
     cache: "no-store",
     headers: {
       Accept: "application/json",
@@ -82,7 +84,7 @@ export async function softDeleteIndustry(industryId: number) {
 }
 
 function getApiBaseUrl() {
-  return process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+  return getRequiredPublicApiUrl();
 }
 
 function toIndustryRecord(record: IndustryApiRecord): IndustryRecord {

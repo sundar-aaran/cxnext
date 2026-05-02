@@ -1,7 +1,8 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { DashboardShell } from "@cxnext/ui";
 import {
   Building2,
@@ -17,6 +18,9 @@ import {
   WalletCards,
 } from "lucide-react";
 import rootPackage from "../../../../../../package.json";
+import type { AuthSession } from "../../../auth/domain/auth";
+import { logout } from "../../../auth/infrastructure/auth-api";
+import { readStoredAuthSession } from "../../../auth/infrastructure/session-storage";
 import { commonMenuGroups, commonMenuLabels } from "../../../common/application/common-service";
 import { getDeskPortal } from "../../application/desk-registry";
 
@@ -38,6 +42,15 @@ const organisationNavItems = [
     label: "Company",
     href: "/desk/company",
     icon: <Building2 className="h-4 w-4" />,
+  },
+] as const;
+
+const adminNavItems = [
+  {
+    id: "admin-users",
+    label: "Users",
+    href: "/desk/admin/users",
+    icon: <Users className="h-4 w-4" />,
   },
 ] as const;
 
@@ -131,6 +144,8 @@ function getWorkspaceLabel(pathname: string, isDeskRoot: boolean, fallbackLabel:
 
 export function DeskShell({ children }: { readonly children: ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [session, setSession] = useState<AuthSession | null>(null);
   const isDeskRoot = pathname === "/desk";
   const activePortal = getDeskPortal(getPortalIdFromPath(pathname));
   const workspaceLabel = getWorkspaceLabel(pathname, isDeskRoot, activePortal.badge);
@@ -146,6 +161,10 @@ export function DeskShell({ children }: { readonly children: ReactNode }) {
     ...item,
     active: pathname === item.href || pathname.startsWith(`${item.href}/`),
   }));
+  const adminItems = adminNavItems.map((item) => ({
+    ...item,
+    active: pathname === item.href || pathname.startsWith(`${item.href}/`),
+  }));
   const commonGroups = commonSubGroups.map((group) => ({
     ...group,
     items: group.items.map((item) => ({
@@ -154,11 +173,29 @@ export function DeskShell({ children }: { readonly children: ReactNode }) {
     })),
   }));
 
+  useEffect(() => {
+    setSession(readStoredAuthSession());
+  }, [pathname]);
+
+  async function handleLogout() {
+    await logout();
+    router.push("/login");
+    router.refresh();
+  }
+
   return (
     <DashboardShell
       brand="CODEXSUN COMME..."
+      currentUser={
+        session
+          ? {
+              name: session.user.displayName,
+              email: session.user.email,
+            }
+          : undefined
+      }
       workspace={workspaceLabel}
-      navItems={[...navItems, ...masterItems, ...entriesItems]}
+      navItems={[...navItems, ...masterItems, ...entriesItems, ...adminItems]}
       navGroups={[
         {
           id: "organisation",
@@ -179,6 +216,12 @@ export function DeskShell({ children }: { readonly children: ReactNode }) {
           items: entriesItems,
         },
         {
+          id: "admin",
+          label: "Admin",
+          icon: <Users className="size-4" />,
+          items: adminItems,
+        },
+        {
           id: "common",
           label: "Common",
           icon: <Flag className="size-4" />,
@@ -191,6 +234,9 @@ export function DeskShell({ children }: { readonly children: ReactNode }) {
           : `shell.${getPortalIdFromPath(pathname) ?? activePortal.id}`
       }
       version={rootPackage.version}
+      onLogout={() => {
+        void handleLogout();
+      }}
     >
       {children}
     </DashboardShell>

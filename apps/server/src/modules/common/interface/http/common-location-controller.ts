@@ -1,4 +1,6 @@
 import { Body, Delete, Inject, NotFoundException, Param, Patch, Post } from "@nestjs/common";
+import { RequirePermissions } from "../../../auth/interface/http/auth-context";
+import { modulePermission } from "../../../auth/interface/http/module-permissions";
 import type { CommonLocationUpsertParams } from "../../domain/entities/common-location-record";
 import type { CommonLocationModuleKey } from "../../domain/value-objects/common-location-definition";
 import { getCommonLocationDefinition } from "../../domain/value-objects/common-location-definition";
@@ -50,6 +52,7 @@ export abstract class CommonLocationControllerBase {
   }
 
   @Post()
+  @RequirePermissions(modulePermission("common", "create"))
   public create(@Body() body: CommonLocationUpsertRequest) {
     return this.createCommonLocationRecordUseCase.execute(
       this.moduleKey,
@@ -58,6 +61,7 @@ export abstract class CommonLocationControllerBase {
   }
 
   @Patch(":id")
+  @RequirePermissions(modulePermission("common", "update"))
   public async update(@Param("id") id: string, @Body() body: CommonLocationUpsertRequest) {
     const record = await this.updateCommonLocationRecordUseCase.execute(
       this.moduleKey,
@@ -75,6 +79,7 @@ export abstract class CommonLocationControllerBase {
   }
 
   @Delete(":id")
+  @RequirePermissions(modulePermission("common", "delete"))
   public async softDelete(@Param("id") id: string) {
     const wasDeleted = await this.deleteCommonLocationRecordUseCase.execute(this.moduleKey, id);
 

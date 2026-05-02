@@ -9,6 +9,8 @@ import {
   Patch,
   Post,
 } from "@nestjs/common";
+import { RequirePermissions } from "../../../auth/interface/http/auth-context";
+import { modulePermission } from "../../../auth/interface/http/module-permissions";
 import { CreateProductUseCase } from "../../application/use-cases/create-product.use-case";
 import { DeleteProductUseCase } from "../../application/use-cases/delete-product.use-case";
 import { GenerateProductSeoFieldUseCase } from "../../application/use-cases/generate-product-seo-field.use-case";
@@ -39,12 +41,14 @@ export class ProductsController {
   ) {}
 
   @Get()
+  @RequirePermissions(modulePermission("product", "read"))
   public async list() {
     const products = await this.listProductsUseCase.execute();
     return products.map((product) => toProductResponse(product));
   }
 
   @Get(":productId")
+  @RequirePermissions(modulePermission("product", "read"))
   public async getById(@Param("productId") productId: string) {
     const product = await this.getProductUseCase.execute(productId);
 
@@ -56,12 +60,14 @@ export class ProductsController {
   }
 
   @Post()
+  @RequirePermissions(modulePermission("product", "create"))
   public async create(@Body() body: ProductUpsertParams) {
     const product = await this.createProductUseCase.execute(parseProductRequest(body));
     return toProductResponse(product);
   }
 
   @Patch(":productId")
+  @RequirePermissions(modulePermission("product", "update"))
   public async update(@Param("productId") productId: string, @Body() body: ProductUpsertParams) {
     const product = await this.updateProductUseCase.execute(productId, parseProductRequest(body));
 
@@ -73,6 +79,7 @@ export class ProductsController {
   }
 
   @Delete(":productId")
+  @RequirePermissions(modulePermission("product", "delete"))
   public async softDelete(@Param("productId") productId: string) {
     const wasDeleted = await this.deleteProductUseCase.execute(productId);
 
@@ -84,11 +91,13 @@ export class ProductsController {
   }
 
   @Post("generate-slug")
+  @RequirePermissions(modulePermission("product", "update"))
   public generateSlug(@Body() body: { readonly text?: string }) {
     return this.generateProductSlugUseCase.execute(body.text ?? "");
   }
 
   @Post("generate-seo-field")
+  @RequirePermissions(modulePermission("product", "update"))
   public generateSeoField(
     @Body()
     body: {

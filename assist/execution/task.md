@@ -1,26 +1,18 @@
 # Task
 
-Active reference: `#141`
+Active reference: `#69`
 
 ## Active
 
-- [x] `#141` Remove Sales print reserve lines
-  - [x] Phase 1: line budget
-    - [x] Remove the repeated PO/DC reserve from Sales print line planning.
-    - [x] Restore blank filler rows based on pure content-line count.
-  - [x] Phase 2: validation
-    - [x] Recalculate sample invoice item-area lines.
-    - [x] Run formatter and frontend typecheck.
-  - [x] Phase 3: fixed 27-line invoice calibration
-    - [x] Lock Sales print item grid to a fixed 27-line budget for every invoice.
-    - [x] Keep `SAL-LINE-005` as the reference case: 7 item lines, 20 blank lines, 27 budget.
-    - [x] Keep the screen-only `Invoice print lines` diagnostic visible on Sales show pages.
-    - [x] Validate the line-count helper with focused frontend tests.
+- [x] `#69` Document auth and runtime stabilization in release tracking
+  - [x] Phase 1: release notes
+    - [x] Capture the database refresh, env cleanup, proxy migration, and auth/runtime fixes in the changelog.
+  - [x] Phase 2: execution alignment
+    - [x] Refresh task tracking to the active `1.0.69` release reference.
+    - [x] Refresh planning notes to match the completed stabilization batch.
 
 ## Notes For Next Agent
 
-- Sales invoice print fitting is calibrated around a fixed `27` item-line budget in `apps/frontend/features/sales/interface/pages/sales-print-line-plan.ts`.
-- `SAL-LINE-005` is the known-good visual reference: `Items: 7`, `Blank: 20`, `Budget: 27`, `Template: single-page`.
-- Do not reintroduce adaptive budgets above 27; simple invoices must also stay inside the same 27-line page-fit ceiling.
-- The `Invoice print lines` panel on Sales show pages is diagnostic and `print:hidden`; keep it until print fitting is fully signed off.
-- PO/DC wrapping uses 6 characters per printed line. Offset particulars currently use 32 characters per line.
+- The live app now points to `codexsun_db` from the root `.env` and the database was refreshed from the current migrations/seeders.
+- Frontend auth runtime depends on the root `.env` value for `NEXT_PUBLIC_API_URL`; the direct `process.env.NEXT_PUBLIC_API_URL` access in `apps/frontend/lib/runtime-env.ts` is intentional for Next.js client bundling.
+- The active route guard file is `apps/frontend/proxy.ts`; do not reintroduce the deprecated `middleware.ts` convention.

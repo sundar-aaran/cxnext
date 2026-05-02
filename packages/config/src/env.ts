@@ -4,9 +4,9 @@ import { z } from "zod";
 config();
 
 export const baseEnvSchema = z.object({
-  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-  PORT: z.coerce.number().int().positive().default(4000),
-  FRONTEND_URL: z.string().url().default("http://localhost:3000"),
+  NODE_ENV: z.enum(["development", "test", "production"]),
+  PORT: z.coerce.number().int().positive(),
+  FRONTEND_URL: z.string().url(),
 });
 
 export type BaseEnv = z.infer<typeof baseEnvSchema>;

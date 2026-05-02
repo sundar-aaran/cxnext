@@ -16,6 +16,7 @@
     "@cxnext/core": "workspace:*",
     "@cxnext/db": "workspace:*",
     "@cxnext/event": "workspace:*",
+    "@cxnext/types": "workspace:*",
     "@cxnext/utils": "workspace:*",
     "@nestjs/apollo": "^13.3.0",
     "@nestjs/common": "^11.1.19",

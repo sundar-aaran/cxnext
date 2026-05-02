@@ -1,4 +1,6 @@
 import { Controller, Get, Inject, Param } from "@nestjs/common";
+import { RequirePermissions } from "../../auth/interface/http/auth-context";
+import { modulePermission } from "../../auth/interface/http/module-permissions";
 import { CreateCommonLocationRecordUseCase } from "../application/use-cases/location/create-common-location-record.use-case";
 import { DeleteCommonLocationRecordUseCase } from "../application/use-cases/location/delete-common-location-record.use-case";
 import { GetCommonLocationRecordUseCase } from "../application/use-cases/location/get-common-location-record.use-case";
@@ -7,6 +9,7 @@ import { UpdateCommonLocationRecordUseCase } from "../application/use-cases/loca
 import { CommonLocationControllerBase } from "../interface/http/common-location-controller";
 
 @Controller("common/countries")
+@RequirePermissions(modulePermission("common", "read"))
 export class CountriesController extends CommonLocationControllerBase {
   public constructor(
     @Inject(ListCommonLocationRecordsUseCase)

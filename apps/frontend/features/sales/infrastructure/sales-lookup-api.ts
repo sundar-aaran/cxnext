@@ -1,4 +1,6 @@
 import type { SalesLookupOption } from "../domain/sales";
+import { getRequiredPublicApiUrl } from "@/lib/runtime-env";
+import { authFetch } from "../../auth/infrastructure/auth-api";
 
 interface ContactLookupRecord {
   readonly id: string | number;
@@ -15,7 +17,7 @@ interface ProductLookupRecord {
 }
 
 export async function listSalesContactLookups(options?: { readonly signal?: AbortSignal }) {
-  const response = await fetch(`${apiBaseUrl()}/contacts`, {
+  const response = await authFetch(`${apiBaseUrl()}/contacts`, {
     cache: "no-store",
     headers: { Accept: "application/json" },
     signal: options?.signal,
@@ -33,7 +35,7 @@ export async function listSalesContactLookups(options?: { readonly signal?: Abor
 }
 
 export async function listSalesProductLookups(options?: { readonly signal?: AbortSignal }) {
-  const response = await fetch(`${apiBaseUrl()}/products`, {
+  const response = await authFetch(`${apiBaseUrl()}/products`, {
     cache: "no-store",
     headers: { Accept: "application/json" },
     signal: options?.signal,
@@ -51,5 +53,5 @@ export async function listSalesProductLookups(options?: { readonly signal?: Abor
 }
 
 function apiBaseUrl() {
-  return process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+  return getRequiredPublicApiUrl();
 }

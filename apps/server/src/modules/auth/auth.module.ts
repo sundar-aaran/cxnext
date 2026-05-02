@@ -1,0 +1,49 @@
+import { Module } from "@nestjs/common";
+import { APP_GUARD, Reflector } from "@nestjs/core";
+import { AUTH_DOMAIN_EVENT_PUBLISHER } from "./application/services/domain-event-publisher";
+import { AUTH_REPOSITORY } from "./application/services/auth.repository";
+import { JwtService } from "./application/services/jwt.service";
+import { PasswordService } from "./application/services/password.service";
+import { LoginUseCase } from "./application/use-cases/login.use-case";
+import {
+  CreateAuthUserUseCase,
+  GetAuthUserUseCase,
+  ListAuthPermissionsUseCase,
+  ListAuthRolesUseCase,
+  ListAuthUsersUseCase,
+  UpdateAuthUserUseCase,
+} from "./application/use-cases/user-admin.use-cases";
+import { KyselyAuthRepository } from "./infrastructure/persistence/kysely-auth.repository";
+import { EventBusAuthDomainEventPublisher } from "./infrastructure/adapters/event-bus-domain-event-publisher";
+import { AuthController } from "./interface/http/auth.controller";
+import { AuthGuard } from "./interface/http/auth.guard";
+
+@Module({
+  controllers: [AuthController],
+  providers: [
+    Reflector,
+    JwtService,
+    PasswordService,
+    LoginUseCase,
+    ListAuthUsersUseCase,
+    GetAuthUserUseCase,
+    CreateAuthUserUseCase,
+    UpdateAuthUserUseCase,
+    ListAuthRolesUseCase,
+    ListAuthPermissionsUseCase,
+    {
+      provide: AUTH_REPOSITORY,
+      useClass: KyselyAuthRepository,
+    },
+    {
+      provide: AUTH_DOMAIN_EVENT_PUBLISHER,
+      useClass: EventBusAuthDomainEventPublisher,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: AuthGuard,
+    },
+  ],
+  exports: [JwtService, AUTH_REPOSITORY],
+})
+export class AuthModule {}

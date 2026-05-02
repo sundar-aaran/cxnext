@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "node scripts/next-listen.mjs dev --port 3000",
-    "build": "next build",
+    "build": "node scripts/next-listen.mjs build",
     "start": "node scripts/next-listen.mjs start --port 3000",
     "lint": "eslint . --config ../../eslint.config.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"

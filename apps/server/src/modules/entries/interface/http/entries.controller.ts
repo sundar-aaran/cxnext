@@ -9,6 +9,8 @@ import {
   Patch,
   Post,
 } from "@nestjs/common";
+import { RequirePermissions } from "../../../auth/interface/http/auth-context";
+import { entryPermission } from "../../../auth/interface/http/module-permissions";
 import type { BillingEntryKind, MoneyEntryKind } from "../../domain/entry-record";
 import { CreateBillingEntryUseCase } from "../../application/use-cases/create-billing-entry.use-case";
 import { CreateMoneyEntryUseCase } from "../../application/use-cases/create-money-entry.use-case";
@@ -46,6 +48,7 @@ export class EntriesController {
   ) {}
 
   @Get(":kind")
+  @RequirePermissions(entryPermission("read"))
   public async list(@Param("kind") kind: string) {
     if (isBillingKind(kind)) {
       return (await this.listBillingUseCase.execute(kind)).map(toBillingEntryResponse);
@@ -57,6 +60,7 @@ export class EntriesController {
   }
 
   @Get(":kind/:entryId")
+  @RequirePermissions(entryPermission("read"))
   public async getById(@Param("kind") kind: string, @Param("entryId") entryId: string) {
     if (isBillingKind(kind)) {
       const entry = await this.getBillingUseCase.execute(kind, entryId);
@@ -72,6 +76,7 @@ export class EntriesController {
   }
 
   @Post(":kind")
+  @RequirePermissions(entryPermission("create"))
   public async create(
     @Param("kind") kind: string,
     @Body() body: BillingEntryInput | MoneyEntryInput,
@@ -90,6 +95,7 @@ export class EntriesController {
   }
 
   @Patch(":kind/:entryId")
+  @RequirePermissions(entryPermission("update"))
   public async update(
     @Param("kind") kind: string,
     @Param("entryId") entryId: string,
@@ -113,6 +119,7 @@ export class EntriesController {
   }
 
   @Delete(":kind/:entryId")
+  @RequirePermissions(entryPermission("delete"))
   public async softDelete(@Param("kind") kind: string, @Param("entryId") entryId: string) {
     const wasDeleted = isBillingKind(kind)
       ? await this.deleteBillingUseCase.execute(kind, entryId)

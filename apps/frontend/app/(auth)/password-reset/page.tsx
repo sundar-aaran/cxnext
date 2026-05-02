@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { AuthCard } from "../../../components/auth/auth-card";
 import { AuthForm } from "../../../components/auth/auth-form";
 
@@ -7,7 +8,9 @@ export default function PasswordResetPage() {
       title="Reset password"
       description="Request a password reset when auth is implemented."
     >
-      <AuthForm mode="reset" />
+      <Suspense fallback={null}>
+        <AuthForm mode="reset" />
+      </Suspense>
     </AuthCard>
   );
 }

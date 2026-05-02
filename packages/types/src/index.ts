@@ -13,3 +13,5 @@ export interface ApiErrorResponse {
 
 export type Nullable<TValue> = TValue | null;
 export type Optional<TValue> = TValue | undefined;
+
+export * from "./auth/rbac-catalog";

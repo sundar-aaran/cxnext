@@ -9,6 +9,8 @@ import {
   Patch,
   Post,
 } from "@nestjs/common";
+import { RequirePermissions } from "../../../auth/interface/http/auth-context";
+import { modulePermission } from "../../../auth/interface/http/module-permissions";
 import { CreateTenantUseCase } from "../../application/use-cases/create-tenant.use-case";
 import { DeleteTenantUseCase } from "../../application/use-cases/delete-tenant.use-case";
 import { GetTenantUseCase } from "../../application/use-cases/get-tenant.use-case";
@@ -38,12 +40,14 @@ export class TenantsController {
   ) {}
 
   @Get()
+  @RequirePermissions(modulePermission("tenant", "read"))
   public async list() {
     const tenants = await this.listTenantsUseCase.execute();
     return tenants.map((tenant) => toTenantResponse(tenant));
   }
 
   @Get(":tenantId")
+  @RequirePermissions(modulePermission("tenant", "read"))
   public async getById(@Param("tenantId") tenantId: string) {
     const tenant = await this.getTenantUseCase.execute(tenantId);
 
@@ -55,12 +59,14 @@ export class TenantsController {
   }
 
   @Post()
+  @RequirePermissions(modulePermission("tenant", "create"))
   public async create(@Body() body: TenantUpsertRequest) {
     const tenant = await this.createTenantUseCase.execute(parseTenantRequest(body));
     return toTenantResponse(tenant);
   }
 
   @Patch(":tenantId")
+  @RequirePermissions(modulePermission("tenant", "update"))
   public async update(@Param("tenantId") tenantId: string, @Body() body: TenantUpsertRequest) {
     const tenant = await this.updateTenantUseCase.execute(tenantId, parseTenantRequest(body));
 
@@ -72,6 +78,7 @@ export class TenantsController {
   }
 
   @Delete(":tenantId")
+  @RequirePermissions(modulePermission("tenant", "delete"))
   public async softDelete(@Param("tenantId") tenantId: string) {
     const wasDeleted = await this.deleteTenantUseCase.execute(tenantId);
 

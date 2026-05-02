@@ -51,7 +51,7 @@ export function formatDatabaseCliError(error: unknown, envState: LoadedDatabaseE
 
   if (databaseError?.code === "ER_ACCESS_DENIED_ERROR") {
     const lines = [
-      `Database connection failed for user '${envState.env.DATABASE_USER}' on ${envState.env.DATABASE_HOST}:${envState.env.DATABASE_PORT}/${envState.env.DATABASE_NAME}.`,
+      `Database connection failed for user '${envState.env.DB_USER}' on ${envState.env.DB_HOST}:${envState.env.DB_PORT}/${envState.env.DB_NAME}.`,
     ];
 
     if (envState.envFilePath) {
@@ -62,11 +62,11 @@ export function formatDatabaseCliError(error: unknown, envState: LoadedDatabaseE
 
     if (usesFallbackDatabaseCredentials(envState)) {
       lines.push(
-        "DATABASE_USER, DATABASE_PASSWORD, or DATABASE_NAME was not set, so the CLI used fallback defaults. Define those values in the repository root .env or current shell, or create a matching MySQL user and database.",
+        "Required DB_* variables are missing from the repository root .env or current shell. Define DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, and DB_NAME before running the database CLI.",
       );
     } else {
       lines.push(
-        "Verify DATABASE_USER, DATABASE_PASSWORD, and DATABASE_NAME in the repository root .env or current shell, and ensure that MySQL grants this user access.",
+        "Verify DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, and DB_NAME in the repository root .env or current shell, and ensure that MySQL grants this user access.",
       );
     }
 
@@ -130,7 +130,7 @@ export async function runDatabaseCli(args = process.argv.slice(2)) {
 
     if (command === "fresh" || command === "refresh") {
       const result = await freshApplicationDatabase(database, {
-        databaseName: envState.env.DATABASE_NAME,
+        databaseName: envState.env.DB_NAME,
         logger: console,
       });
       console.info(

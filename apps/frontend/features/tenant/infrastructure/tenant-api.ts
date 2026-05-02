@@ -1,4 +1,6 @@
 import type { TenantRecord, TenantUpsertInput } from "../domain/tenant";
+import { getRequiredPublicApiUrl } from "@/lib/runtime-env";
+import { authFetch } from "../../auth/infrastructure/auth-api";
 
 interface TenantApiRecord {
   readonly id: string;
@@ -11,7 +13,7 @@ interface TenantApiRecord {
 }
 
 export async function listTenants(options?: { readonly signal?: AbortSignal }) {
-  const response = await fetch(`${getApiBaseUrl()}/tenants`, {
+  const response = await authFetch(`${getApiBaseUrl()}/tenants`, {
     cache: "no-store",
     headers: {
       Accept: "application/json",
@@ -28,7 +30,7 @@ export async function listTenants(options?: { readonly signal?: AbortSignal }) {
 }
 
 export async function getTenant(tenantId: number, options?: { readonly signal?: AbortSignal }) {
-  const response = await fetch(`${getApiBaseUrl()}/tenants/${tenantId}`, {
+  const response = await authFetch(`${getApiBaseUrl()}/tenants/${tenantId}`, {
     cache: "no-store",
     headers: {
       Accept: "application/json",
@@ -48,7 +50,7 @@ export async function getTenant(tenantId: number, options?: { readonly signal?: 
 }
 
 export async function upsertTenant(input: TenantUpsertInput, tenantId?: number) {
-  const response = await fetch(`${getApiBaseUrl()}/tenants${tenantId ? `/${tenantId}` : ""}`, {
+  const response = await authFetch(`${getApiBaseUrl()}/tenants${tenantId ? `/${tenantId}` : ""}`, {
     body: JSON.stringify(input),
     cache: "no-store",
     headers: {
@@ -66,7 +68,7 @@ export async function upsertTenant(input: TenantUpsertInput, tenantId?: number) 
 }
 
 export async function softDeleteTenant(tenantId: number) {
-  const response = await fetch(`${getApiBaseUrl()}/tenants/${tenantId}`, {
+  const response = await authFetch(`${getApiBaseUrl()}/tenants/${tenantId}`, {
     cache: "no-store",
     headers: {
       Accept: "application/json",
@@ -80,7 +82,7 @@ export async function softDeleteTenant(tenantId: number) {
 }
 
 function getApiBaseUrl() {
-  return process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+  return getRequiredPublicApiUrl();
 }
 
 function toTenantRecord(record: TenantApiRecord): TenantRecord {

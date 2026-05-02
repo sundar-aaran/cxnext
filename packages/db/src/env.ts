@@ -5,22 +5,14 @@ import { parseEnv } from "node:util";
 import { databaseEnvSchema, type DatabaseEnv } from "./database";
 
 const databaseEnvKeys = [
-  "DATABASE_HOST",
-  "DATABASE_PORT",
-  "DATABASE_USER",
-  "DATABASE_PASSWORD",
-  "DATABASE_NAME",
+  "DB_HOST",
+  "DB_PORT",
+  "DB_USER",
+  "DB_PASSWORD",
+  "DB_NAME",
 ] as const;
 
-const fallbackCredentialKeys = ["DATABASE_USER", "DATABASE_PASSWORD", "DATABASE_NAME"] as const;
-
-const databaseEnvAliases: Record<DatabaseEnvKey, string> = {
-  DATABASE_HOST: "DB_HOST",
-  DATABASE_PORT: "DB_PORT",
-  DATABASE_USER: "DB_USER",
-  DATABASE_PASSWORD: "DB_PASSWORD",
-  DATABASE_NAME: "DB_NAME",
-};
+const fallbackCredentialKeys = ["DB_USER", "DB_PASSWORD", "DB_NAME"] as const;
 
 export type DatabaseEnvKey = (typeof databaseEnvKeys)[number];
 
@@ -68,10 +60,10 @@ export function loadDatabaseEnv(options?: {
   const source = options?.source ?? process.env;
   const envFilePath = findNearestEnvFile(cwd);
   const envFileValues = envFilePath ? loadEnvFileValues(envFilePath) : {};
-  const mergedSource = normalizeDatabaseEnvAliases({
+  const mergedSource = {
     ...envFileValues,
     ...source,
-  });
+  };
 
   const explicitKeys = databaseEnvKeys.filter((key) =>
     Object.prototype.hasOwnProperty.call(mergedSource, key),
@@ -91,18 +83,4 @@ export function loadDatabaseEnv(options?: {
 
 export function usesFallbackDatabaseCredentials(envState: LoadedDatabaseEnv): boolean {
   return fallbackCredentialKeys.some((key) => envState.fallbackKeys.includes(key));
-}
-
-function normalizeDatabaseEnvAliases(source: Record<string, string | undefined>) {
-  const normalizedSource = { ...source };
-
-  for (const [databaseKey, aliasKey] of Object.entries(databaseEnvAliases) as Array<
-    [DatabaseEnvKey, string]
-  >) {
-    if (normalizedSource[databaseKey] === undefined && normalizedSource[aliasKey] !== undefined) {
-      normalizedSource[databaseKey] = normalizedSource[aliasKey];
-    }
-  }
-
-  return normalizedSource;
 }

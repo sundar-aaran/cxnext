@@ -9,6 +9,8 @@ import {
   Patch,
   Post,
 } from "@nestjs/common";
+import { RequirePermissions } from "../../../auth/interface/http/auth-context";
+import { modulePermission } from "../../../auth/interface/http/module-permissions";
 import { CreateIndustryUseCase } from "../../application/use-cases/create-industry.use-case";
 import { DeleteIndustryUseCase } from "../../application/use-cases/delete-industry.use-case";
 import { GetIndustryUseCase } from "../../application/use-cases/get-industry.use-case";
@@ -37,12 +39,14 @@ export class IndustriesController {
   ) {}
 
   @Get()
+  @RequirePermissions(modulePermission("industry", "read"))
   public async list() {
     const industries = await this.listIndustriesUseCase.execute();
     return industries.map((industry) => toIndustryResponse(industry));
   }
 
   @Get(":industryId")
+  @RequirePermissions(modulePermission("industry", "read"))
   public async getById(@Param("industryId") industryId: string) {
     const industry = await this.getIndustryUseCase.execute(industryId);
 
@@ -54,12 +58,14 @@ export class IndustriesController {
   }
 
   @Post()
+  @RequirePermissions(modulePermission("industry", "create"))
   public async create(@Body() body: IndustryUpsertRequest) {
     const industry = await this.createIndustryUseCase.execute(parseIndustryRequest(body));
     return toIndustryResponse(industry);
   }
 
   @Patch(":industryId")
+  @RequirePermissions(modulePermission("industry", "update"))
   public async update(
     @Param("industryId") industryId: string,
     @Body() body: IndustryUpsertRequest,
@@ -77,6 +83,7 @@ export class IndustriesController {
   }
 
   @Delete(":industryId")
+  @RequirePermissions(modulePermission("industry", "delete"))
   public async softDelete(@Param("industryId") industryId: string) {
     const wasDeleted = await this.deleteIndustryUseCase.execute(industryId);
 

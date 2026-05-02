@@ -1,4 +1,6 @@
 import type { CompanyRecord, CompanyUpsertInput } from "../domain/company";
+import { getRequiredPublicApiUrl } from "@/lib/runtime-env";
+import { authFetch } from "../../auth/infrastructure/auth-api";
 
 type CompanyApiRecord = Omit<CompanyRecord, "id" | "tenantId" | "industryId"> & {
   readonly id: string;
@@ -7,7 +9,7 @@ type CompanyApiRecord = Omit<CompanyRecord, "id" | "tenantId" | "industryId"> & 
 };
 
 export async function listCompanies(options?: { readonly signal?: AbortSignal }) {
-  const response = await fetch(`${getApiBaseUrl()}/companies`, {
+  const response = await authFetch(`${getApiBaseUrl()}/companies`, {
     cache: "no-store",
     headers: { Accept: "application/json" },
     signal: options?.signal,
@@ -21,7 +23,7 @@ export async function listCompanies(options?: { readonly signal?: AbortSignal })
 }
 
 export async function getCompany(companyId: number, options?: { readonly signal?: AbortSignal }) {
-  const response = await fetch(`${getApiBaseUrl()}/companies/${companyId}`, {
+  const response = await authFetch(`${getApiBaseUrl()}/companies/${companyId}`, {
     cache: "no-store",
     headers: { Accept: "application/json" },
     signal: options?.signal,
@@ -39,7 +41,7 @@ export async function getCompany(companyId: number, options?: { readonly signal?
 }
 
 export async function upsertCompany(input: CompanyUpsertInput, companyId?: number) {
-  const response = await fetch(`${getApiBaseUrl()}/companies${companyId ? `/${companyId}` : ""}`, {
+  const response = await authFetch(`${getApiBaseUrl()}/companies${companyId ? `/${companyId}` : ""}`, {
     body: JSON.stringify(input),
     cache: "no-store",
     headers: {
@@ -57,7 +59,7 @@ export async function upsertCompany(input: CompanyUpsertInput, companyId?: numbe
 }
 
 export async function softDeleteCompany(companyId: number) {
-  const response = await fetch(`${getApiBaseUrl()}/companies/${companyId}`, {
+  const response = await authFetch(`${getApiBaseUrl()}/companies/${companyId}`, {
     cache: "no-store",
     headers: { Accept: "application/json" },
     method: "DELETE",
@@ -69,7 +71,7 @@ export async function softDeleteCompany(companyId: number) {
 }
 
 function getApiBaseUrl() {
-  return process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+  return getRequiredPublicApiUrl();
 }
 
 function toCompanyRecord(record: CompanyApiRecord): CompanyRecord {

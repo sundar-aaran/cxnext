@@ -16,30 +16,30 @@ describe("database env loading", () => {
     await writeFile(
       envFilePath,
       [
-        "DATABASE_HOST=127.0.0.1",
-        "DATABASE_PORT=3307",
-        "DATABASE_USER=file-user",
-        "DATABASE_PASSWORD=file-password",
-        "DATABASE_NAME=file-database",
+        "DB_HOST=127.0.0.1",
+        "DB_PORT=3307",
+        "DB_USER=file-user",
+        "DB_PASSWORD=file-password",
+        "DB_NAME=file-database",
       ].join("\n"),
     );
 
     const envState = loadDatabaseEnv({
       cwd: workspaceDirectory,
       source: {
-        DATABASE_PASSWORD: "process-password",
+        DB_PASSWORD: "process-password",
       } as NodeJS.ProcessEnv,
     });
 
     expect(envState.envFilePath).toBe(envFilePath);
-    expect(envState.env.DATABASE_HOST).toBe("127.0.0.1");
-    expect(envState.env.DATABASE_PORT).toBe(3307);
-    expect(envState.env.DATABASE_USER).toBe("file-user");
-    expect(envState.env.DATABASE_PASSWORD).toBe("process-password");
-    expect(envState.env.DATABASE_NAME).toBe("file-database");
+    expect(envState.env.DB_HOST).toBe("127.0.0.1");
+    expect(envState.env.DB_PORT).toBe(3307);
+    expect(envState.env.DB_USER).toBe("file-user");
+    expect(envState.env.DB_PASSWORD).toBe("process-password");
+    expect(envState.env.DB_NAME).toBe("file-database");
   });
 
-  it("loads DB-prefixed aliases from the repository .env file", async () => {
+  it("loads DB-prefixed settings from the repository .env file", async () => {
     const tempRoot = await mkdtemp(path.join(os.tmpdir(), "cxnext-db-env-"));
     const workspaceDirectory = path.join(tempRoot, "packages", "db");
     const envFilePath = path.join(tempRoot, ".env");
@@ -61,11 +61,11 @@ describe("database env loading", () => {
       source: {} as NodeJS.ProcessEnv,
     });
 
-    expect(envState.env.DATABASE_HOST).toBe("127.0.0.1");
-    expect(envState.env.DATABASE_PORT).toBe(3307);
-    expect(envState.env.DATABASE_USER).toBe("root");
-    expect(envState.env.DATABASE_PASSWORD).toBe("Computer.1");
-    expect(envState.env.DATABASE_NAME).toBe("cxnext_db");
+    expect(envState.env.DB_HOST).toBe("127.0.0.1");
+    expect(envState.env.DB_PORT).toBe(3307);
+    expect(envState.env.DB_USER).toBe("root");
+    expect(envState.env.DB_PASSWORD).toBe("Computer.1");
+    expect(envState.env.DB_NAME).toBe("cxnext_db");
     expect(envState.fallbackKeys).toEqual([]);
   });
 
@@ -73,15 +73,15 @@ describe("database env loading", () => {
     const envState: LoadedDatabaseEnv = {
       cwd: "E:/Workspace/websites/cxnext/packages/db",
       env: {
-        DATABASE_HOST: "localhost",
-        DATABASE_PORT: 3306,
-        DATABASE_USER: "cxnext",
-        DATABASE_PASSWORD: "cxnext",
-        DATABASE_NAME: "cxnext",
+        DB_HOST: "localhost",
+        DB_PORT: 3306,
+        DB_USER: "cxnext",
+        DB_PASSWORD: "cxnext",
+        DB_NAME: "cxnext",
       },
       envFilePath: "E:/Workspace/websites/cxnext/.env",
-      explicitKeys: ["DATABASE_HOST", "DATABASE_PORT"],
-      fallbackKeys: ["DATABASE_USER", "DATABASE_PASSWORD", "DATABASE_NAME"],
+      explicitKeys: ["DB_HOST", "DB_PORT"],
+      fallbackKeys: ["DB_USER", "DB_PASSWORD", "DB_NAME"],
     };
 
     const message = formatDatabaseCliError(
@@ -92,7 +92,7 @@ describe("database env loading", () => {
     );
 
     expect(message).toContain("Database connection failed");
-    expect(message).toContain("fallback defaults");
+    expect(message).toContain("Required DB_* variables are missing");
     expect(message).toContain("repository root .env");
   });
 });

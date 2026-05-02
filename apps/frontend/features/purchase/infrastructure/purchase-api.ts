@@ -1,9 +1,11 @@
 import type { PurchaseInput, PurchaseRecord } from "../domain/purchase";
+import { getRequiredPublicApiUrl } from "@/lib/runtime-env";
+import { authFetch } from "../../auth/infrastructure/auth-api";
 
 type ApiRecord = Omit<PurchaseRecord, "id"> & { readonly id: string };
 
 export async function listPurchase(options?: { readonly signal?: AbortSignal }) {
-  const response = await fetch(`${apiBaseUrl()}/entries/purchase`, {
+  const response = await authFetch(`${apiBaseUrl()}/entries/purchase`, {
     cache: "no-store",
     headers: { Accept: "application/json" },
     signal: options?.signal,
@@ -13,7 +15,7 @@ export async function listPurchase(options?: { readonly signal?: AbortSignal }) 
 }
 
 export async function getPurchase(id: number) {
-  const response = await fetch(`${apiBaseUrl()}/entries/purchase/${id}`, {
+  const response = await authFetch(`${apiBaseUrl()}/entries/purchase/${id}`, {
     cache: "no-store",
     headers: { Accept: "application/json" },
   });
@@ -23,7 +25,7 @@ export async function getPurchase(id: number) {
 }
 
 export async function upsertPurchase(input: PurchaseInput, id?: number) {
-  const response = await fetch(`${apiBaseUrl()}/entries/purchase${id ? `/${id}` : ""}`, {
+  const response = await authFetch(`${apiBaseUrl()}/entries/purchase${id ? `/${id}` : ""}`, {
     body: JSON.stringify(input),
     cache: "no-store",
     headers: { Accept: "application/json", "Content-Type": "application/json" },
@@ -34,7 +36,7 @@ export async function upsertPurchase(input: PurchaseInput, id?: number) {
 }
 
 export async function deletePurchase(id: number) {
-  const response = await fetch(`${apiBaseUrl()}/entries/purchase/${id}`, {
+  const response = await authFetch(`${apiBaseUrl()}/entries/purchase/${id}`, {
     method: "DELETE",
     headers: { Accept: "application/json" },
   });
@@ -42,7 +44,7 @@ export async function deletePurchase(id: number) {
 }
 
 function apiBaseUrl() {
-  return process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+  return getRequiredPublicApiUrl();
 }
 
 function toRecord(record: ApiRecord): PurchaseRecord {

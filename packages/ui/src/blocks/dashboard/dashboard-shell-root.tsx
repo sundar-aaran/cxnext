@@ -73,6 +73,11 @@ export interface DashboardShellProps {
   readonly workspace: string;
   readonly navItems: readonly DashboardNavItem[];
   readonly navGroups?: readonly DashboardNavGroup[];
+  readonly currentUser?: {
+    readonly name: string;
+    readonly email: string;
+  };
+  readonly onLogout?: () => void;
   readonly children: ReactNode;
   readonly header?: ReactNode;
   readonly className?: string;
@@ -275,6 +280,8 @@ export function DashboardShell({
   workspace,
   navItems,
   navGroups,
+  currentUser,
+  onLogout,
   children,
   className,
   shellTechnicalName,
@@ -323,6 +330,10 @@ export function DashboardShell({
     () => sidebarGroups.flatMap((group) => collectActiveGroupIds(group)).join("|"),
     [sidebarGroups],
   );
+  const shellUser = currentUser ?? {
+    name: "Sundar",
+    email: "sundar@sundar.com",
+  };
 
   function markAllNotificationsRead() {
     setReadNotificationIds(new Set(notifications.map((item) => item.id)));
@@ -822,12 +833,12 @@ export function DashboardShell({
                   )}
                 >
                   <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-muted text-sm font-semibold">
-                    {toInitials("Sundar")}
+                    {toInitials(shellUser.name)}
                   </span>
                   <span className={cn("flex-1", sidebarLabelClass(labelsHidden))}>
-                    <span className="block truncate text-sm font-medium">Sundar</span>
+                    <span className="block truncate text-sm font-medium">{shellUser.name}</span>
                     <span className="block truncate text-xs text-muted-foreground">
-                      sundar@sundar.com
+                      {shellUser.email}
                     </span>
                   </span>
                   <ChevronDown
@@ -848,12 +859,12 @@ export function DashboardShell({
                 <DropdownMenuLabel className="p-0 font-normal">
                   <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                     <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-sm font-semibold">
-                      {toInitials("Sundar")}
+                      {toInitials(shellUser.name)}
                     </span>
                     <div className="grid flex-1 text-left text-sm leading-tight">
-                      <span className="truncate font-medium">Sundar</span>
+                      <span className="truncate font-medium">{shellUser.name}</span>
                       <span className="truncate text-xs text-muted-foreground">
-                        sundar@sundar.com
+                        {shellUser.email}
                       </span>
                     </div>
                   </div>
@@ -881,7 +892,11 @@ export function DashboardShell({
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={() => {
+                    onLogout?.();
+                  }}
+                >
                   <LogOut className="size-4" />
                   <span>Log out</span>
                 </DropdownMenuItem>
@@ -1136,10 +1151,14 @@ export function DashboardShell({
                   </DropdownMenu>
 
                   <Button
+                    type="button"
                     variant="outline"
                     size="sm"
                     className="size-9 rounded-md px-0 sm:w-auto sm:px-3"
                     aria-label="Logout"
+                    onClick={() => {
+                      onLogout?.();
+                    }}
                   >
                     <LogOut className="size-3.5 sm:size-4" />
                     <span className="hidden sm:inline">Logout</span>

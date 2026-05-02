@@ -3,7 +3,10 @@
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "dist",
-    "types": ["node"]
+    "types": ["node"],
+    "paths": {
+      "@cxnext/types": ["../types/dist/index.d.ts"]
+    }
   },
   "include": ["src/**/*.ts"]
 }

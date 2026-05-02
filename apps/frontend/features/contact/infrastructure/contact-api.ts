@@ -1,11 +1,13 @@
 import type { ContactRecord, ContactUpsertInput } from "../domain/contact";
+import { getRequiredPublicApiUrl } from "@/lib/runtime-env";
+import { authFetch } from "../../auth/infrastructure/auth-api";
 
 interface ContactApiRecord extends Omit<ContactRecord, "id"> {
   readonly id: string;
 }
 
 export async function listContacts(options?: { readonly signal?: AbortSignal }) {
-  const response = await fetch(`${getApiBaseUrl()}/contacts`, {
+  const response = await authFetch(`${getApiBaseUrl()}/contacts`, {
     cache: "no-store",
     headers: { Accept: "application/json" },
     signal: options?.signal,
@@ -19,7 +21,7 @@ export async function listContacts(options?: { readonly signal?: AbortSignal }) 
 }
 
 export async function getContact(contactId: number, options?: { readonly signal?: AbortSignal }) {
-  const response = await fetch(`${getApiBaseUrl()}/contacts/${contactId}`, {
+  const response = await authFetch(`${getApiBaseUrl()}/contacts/${contactId}`, {
     cache: "no-store",
     headers: { Accept: "application/json" },
     signal: options?.signal,
@@ -37,7 +39,7 @@ export async function getContact(contactId: number, options?: { readonly signal?
 }
 
 export async function upsertContact(input: ContactUpsertInput, contactId?: number) {
-  const response = await fetch(`${getApiBaseUrl()}/contacts${contactId ? `/${contactId}` : ""}`, {
+  const response = await authFetch(`${getApiBaseUrl()}/contacts${contactId ? `/${contactId}` : ""}`, {
     body: JSON.stringify(input),
     cache: "no-store",
     headers: {
@@ -55,7 +57,7 @@ export async function upsertContact(input: ContactUpsertInput, contactId?: numbe
 }
 
 export async function softDeleteContact(contactId: number) {
-  const response = await fetch(`${getApiBaseUrl()}/contacts/${contactId}`, {
+  const response = await authFetch(`${getApiBaseUrl()}/contacts/${contactId}`, {
     cache: "no-store",
     headers: { Accept: "application/json" },
     method: "DELETE",
@@ -67,7 +69,7 @@ export async function softDeleteContact(contactId: number) {
 }
 
 function getApiBaseUrl() {
-  return process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+  return getRequiredPublicApiUrl();
 }
 
 function toContactRecord(record: ContactApiRecord): ContactRecord {

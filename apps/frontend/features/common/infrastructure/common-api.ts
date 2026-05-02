@@ -1,4 +1,6 @@
 import type { CommonModuleDefinition, CommonRecord } from "../domain/common-master";
+import { getRequiredPublicApiUrl } from "@/lib/runtime-env";
+import { authFetch } from "../../auth/infrastructure/auth-api";
 
 const commonEndpointByKey: Record<string, string> = {
   countries: "countries",
@@ -30,7 +32,7 @@ const commonEndpointByKey: Record<string, string> = {
 };
 
 export async function listCommonModules(options?: { readonly signal?: AbortSignal }) {
-  const response = await fetch(`${getApiBaseUrl()}/common/modules`, {
+  const response = await authFetch(`${getApiBaseUrl()}/common/modules`, {
     cache: "no-store",
     signal: options?.signal,
   });
@@ -46,7 +48,7 @@ export async function listCommonRecords(
   moduleKey: string,
   options?: { readonly signal?: AbortSignal },
 ) {
-  const response = await fetch(`${getApiBaseUrl()}/common/${getCommonEndpoint(moduleKey)}`, {
+  const response = await authFetch(`${getApiBaseUrl()}/common/${getCommonEndpoint(moduleKey)}`, {
     cache: "no-store",
     signal: options?.signal,
   });
@@ -59,7 +61,7 @@ export async function listCommonRecords(
 }
 
 export async function createCommonRecord(moduleKey: string, payload: Record<string, unknown>) {
-  const response = await fetch(
+  const response = await authFetch(
     `${getApiBaseUrl()}/common/${getCommonEndpoint(moduleKey)}`,
     request("POST", payload),
   );
@@ -76,7 +78,7 @@ export async function updateCommonRecord(
   id: number,
   payload: Record<string, unknown>,
 ) {
-  const response = await fetch(
+  const response = await authFetch(
     `${getApiBaseUrl()}/common/${getCommonEndpoint(moduleKey)}/${encodeURIComponent(String(id))}`,
     request("PATCH", payload),
   );
@@ -89,7 +91,7 @@ export async function updateCommonRecord(
 }
 
 export async function dropCommonRecord(moduleKey: string, id: number) {
-  const response = await fetch(
+  const response = await authFetch(
     `${getApiBaseUrl()}/common/${getCommonEndpoint(moduleKey)}/${encodeURIComponent(String(id))}`,
     { cache: "no-store", method: "DELETE" },
   );
@@ -100,7 +102,7 @@ export async function dropCommonRecord(moduleKey: string, id: number) {
 }
 
 export async function forceDeleteCommonRecord(moduleKey: string, id: number) {
-  const response = await fetch(
+  const response = await authFetch(
     `${getApiBaseUrl()}/common/${getCommonEndpoint(moduleKey)}/${encodeURIComponent(String(id))}?force=true`,
     { cache: "no-store", method: "DELETE" },
   );
@@ -120,7 +122,7 @@ function request(method: "POST" | "PATCH", payload: Record<string, unknown>) {
 }
 
 function getApiBaseUrl() {
-  return process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+  return getRequiredPublicApiUrl();
 }
 
 function getCommonEndpoint(moduleKey: string) {

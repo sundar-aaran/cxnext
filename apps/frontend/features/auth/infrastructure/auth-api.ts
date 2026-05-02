@@ -1,0 +1,77 @@
+import type { AuthRole, AuthSession, AuthUser, AuthUserInput } from "../domain/auth";
+import { getRequiredPublicApiUrl } from "@/lib/runtime-env";
+import { clearStoredAuthSession, getStoredAccessToken } from "./session-storage";
+
+export async function login(input: { readonly login: string; readonly password: string }) {
+  const response = await fetch(`${apiBaseUrl()}/auth/login`, {
+    body: JSON.stringify(input),
+    cache: "no-store",
+    headers: { Accept: "application/json", "Content-Type": "application/json" },
+    method: "POST",
+  });
+
+  if (!response.ok) throw new Error(`Login failed with status ${response.status}.`);
+  return (await response.json()) as AuthSession;
+}
+
+export async function listAuthUsers() {
+  const response = await authFetch(`${apiBaseUrl()}/auth/users`);
+  if (!response.ok) throw new Error(`User list failed with status ${response.status}.`);
+  return (await response.json()) as AuthUser[];
+}
+
+export async function getAuthUser(userId: string) {
+  const response = await authFetch(`${apiBaseUrl()}/auth/users/${userId}`);
+  if (!response.ok) throw new Error(`User detail failed with status ${response.status}.`);
+  return (await response.json()) as AuthUser;
+}
+
+export async function upsertAuthUser(input: AuthUserInput, userId?: string) {
+  const response = await authFetch(`${apiBaseUrl()}/auth/users${userId ? `/${userId}` : ""}`, {
+    body: JSON.stringify(input),
+    headers: { "Content-Type": "application/json" },
+    method: userId ? "PATCH" : "POST",
+  });
+
+  if (!response.ok) throw new Error(`User save failed with status ${response.status}.`);
+  return (await response.json()) as AuthUser;
+}
+
+export async function logout() {
+  try {
+    const response = await authFetch(`${apiBaseUrl()}/auth/logout`, {
+      method: "POST",
+    });
+
+    if (!response.ok && response.status !== 401) {
+      throw new Error(`Logout failed with status ${response.status}.`);
+    }
+  } finally {
+    clearStoredAuthSession();
+  }
+}
+
+export async function listAuthRoles() {
+  const response = await authFetch(`${apiBaseUrl()}/auth/roles`);
+  if (!response.ok) throw new Error(`Role list failed with status ${response.status}.`);
+  return (await response.json()) as AuthRole[];
+}
+
+export async function listTenants() {
+  const response = await authFetch(`${apiBaseUrl()}/tenants`);
+  if (!response.ok) throw new Error(`Tenant list failed with status ${response.status}.`);
+  return (await response.json()) as Array<{ id: string; name: string; slug: string }>;
+}
+
+export async function authFetch(input: RequestInfo | URL, init: RequestInit = {}) {
+  const token = getStoredAccessToken();
+  const headers = new Headers(init.headers);
+  headers.set("Accept", headers.get("Accept") ?? "application/json");
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+
+  return fetch(input, { ...init, cache: "no-store", headers });
+}
+
+function apiBaseUrl() {
+  return getRequiredPublicApiUrl();
+}

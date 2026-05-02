@@ -1,4 +1,6 @@
 import { Body, Delete, Inject, NotFoundException, Param, Patch, Post, Query } from "@nestjs/common";
+import { RequirePermissions } from "../../../auth/interface/http/auth-context";
+import { modulePermission } from "../../../auth/interface/http/module-permissions";
 import type { CommonMasterUpsertParams } from "../../domain/entities/common-master-record";
 import type { CommonMasterModuleKey } from "../../domain/value-objects/common-master-definition";
 import { getCommonMasterDefinition } from "../../domain/value-objects/common-master-definition";
@@ -76,6 +78,7 @@ export abstract class CommonMasterControllerBase {
   }
 
   @Post()
+  @RequirePermissions(modulePermission("common", "create"))
   public create(@Body() body: CommonMasterUpsertRequest) {
     return this.createCommonMasterRecordUseCase.execute(
       this.moduleKey,
@@ -84,6 +87,7 @@ export abstract class CommonMasterControllerBase {
   }
 
   @Patch(":id")
+  @RequirePermissions(modulePermission("common", "update"))
   public async update(@Param("id") id: string, @Body() body: CommonMasterUpsertRequest) {
     const record = await this.updateCommonMasterRecordUseCase.execute(
       this.moduleKey,
@@ -101,6 +105,7 @@ export abstract class CommonMasterControllerBase {
   }
 
   @Delete(":id")
+  @RequirePermissions(modulePermission("common", "delete"))
   public async delete(@Param("id") id: string, @Query("force") force?: string) {
     const isForceDelete = force === "true";
     const wasDeleted = await this.deleteCommonMasterRecordUseCase.execute(

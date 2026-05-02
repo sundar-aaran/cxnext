@@ -63,7 +63,7 @@ async function resetApplicationDatabase(
   const databaseName = options.databaseName.trim();
 
   if (!databaseName) {
-    throw new Error("DATABASE_NAME is required for db:refresh.");
+    throw new Error("DB_NAME is required for db:refresh.");
   }
 
   options.logger?.info(`Refreshing database ${databaseName}`);

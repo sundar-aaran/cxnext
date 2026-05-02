@@ -525,11 +525,11 @@ export interface DatabaseSchema {
 }
 
 export const databaseEnvSchema = z.object({
-  DATABASE_HOST: z.string().default("localhost"),
-  DATABASE_PORT: z.coerce.number().int().positive().default(3306),
-  DATABASE_USER: z.string().default("cxnext"),
-  DATABASE_PASSWORD: z.string().default("cxnext"),
-  DATABASE_NAME: z.string().default("cxnext"),
+  DB_HOST: z.string().min(1, "DB_HOST is required."),
+  DB_PORT: z.coerce.number().int().positive(),
+  DB_USER: z.string().min(1, "DB_USER is required."),
+  DB_PASSWORD: z.string(),
+  DB_NAME: z.string().min(1, "DB_NAME is required."),
 });
 
 export type DatabaseEnv = z.infer<typeof databaseEnvSchema>;
@@ -541,11 +541,11 @@ export interface DatabaseConnection {
 
 export function createDatabaseConnection(env: DatabaseEnv): DatabaseConnection {
   const poolOptions: PoolOptions = {
-    host: env.DATABASE_HOST,
-    port: env.DATABASE_PORT,
-    user: env.DATABASE_USER,
-    password: env.DATABASE_PASSWORD,
-    database: env.DATABASE_NAME,
+    host: env.DB_HOST,
+    port: env.DB_PORT,
+    user: env.DB_USER,
+    password: env.DB_PASSWORD,
+    database: env.DB_NAME,
     connectionLimit: 10,
   };
 

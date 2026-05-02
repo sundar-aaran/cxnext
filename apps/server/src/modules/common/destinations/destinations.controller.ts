@@ -1,4 +1,6 @@
 import { Controller, Get, Inject, Param } from "@nestjs/common";
+import { RequirePermissions } from "../../auth/interface/http/auth-context";
+import { modulePermission } from "../../auth/interface/http/module-permissions";
 import { CreateCommonMasterRecordUseCase } from "../application/use-cases/contact-masters/create-common-master-record.use-case";
 import { DeleteCommonMasterRecordUseCase } from "../application/use-cases/contact-masters/delete-common-master-record.use-case";
 import { GetCommonMasterRecordUseCase } from "../application/use-cases/contact-masters/get-common-master-record.use-case";
@@ -7,6 +9,7 @@ import { UpdateCommonMasterRecordUseCase } from "../application/use-cases/contac
 import { CommonMasterControllerBase } from "../interface/http/common-master-controller";
 
 @Controller("common/destinations")
+@RequirePermissions(modulePermission("common", "read"))
 export class DestinationsController extends CommonMasterControllerBase {
   public constructor(
     @Inject(ListCommonMasterRecordsUseCase) listUseCase: ListCommonMasterRecordsUseCase,

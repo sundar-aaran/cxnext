@@ -3,6 +3,7 @@ import { ConfigModule } from "@nestjs/config";
 import { ApolloDriver, type ApolloDriverConfig } from "@nestjs/apollo";
 import { GraphQLModule } from "@nestjs/graphql";
 import { HealthModule } from "./common/health/health.module";
+import { AuthModule } from "./modules/auth/auth.module";
 import { GraphqlFoundationModule } from "./common/graphql/graphql-foundation.module";
 import { CoreModule } from "./core/core.module";
 import { EventsModule } from "./events/events.module";
@@ -25,6 +26,7 @@ import { TenantsModule } from "./modules/tenants/tenants.module";
       autoSchemaFile: true,
       sortSchema: true,
     }),
+    AuthModule,
     CompaniesModule,
     CommonModule,
     ContactsModule,

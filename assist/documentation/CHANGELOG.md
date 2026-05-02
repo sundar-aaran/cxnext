@@ -10,6 +10,14 @@
 
 ## v-1.0.69
 
+### [v 1.0.69] 2026-05-02 - Stabilize Auth Env And Frontend Runtime
+
+- Standardized runtime configuration around the root `.env`, keeping database and app URLs sourced from the shared `DB_*`, `FRONTEND_URL`, `BACKEND_URL`, and `NEXT_PUBLIC_API_URL` variables.
+- Refreshed `codexsun_db` from the current migrations and seeders so auth, RBAC, and supporting master data match the live codebase again.
+- Replaced the deprecated Next.js middleware convention with `proxy.ts` and removed the related frontend warning.
+- Fixed frontend Next.js build and runtime env loading so `NEXT_PUBLIC_API_URL` reaches the client bundle during build/start, restoring login and auth-protected desk flows.
+- Revalidated the live app with frontend typecheck/build, API health, and the auth smoke e2e covering login, guarded routes, and both logout paths.
+
 ### [v 1.0.69] 2026-05-01 - Calibrate Sales Invoice Print Lines
 
 - Added a pure Sales print line-planning helper with PO/DC wrapping, particulars counting, and focused tests.

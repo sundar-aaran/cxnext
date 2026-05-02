@@ -1,11 +1,53 @@
 import { app, BrowserWindow, Menu } from "electron";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
+import { parseEnv } from "node:util";
 import { registerIpcHandlers } from "./ipc";
 
-const frontendUrl = process.env.FRONTEND_URL ?? "http://localhost:3000";
-const backendUrl = process.env.BACKEND_URL ?? "http://localhost:4000";
-const backendHealthUrl = process.env.BACKEND_HEALTH_URL ?? `${backendUrl}/health`;
-const readinessTimeoutMs = Number(process.env.DESKTOP_READY_TIMEOUT_MS ?? 30_000);
+loadEnvFromRoot();
+
+function requireEnv(key: string) {
+  const value = process.env[key];
+
+  if (!value) {
+    throw new Error(`${key} is required.`);
+  }
+
+  return value;
+}
+
+function loadEnvFromRoot() {
+  let currentDirectory = path.resolve(__dirname, "..", "..", "..");
+
+  while (true) {
+    const envPath = path.join(currentDirectory, ".env");
+
+    if (existsSync(envPath)) {
+      const parsedEnv = parseEnv(readFileSync(envPath, "utf8"));
+
+      for (const [key, value] of Object.entries(parsedEnv)) {
+        if (value !== undefined && process.env[key] === undefined) {
+          process.env[key] = value;
+        }
+      }
+
+      return;
+    }
+
+    const parentDirectory = path.dirname(currentDirectory);
+
+    if (parentDirectory === currentDirectory) {
+      return;
+    }
+
+    currentDirectory = parentDirectory;
+  }
+}
+
+const frontendUrl = requireEnv("FRONTEND_URL");
+const backendUrl = requireEnv("BACKEND_URL");
+const backendHealthUrl = requireEnv("BACKEND_HEALTH_URL");
+const readinessTimeoutMs = Number(requireEnv("DESKTOP_READY_TIMEOUT_MS"));
 
 async function waitForUrl(url: string, timeoutMs: number): Promise<boolean> {
   const startedAt = Date.now();

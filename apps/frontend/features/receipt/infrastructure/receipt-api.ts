@@ -1,7 +1,9 @@
 import type { ReceiptInput, ReceiptRecord } from "../domain/receipt";
+import { getRequiredPublicApiUrl } from "@/lib/runtime-env";
+import { authFetch } from "../../auth/infrastructure/auth-api";
 
 export async function listReceipts(options?: { readonly signal?: AbortSignal }) {
-  const response = await fetch(`${apiBaseUrl()}/entries/receipt`, {
+  const response = await authFetch(`${apiBaseUrl()}/entries/receipt`, {
     cache: "no-store",
     headers: { Accept: "application/json" },
     signal: options?.signal,
@@ -13,7 +15,7 @@ export async function listReceipts(options?: { readonly signal?: AbortSignal }) 
 }
 
 export async function getReceipt(id: number, options?: { readonly signal?: AbortSignal }) {
-  const response = await fetch(`${apiBaseUrl()}/entries/receipt/${id}`, {
+  const response = await authFetch(`${apiBaseUrl()}/entries/receipt/${id}`, {
     cache: "no-store",
     headers: { Accept: "application/json" },
     signal: options?.signal,
@@ -24,7 +26,7 @@ export async function getReceipt(id: number, options?: { readonly signal?: Abort
 }
 
 export async function upsertReceipt(input: ReceiptInput, id?: number) {
-  const response = await fetch(`${apiBaseUrl()}/entries/receipt${id ? `/${id}` : ""}`, {
+  const response = await authFetch(`${apiBaseUrl()}/entries/receipt${id ? `/${id}` : ""}`, {
     body: JSON.stringify(input),
     cache: "no-store",
     headers: { Accept: "application/json", "Content-Type": "application/json" },
@@ -35,7 +37,7 @@ export async function upsertReceipt(input: ReceiptInput, id?: number) {
 }
 
 export async function deleteReceipt(id: number) {
-  const response = await fetch(`${apiBaseUrl()}/entries/receipt/${id}`, {
+  const response = await authFetch(`${apiBaseUrl()}/entries/receipt/${id}`, {
     cache: "no-store",
     headers: { Accept: "application/json" },
     method: "DELETE",
@@ -44,7 +46,7 @@ export async function deleteReceipt(id: number) {
 }
 
 function apiBaseUrl() {
-  return process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+  return getRequiredPublicApiUrl();
 }
 
 function toRecord(record: Omit<ReceiptRecord, "id"> & { id: string }): ReceiptRecord {

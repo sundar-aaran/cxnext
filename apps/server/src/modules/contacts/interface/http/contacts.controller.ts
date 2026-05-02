@@ -9,6 +9,8 @@ import {
   Patch,
   Post,
 } from "@nestjs/common";
+import { RequirePermissions } from "../../../auth/interface/http/auth-context";
+import { modulePermission } from "../../../auth/interface/http/module-permissions";
 import { CreateContactUseCase } from "../../application/use-cases/create-contact.use-case";
 import { DeleteContactUseCase } from "../../application/use-cases/delete-contact.use-case";
 import { GetContactUseCase } from "../../application/use-cases/get-contact.use-case";
@@ -33,12 +35,14 @@ export class ContactsController {
   ) {}
 
   @Get()
+  @RequirePermissions(modulePermission("contact", "read"))
   public async list() {
     const contacts = await this.listContactsUseCase.execute();
     return contacts.map((contact) => toContactResponse(contact));
   }
 
   @Get(":contactId")
+  @RequirePermissions(modulePermission("contact", "read"))
   public async getById(@Param("contactId") contactId: string) {
     const contact = await this.getContactUseCase.execute(contactId);
 
@@ -50,12 +54,14 @@ export class ContactsController {
   }
 
   @Post()
+  @RequirePermissions(modulePermission("contact", "create"))
   public async create(@Body() body: ContactUpsertParams) {
     const contact = await this.createContactUseCase.execute(parseContactRequest(body));
     return toContactResponse(contact);
   }
 
   @Patch(":contactId")
+  @RequirePermissions(modulePermission("contact", "update"))
   public async update(@Param("contactId") contactId: string, @Body() body: ContactUpsertParams) {
     const contact = await this.updateContactUseCase.execute(contactId, parseContactRequest(body));
 
@@ -67,6 +73,7 @@ export class ContactsController {
   }
 
   @Delete(":contactId")
+  @RequirePermissions(modulePermission("contact", "delete"))
   public async softDelete(@Param("contactId") contactId: string) {
     const wasDeleted = await this.deleteContactUseCase.execute(contactId);
 

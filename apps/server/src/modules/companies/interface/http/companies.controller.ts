@@ -9,6 +9,8 @@ import {
   Patch,
   Post,
 } from "@nestjs/common";
+import { RequirePermissions } from "../../../auth/interface/http/auth-context";
+import { modulePermission } from "../../../auth/interface/http/module-permissions";
 import { CreateCompanyUseCase } from "../../application/use-cases/create-company.use-case";
 import { DeleteCompanyUseCase } from "../../application/use-cases/delete-company.use-case";
 import { GetCompanyUseCase } from "../../application/use-cases/get-company.use-case";
@@ -51,12 +53,14 @@ export class CompaniesController {
   ) {}
 
   @Get()
+  @RequirePermissions(modulePermission("company", "read"))
   public async list() {
     const companies = await this.listCompaniesUseCase.execute();
     return companies.map((company) => toCompanyResponse(company));
   }
 
   @Get(":companyId")
+  @RequirePermissions(modulePermission("company", "read"))
   public async getById(@Param("companyId") companyId: string) {
     const company = await this.getCompanyUseCase.execute(companyId);
 
@@ -68,12 +72,14 @@ export class CompaniesController {
   }
 
   @Post()
+  @RequirePermissions(modulePermission("company", "create"))
   public async create(@Body() body: CompanyUpsertRequest) {
     const company = await this.createCompanyUseCase.execute(parseCompanyRequest(body));
     return toCompanyResponse(company);
   }
 
   @Patch(":companyId")
+  @RequirePermissions(modulePermission("company", "update"))
   public async update(@Param("companyId") companyId: string, @Body() body: CompanyUpsertRequest) {
     const company = await this.updateCompanyUseCase.execute(companyId, parseCompanyRequest(body));
 
@@ -85,6 +91,7 @@ export class CompaniesController {
   }
 
   @Delete(":companyId")
+  @RequirePermissions(modulePermission("company", "delete"))
   public async softDelete(@Param("companyId") companyId: string) {
     const wasDeleted = await this.deleteCompanyUseCase.execute(companyId);
 

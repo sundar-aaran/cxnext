@@ -6,6 +6,7 @@ import { createContactsMigration } from "./005-create-contacts";
 import { createProductsMigration } from "./006-create-products";
 import { createEntriesMigration } from "./007-create-entries";
 import { extendSalesIndustryFieldsMigration } from "./008-extend-sales-industry-fields";
+import { createAuthRbacMigration } from "./009-create-auth-rbac";
 import {
   contactsCommonMigrations,
   locationCommonMigrations,
@@ -23,6 +24,7 @@ export const databaseMigrations = [
   createProductsMigration,
   createEntriesMigration,
   extendSalesIndustryFieldsMigration,
+  createAuthRbacMigration,
   ...locationCommonMigrations,
   ...contactsCommonMigrations,
   ...productCommonMigrations,
@@ -38,6 +40,7 @@ export { createContactsMigration };
 export { createProductsMigration };
 export { createEntriesMigration };
 export { extendSalesIndustryFieldsMigration };
+export { createAuthRbacMigration };
 export {
   contactsCommonMigrations,
   locationCommonMigrations,

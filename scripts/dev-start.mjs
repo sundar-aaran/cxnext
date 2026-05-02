@@ -1,12 +1,41 @@
 import { spawn } from "node:child_process";
+import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import { parseEnv } from "node:util";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const pnpmCommand = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
-const frontendUrl = process.env.FRONTEND_URL ?? "http://localhost:3000";
-const backendUrl = process.env.BACKEND_URL ?? "http://localhost:4000";
-const backendHealthUrl = process.env.BACKEND_HEALTH_URL ?? "http://localhost:4000/health";
+
+loadEnvFile(path.join(root, ".env"));
+
+function requireEnv(key) {
+  const value = process.env[key];
+
+  if (!value) {
+    throw new Error(`${key} is required.`);
+  }
+
+  return value;
+}
+
+function loadEnvFile(envPath) {
+  if (!existsSync(envPath)) {
+    return;
+  }
+
+  const parsedEnv = parseEnv(readFileSync(envPath, "utf8"));
+
+  for (const [key, value] of Object.entries(parsedEnv)) {
+    if (value !== undefined && process.env[key] === undefined) {
+      process.env[key] = value;
+    }
+  }
+}
+
+const frontendUrl = requireEnv("FRONTEND_URL");
+const backendUrl = requireEnv("BACKEND_URL");
+const backendHealthUrl = requireEnv("BACKEND_HEALTH_URL");
 
 function resolvePnpmInvocation() {
   const npmExecPath = process.env.npm_execpath;
@@ -29,6 +58,23 @@ function resolvePnpmInvocation() {
 async function releasePorts() {
   const stopScript = path.join(root, "scripts", "dev-stop.mjs");
   const child = spawn(process.execPath, [stopScript], {
+    cwd: root,
+    stdio: "inherit",
+    windowsHide: true,
+  });
+
+  const code = await new Promise((resolve) => {
+    child.once("exit", resolve);
+  });
+
+  if (code !== 0) {
+    process.exit(Number(code ?? 1));
+  }
+}
+
+async function runPreflight() {
+  const preflightScript = path.join(root, "scripts", "preflight.mjs");
+  const child = spawn(process.execPath, [preflightScript], {
     cwd: root,
     stdio: "inherit",
     windowsHide: true,
@@ -66,7 +112,7 @@ function runTurbo() {
       FRONTEND_URL: frontendUrl,
       BACKEND_URL: backendUrl,
       BACKEND_HEALTH_URL: backendHealthUrl,
-      PORT: process.env.PORT ?? "4000",
+      PORT: requireEnv("PORT"),
     },
   });
 
@@ -84,5 +130,6 @@ function runTurbo() {
   });
 }
 
+await runPreflight();
 await releasePorts();
 runTurbo();

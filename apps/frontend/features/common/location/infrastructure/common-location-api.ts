@@ -3,7 +3,9 @@ import type {
   CommonLocationRecord,
   CommonLocationUpsertInput,
 } from "../domain/common-location";
+import { getRequiredPublicApiUrl } from "@/lib/runtime-env";
 import { commonLocationDefinitions } from "../domain/common-location";
+import { authFetch } from "../../../auth/infrastructure/auth-api";
 
 interface CommonLocationApiRecord {
   readonly id: string | number;
@@ -43,7 +45,7 @@ export async function getCommonLocation(
   id: string,
   options?: { readonly signal?: AbortSignal },
 ) {
-  const response = await fetch(
+  const response = await authFetch(
     `${getApiBaseUrl()}/${definition.endpoint}/${encodeURIComponent(id)}`,
     {
       cache: "no-store",
@@ -68,7 +70,7 @@ export async function upsertCommonLocation(
   input: CommonLocationUpsertInput,
   existingId?: string,
 ) {
-  const response = await fetch(
+  const response = await authFetch(
     `${getApiBaseUrl()}/${definition.endpoint}${existingId ? `/${encodeURIComponent(existingId)}` : ""}`,
     {
       body: JSON.stringify(input),
@@ -89,7 +91,7 @@ export async function softDeleteCommonLocation(
   definition: CommonLocationModuleDefinition,
   id: string,
 ) {
-  const response = await fetch(
+  const response = await authFetch(
     `${getApiBaseUrl()}/${definition.endpoint}/${encodeURIComponent(id)}`,
     {
       cache: "no-store",
@@ -104,14 +106,14 @@ export async function softDeleteCommonLocation(
 }
 
 function getApiBaseUrl() {
-  return process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+  return getRequiredPublicApiUrl();
 }
 
 async function fetchCommonLocationRecords(
   definition: CommonLocationModuleDefinition,
   options?: { readonly signal?: AbortSignal },
 ) {
-  const response = await fetch(`${getApiBaseUrl()}/${definition.endpoint}`, {
+  const response = await authFetch(`${getApiBaseUrl()}/${definition.endpoint}`, {
     cache: "no-store",
     headers: { Accept: "application/json" },
     signal: options?.signal,
