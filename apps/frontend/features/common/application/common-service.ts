@@ -46,6 +46,7 @@ export const commonMenuGroups = [
     items: ["warehouses", "transports", "destinations", "orderTypes", "stockRejectionTypes"],
   },
   { label: "Others", items: ["currencies", "paymentTerms"] },
+  { label: "Accounts", items: ["accountingYear"] },
 ] as const;
 
 export const commonMenuLabels: Record<string, string> = {
@@ -75,6 +76,7 @@ export const commonMenuLabels: Record<string, string> = {
   destinations: "Destinations",
   paymentTerms: "Payment Terms",
   stockRejectionTypes: "Stock Rejection Types",
+  accountingYear: "Accounting Year",
   storefrontTemplates: "Storefront Templates",
   sliderThemes: "Slider Themes",
 };
@@ -83,6 +85,25 @@ const codeNameDescription = [
   { key: "code", label: "Code", type: "string" as const, required: true, nullable: false },
   { key: "name", label: "Name", type: "string" as const, required: true, nullable: false },
   { key: "description", label: "Description", type: "string" as const, nullable: true },
+] satisfies readonly CommonColumnDefinition[];
+
+const accountingYearColumns = [
+  {
+    key: "name",
+    label: "Accounting Year",
+    type: "string" as const,
+    required: true,
+    nullable: false,
+  },
+  {
+    key: "start_date",
+    label: "Start Date",
+    type: "string" as const,
+    required: true,
+    nullable: false,
+  },
+  { key: "end_date", label: "End Date", type: "string" as const, required: true, nullable: false },
+  { key: "books_start", label: "Books Start", type: "string" as const, nullable: true },
 ] satisfies readonly CommonColumnDefinition[];
 
 function simpleModule(key: string, tableName: string, idPrefix: string): CommonModuleDefinition {
@@ -270,6 +291,14 @@ export const fallbackCommonModules: readonly CommonModuleDefinition[] = [
     defaultSortKey: "name",
     idPrefix: "payment-term",
     columns: [...codeNameDescription, { key: "due_days", label: "Due Days", type: "number" }],
+  },
+  {
+    key: "accountingYear",
+    label: "Accounting Year",
+    tableName: "accounting_years",
+    defaultSortKey: "start_date",
+    idPrefix: "accounting-year",
+    columns: accountingYearColumns,
   },
   simpleModule("stockRejectionTypes", "common_stock_rejection_types", "stock-rejection-type"),
   {

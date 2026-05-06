@@ -264,15 +264,30 @@ function hasOpenSubGroup(group: DashboardNavGroup, openGroups: Record<string, bo
   return collectSubGroupIds(group).some((subGroupId) => openGroups[subGroupId]);
 }
 
-function hasActiveItem(group: DashboardNavGroup): boolean {
-  return flattenNavGroupItems(group).some((item) => item.active);
+const dashboardOpenNavGroupsStorageKey = "cxnext-dashboard-open-nav-groups";
+
+function readStoredOpenNavGroups() {
+  if (typeof window === "undefined") return {};
+
+  try {
+    const storedValue = window.localStorage.getItem(dashboardOpenNavGroupsStorageKey);
+    if (!storedValue) return {};
+
+    const parsedValue = JSON.parse(storedValue) as unknown;
+    if (!parsedValue || typeof parsedValue !== "object" || Array.isArray(parsedValue)) return {};
+
+    return Object.fromEntries(
+      Object.entries(parsedValue).filter((entry): entry is [string, boolean] => {
+        return typeof entry[0] === "string" && typeof entry[1] === "boolean";
+      }),
+    );
+  } catch {
+    return {};
+  }
 }
 
-function collectActiveGroupIds(group: DashboardNavGroup): readonly string[] {
-  return [
-    ...(hasActiveItem(group) ? [group.id] : []),
-    ...(group.subGroups ?? []).flatMap((subGroup) => collectActiveGroupIds(subGroup)),
-  ];
+function storeOpenNavGroups(openGroups: Record<string, boolean>) {
+  window.localStorage.setItem(dashboardOpenNavGroupsStorageKey, JSON.stringify(openGroups));
 }
 
 export function DashboardShell({
@@ -289,15 +304,8 @@ export function DashboardShell({
 }: DashboardShellProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [openNavGroups, setOpenNavGroups] = useState<Record<string, boolean>>({
-    organisation: true,
-    common: true,
-    "common-location": false,
-    "common-contacts": false,
-    "common-product": false,
-    "common-orders": false,
-    "common-others": false,
-  });
+  const [openNavGroups, setOpenNavGroups] =
+    useState<Record<string, boolean>>(readStoredOpenNavGroups);
   const [themeMode, setThemeMode] = useState<ThemeMode>("system");
   const [accentTheme, setAccentTheme] = useState<AccentTheme>("neutral");
   const [readNotificationIds, setReadNotificationIds] = useState<Set<NotificationId>>(
@@ -324,10 +332,6 @@ export function DashboardShell({
   );
   const sidebarLeafItems = useMemo(
     () => sidebarGroups.flatMap((group) => flattenNavGroupItems(group)),
-    [sidebarGroups],
-  );
-  const activeGroupIdsKey = useMemo(
-    () => sidebarGroups.flatMap((group) => collectActiveGroupIds(group)).join("|"),
     [sidebarGroups],
   );
   const shellUser = currentUser ?? {
@@ -361,35 +365,6 @@ export function DashboardShell({
   }, [accentTheme, themeMode]);
 
   useEffect(() => {
-    if (!activeGroupIdsKey) return;
-
-    const activeGroupIds = new Set(activeGroupIdsKey.split("|"));
-
-    setOpenNavGroups((current) => {
-      const next = { ...current };
-
-      for (const group of sidebarGroups) {
-        const subGroupIds = collectSubGroupIds(group);
-        const activeSubGroupIds = subGroupIds.filter((subGroupId) =>
-          activeGroupIds.has(subGroupId),
-        );
-
-        if (activeGroupIds.has(group.id) || activeSubGroupIds.length > 0) {
-          next[group.id] = true;
-        }
-
-        if (activeSubGroupIds.length > 0) {
-          for (const subGroupId of subGroupIds) {
-            next[subGroupId] = activeGroupIds.has(subGroupId);
-          }
-        }
-      }
-
-      return next;
-    });
-  }, [activeGroupIdsKey, sidebarGroups]);
-
-  useEffect(() => {
     if (themeMode !== "system") {
       return;
     }
@@ -420,23 +395,32 @@ export function DashboardShell({
 
   function toggleNavGroup(group: DashboardNavGroup, defaultOpen: boolean) {
     setOpenNavGroups((current) => {
+      let next: Record<string, boolean>;
+
       if (group.id === "common" && hasOpenSubGroup(group, current)) {
         const collapsedSubGroups = Object.fromEntries(
           collectSubGroupIds(group).map((subGroupId) => [subGroupId, false]),
         );
 
-        return { ...current, ...collapsedSubGroups, [group.id]: true };
+        next = { ...current, ...collapsedSubGroups, [group.id]: true };
+      } else {
+        next = { ...current, [group.id]: !(current[group.id] ?? defaultOpen) };
       }
 
-      return { ...current, [group.id]: !(current[group.id] ?? defaultOpen) };
+      storeOpenNavGroups(next);
+      return next;
     });
   }
 
   function keepNavGroupsOpen(...groupIds: readonly string[]) {
-    setOpenNavGroups((current) => ({
-      ...current,
-      ...Object.fromEntries(groupIds.map((groupId) => [groupId, true])),
-    }));
+    setOpenNavGroups((current) => {
+      const next = {
+        ...current,
+        ...Object.fromEntries(groupIds.map((groupId) => [groupId, true])),
+      };
+      storeOpenNavGroups(next);
+      return next;
+    });
   }
 
   function renderSidebarContent({
@@ -576,7 +560,7 @@ export function DashboardShell({
           </Tooltip>
 
           {sidebarGroups.map((group) => {
-            const groupOpen = openNavGroups[group.id] ?? true;
+            const groupOpen = openNavGroups[group.id] ?? false;
             return (
               <div key={group.id} className="space-y-1.5">
                 <Tooltip>
@@ -589,7 +573,7 @@ export function DashboardShell({
                         "group flex min-h-11 w-full cursor-pointer items-center rounded-md text-sm font-semibold text-foreground transition-[background-color,padding,gap,justify-content,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-sidebar-accent",
                         labelsHidden ? "justify-center px-0" : "gap-3 px-1 py-2",
                       )}
-                      onClick={() => toggleNavGroup(group, true)}
+                      onClick={() => toggleNavGroup(group, false)}
                     >
                       <span
                         className={cn(
@@ -680,7 +664,7 @@ export function DashboardShell({
                         const subGroupActive = flattenNavGroupItems(subGroup).some(
                           (item) => item.active,
                         );
-                        const subGroupOpen = openNavGroups[subGroup.id] ?? subGroupActive;
+                        const subGroupOpen = openNavGroups[subGroup.id] ?? false;
 
                         return (
                           <div key={subGroup.id} className="space-y-1">
@@ -699,15 +683,19 @@ export function DashboardShell({
                                 transitionDelay: groupOpen ? `${subGroupIndex * 45}ms` : "0ms",
                               }}
                               onClick={() =>
-                                setOpenNavGroups((current) => ({
-                                  ...current,
-                                  ...Object.fromEntries(
-                                    (group.subGroups ?? [])
-                                      .filter((candidate) => candidate.id !== subGroup.id)
-                                      .map((candidate) => [candidate.id, false]),
-                                  ),
-                                  [subGroup.id]: !subGroupOpen,
-                                }))
+                                setOpenNavGroups((current) => {
+                                  const next = {
+                                    ...current,
+                                    ...Object.fromEntries(
+                                      (group.subGroups ?? [])
+                                        .filter((candidate) => candidate.id !== subGroup.id)
+                                        .map((candidate) => [candidate.id, false]),
+                                    ),
+                                    [subGroup.id]: !subGroupOpen,
+                                  };
+                                  storeOpenNavGroups(next);
+                                  return next;
+                                })
                               }
                             >
                               <span

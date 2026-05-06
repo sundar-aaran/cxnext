@@ -16,8 +16,14 @@ export function prepareContactForSave(input: ContactUpsertInput): ContactUpsertI
     gstin: normalizeOptionalText(input.gstin)?.toUpperCase() ?? null,
     msmeType: normalizeOptionalText(input.msmeType),
     msmeNo: normalizeOptionalText(input.msmeNo),
+    tan: normalizeOptionalText(input.tan)?.toUpperCase() ?? null,
     balanceType: normalizeOptionalText(input.balanceType),
     website: normalizeOptionalText(input.website),
     description: normalizeOptionalText(input.description),
+    socialLinks: input.socialLinks.map((link) => ({
+      ...link,
+      platform: normalizeOptionalText(link.platform) ?? "",
+      url: normalizeOptionalText(link.url) ?? "",
+    })),
   };
 }

@@ -13,7 +13,7 @@ export const createAuthRbacMigration = defineDatabaseMigration({
   appId: "security",
   moduleKey: "auth",
   name: "Create auth users, roles, permissions, and sessions",
-  order: 90,
+  order: 900,
   up: async ({ database }) => {
     const db = asQueryDatabase(database);
 

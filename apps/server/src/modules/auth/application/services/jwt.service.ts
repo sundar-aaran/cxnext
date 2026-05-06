@@ -21,6 +21,18 @@ function requireEnv(key: string) {
   return value;
 }
 
+function requireOneEnv(keys: readonly string[]) {
+  for (const key of keys) {
+    const value = process.env[key];
+
+    if (value) {
+      return value;
+    }
+  }
+
+  throw new Error(`${keys[0]} is required.`);
+}
+
 function base64Url(input: string | Buffer) {
   return Buffer.from(input).toString("base64url");
 }
@@ -28,7 +40,9 @@ function base64Url(input: string | Buffer) {
 @Injectable()
 export class JwtService {
   private readonly secret = requireEnv("JWT_SECRET");
-  private readonly expiresSeconds = Number(requireEnv("AUTH_TOKEN_EXPIRES_SECONDS"));
+  private readonly expiresSeconds = Number(
+    requireOneEnv(["AUTH_TOKEN_EXPIRES_SECONDS", "JWT_EXPIRES_IN_SECONDS"]),
+  );
 
   public issue(params: {
     readonly userId: string;
@@ -75,7 +89,9 @@ export class JwtService {
       throw new UnauthorizedException("Invalid bearer token signature.");
     }
 
-    const payload = JSON.parse(Buffer.from(encodedPayload, "base64url").toString("utf8")) as AuthTokenPayload;
+    const payload = JSON.parse(
+      Buffer.from(encodedPayload, "base64url").toString("utf8"),
+    ) as AuthTokenPayload;
 
     if (payload.exp * 1000 <= Date.now()) {
       throw new UnauthorizedException("Bearer token has expired.");

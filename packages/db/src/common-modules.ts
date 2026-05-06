@@ -204,7 +204,7 @@ export const commonModuleDefinitions = [
     label: "Taxes",
     tableName: "common_taxes",
     idPrefix: "tax",
-    defaultSortKey: "name",
+    defaultSortKey: "rate_percent",
     columns: [
       { key: "code", label: "Code", type: "string", required: true, nullable: false },
       { key: "name", label: "Name", type: "string", required: true, nullable: false },
@@ -289,6 +289,19 @@ export const commonModuleDefinitions = [
     columns: [
       ...codeNameDescription,
       { key: "due_days", label: "Due Days", type: "number", numberMode: "integer" },
+    ],
+  },
+  {
+    key: "accountingYear",
+    label: "Accounting Year",
+    tableName: "accounting_years",
+    idPrefix: "accounting-year",
+    defaultSortKey: "start_date",
+    columns: [
+      { key: "name", label: "Accounting Year", type: "string", required: true, nullable: false },
+      { key: "start_date", label: "Start Date", type: "string", required: true, nullable: false },
+      { key: "end_date", label: "End Date", type: "string", required: true, nullable: false },
+      { key: "books_start", label: "Books Start", type: "string", nullable: true },
     ],
   },
   defineSimple(

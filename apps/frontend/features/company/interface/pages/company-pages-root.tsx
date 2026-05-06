@@ -6,7 +6,18 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useForm } from "@tanstack/react-form";
 import { z } from "zod";
 import { toast } from "sonner";
-import { ArrowLeft, Eye, MoreHorizontal, Pencil, Plus, Save, Trash2, X } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  ChevronDown,
+  Eye,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  Save,
+  Trash2,
+  X,
+} from "lucide-react";
 import {
   AnimatedTabs,
   Badge,
@@ -36,6 +47,8 @@ import { listIndustries } from "../../../industry/application/industry-service";
 import type { IndustryRecord } from "../../../industry/domain/industry";
 import { listTenants } from "../../../tenant/application/tenant-service";
 import type { TenantRecord } from "../../../tenant/domain/tenant";
+import { createCommonRecord, listCommonRecords } from "../../../common/application/common-service";
+import type { CommonRecord } from "../../../common/domain/common-master";
 import {
   buildCompanyColumnOptions,
   filterCompanies,
@@ -54,6 +67,38 @@ import {
   type CompanyUpsertInput,
 } from "../../domain/company";
 
+type LocationLookupKey = "countries" | "states" | "districts" | "cities" | "pincodes";
+type LocationLookupMap = Record<LocationLookupKey, readonly CommonRecord[]>;
+type ThemedSelectOption = { readonly label: string; readonly value: string };
+
+const emptyLocationLookups: LocationLookupMap = {
+  countries: [],
+  states: [],
+  districts: [],
+  cities: [],
+  pincodes: [],
+};
+
+const addressTypeDisplayOrder = [
+  { label: "Billing Address", matches: ["Billing Address", "Billing", "BILL"] },
+  { label: "Shipping Address", matches: ["Shipping Address", "Shipping", "SHIP"] },
+  { label: "Secondary Address", matches: ["Secondary Address", "Secondary", "SECONDARY"] },
+  { label: "Third Address", matches: ["Third Address", "Third", "THIRD"] },
+] as const;
+
+const companyLogoVariants = [
+  { type: "logo", label: "Logo" },
+  { type: "logo-dark", label: "Logo Dark" },
+  { type: "favicon", label: "Favicon" },
+  { type: "letter-head", label: "Letter Head" },
+] as const;
+
+const msmeCategoryOptions: readonly ThemedSelectOption[] = [
+  { value: "micro", label: "Micro" },
+  { value: "small", label: "Small" },
+  { value: "medium", label: "Medium" },
+];
+
 const companySchema = z.object({
   tenantId: z.number().int().positive(),
   industryId: z.number().int().positive(),
@@ -61,16 +106,69 @@ const companySchema = z.object({
   legalName: z.string().nullable(),
   tagline: z.string().nullable(),
   shortAbout: z.string().nullable(),
-  registrationNumber: z.string().nullable(),
+  gstinUin: z.string().nullable(),
   pan: z.string().nullable(),
-  financialYearStart: z.string().nullable(),
-  booksStart: z.string().nullable(),
+  dateOfIncorporation: z.string().nullable(),
+  msmeNo: z.string().nullable(),
+  msmeCategory: z.string().nullable(),
+  tan: z.string().nullable(),
+  tdsAvailable: z.boolean(),
+  tdsSection: z.string().nullable(),
+  tdsRatePercent: z.number().nullable(),
+  tcsAvailable: z.boolean(),
+  tcsSection: z.string().nullable(),
+  tcsRatePercent: z.number().nullable(),
   website: z.string().nullable(),
   description: z.string().nullable(),
   primaryEmail: z.string().nullable(),
   primaryPhone: z.string().nullable(),
   isPrimary: z.boolean(),
   isActive: z.boolean(),
+  logos: z.array(
+    z.object({
+      logoUrl: z.string(),
+      logoType: z.string(),
+      isActive: z.boolean(),
+    }),
+  ),
+  emails: z.array(
+    z.object({
+      email: z.string(),
+      emailType: z.string(),
+      isActive: z.boolean(),
+    }),
+  ),
+  phones: z.array(
+    z.object({
+      phoneNumber: z.string(),
+      phoneType: z.string(),
+      isPrimary: z.boolean(),
+      isActive: z.boolean(),
+    }),
+  ),
+  socialLinks: z.array(
+    z.object({
+      platform: z.string(),
+      url: z.string(),
+      isActive: z.boolean(),
+    }),
+  ),
+  addresses: z.array(
+    z.object({
+      addressTypeId: z.string().nullable(),
+      addressLine1: z.string(),
+      addressLine2: z.string().nullable(),
+      cityId: z.string().nullable(),
+      districtId: z.string().nullable(),
+      stateId: z.string().nullable(),
+      countryId: z.string().nullable(),
+      pincodeId: z.string().nullable(),
+      latitude: z.number().nullable(),
+      longitude: z.number().nullable(),
+      isDefault: z.boolean(),
+      isActive: z.boolean(),
+    }),
+  ),
 });
 
 export function CompanyListPage() {
@@ -410,14 +508,17 @@ export function CompanyShowPage({ companyId }: { readonly companyId: number }) {
           <MasterListShowCard key="detail" title="Details" className="lg:col-span-2">
             <CompanyDetailsTable company={currentCompany} />
           </MasterListShowCard>,
+          <MasterListShowCard key="tax" title="Tax Details" className="lg:col-span-2">
+            <CompanyTaxDetailsTable company={currentCompany} />
+          </MasterListShowCard>,
           <MasterListShowCard key="logos" title="Logos">
             <SimpleRows rows={currentCompany.logos.map((logo) => [logo.logoType, logo.logoUrl])} />
           </MasterListShowCard>,
           <MasterListShowCard key="addresses" title="Addresses">
             <SimpleRows
               rows={currentCompany.addresses.map((address) => [
-                address.addressType,
-                [address.addressLine1, address.city, address.state, address.pincode]
+                formatLookupFallback(address.addressTypeId) || "-",
+                [address.addressLine1, address.cityId, address.stateId, address.pincodeId]
                   .filter(Boolean)
                   .join(", "),
               ])}
@@ -431,6 +532,11 @@ export function CompanyShowPage({ companyId }: { readonly companyId: number }) {
           <MasterListShowCard key="phones" title="Phones">
             <SimpleRows
               rows={currentCompany.phones.map((phone) => [phone.phoneType, phone.phoneNumber])}
+            />
+          </MasterListShowCard>,
+          <MasterListShowCard key="social" title="Social Links">
+            <SimpleRows
+              rows={currentCompany.socialLinks.map((link) => [link.platform, link.url])}
             />
           </MasterListShowCard>,
           <MasterListShowCard key="banks" title="Bank accounts">
@@ -460,16 +566,23 @@ export function CompanyUpsertPage({
   const [existingCompany, setExistingCompany] = useState<CompanyRecord | null>(null);
   const [tenants, setTenants] = useState<readonly TenantRecord[]>([]);
   const [industries, setIndustries] = useState<readonly IndustryRecord[]>([]);
+  const [locationLookups, setLocationLookups] = useState<LocationLookupMap>(emptyLocationLookups);
+  const [addressTypes, setAddressTypes] = useState<readonly CommonRecord[]>([]);
   const [isLoaded, setIsLoaded] = useState(!isEdit);
   const [message, setMessage] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const form = useForm({
     defaultValues: defaultCompanyFormValues(existingCompany),
     onSubmit: async ({ value }) => {
-      const parsedValue = companySchema.safeParse(value);
+      const normalizedValue = normalizeCompanyAddressTypes(value, addressTypes);
+      const parsedValue = companySchema.safeParse(normalizedValue);
       if (!parsedValue.success) {
-        setMessage("Resolve validation errors before saving.");
+        const nextValidationErrors = buildCompanyValidationErrors(parsedValue.error.issues);
+        setValidationErrors(nextValidationErrors);
+        setMessage(buildValidationBannerMessage(nextValidationErrors));
         return;
       }
+      setValidationErrors({});
       const hideGlobalLoader = showGlobalLoader();
       try {
         const company = await upsertCompany(parsedValue.data as CompanyUpsertInput, companyId);
@@ -496,25 +609,36 @@ export function CompanyUpsertPage({
     const loaders = [
       listTenants({ signal: controller.signal }),
       listIndustries({ signal: controller.signal }),
+      loadLocationLookups(controller.signal),
+      listCommonRecords("addressTypes", { signal: controller.signal }),
     ] as const;
     const companyLoader = companyId
       ? getCompany(companyId, { signal: controller.signal })
       : Promise.resolve(null);
     setIsLoaded(false);
     Promise.all([...loaders, companyLoader])
-      .then(([tenantRecords, industryRecords, companyRecord]) => {
-        setTenants(tenantRecords);
-        setIndustries(industryRecords);
-        setExistingCompany(companyRecord);
-        const values = defaultCompanyFormValues(
+      .then(
+        ([
+          tenantRecords,
+          industryRecords,
+          nextLocationLookups,
+          addressTypeRecords,
           companyRecord,
-          tenantRecords[0]?.id,
-          industryRecords[0]?.id,
-        );
-        Object.entries(values).forEach(([key, nextValue]) =>
-          form.setFieldValue(key as keyof typeof values, nextValue),
-        );
-      })
+        ]) => {
+          setTenants(tenantRecords);
+          setIndustries(industryRecords);
+          setLocationLookups(nextLocationLookups);
+          setAddressTypes(addressTypeRecords);
+          setExistingCompany(companyRecord);
+          const values = normalizeCompanyAddressTypes(
+            defaultCompanyFormValues(companyRecord, tenantRecords[0]?.id, industryRecords[0]?.id),
+            addressTypeRecords,
+          );
+          Object.entries(values).forEach(([key, nextValue]) =>
+            form.setFieldValue(key as keyof typeof values, nextValue),
+          );
+        },
+      )
       .catch((error: unknown) => {
         if (!controller.signal.aborted) console.error(error);
       })
@@ -529,6 +653,37 @@ export function CompanyUpsertPage({
       hideGlobalLoader();
     };
   }, [companyId, form, showGlobalLoader]);
+
+  async function createLocationLookup(
+    moduleKey: LocationLookupKey,
+    label: string,
+    address: CompanyUpsertInput["addresses"][number],
+  ) {
+    const payload = buildLocationCreatePayload(moduleKey, label, address);
+    if (!payload) {
+      toast.error("Select parent location first", {
+        description: `Choose the parent fields needed before creating ${locationLookupLabel(moduleKey)}.`,
+      });
+      return null;
+    }
+
+    try {
+      const record = await createCommonRecord(moduleKey, payload);
+      setLocationLookups((current) => ({
+        ...current,
+        [moduleKey]: [...current[moduleKey], record],
+      }));
+      toast.success(`${locationLookupLabel(moduleKey)} created`, {
+        description: getCommonRecordLabel(record),
+      });
+      return record;
+    } catch (error) {
+      toast.error(`Could not create ${locationLookupLabel(moduleKey).toLowerCase()}`, {
+        description: getErrorMessage(error),
+      });
+      return null;
+    }
+  }
 
   if (!isLoaded) {
     return (
@@ -590,13 +745,16 @@ export function CompanyUpsertPage({
               tabs={[
                 {
                   value: "identity",
-                  label: "Identity",
+                  label: "Details",
                   content: (
-                    <div className="space-y-4 rounded-2xl border border-border/70 bg-card/80 p-4 shadow-sm md:p-5">
-                      <div className="grid gap-4 md:grid-cols-3">
+                    <div className="space-y-6 rounded-2xl border border-border/70 bg-card/80 p-4 shadow-sm md:p-6">
+                      <div className="grid gap-x-6 gap-y-5 md:grid-cols-2">
                         <form.Field name="name">
                           {(field) => (
-                            <FieldShell label="Company name" error={field.state.meta.errors[0]}>
+                            <FieldShell
+                              label="Company name"
+                              error={validationErrors.name ?? field.state.meta.errors[0]}
+                            >
                               <Input
                                 className="h-11 rounded-xl"
                                 value={field.state.value}
@@ -607,44 +765,46 @@ export function CompanyUpsertPage({
                         </form.Field>
                         <form.Field name="tenantId">
                           {(field) => (
-                            <FieldShell label="Tenant" error={field.state.meta.errors[0]}>
-                              <select
-                                className="h-11 cursor-pointer rounded-xl border border-input bg-background px-3"
-                                value={field.state.value}
-                                onChange={(event) => field.handleChange(Number(event.target.value))}
-                              >
-                                {tenants.map((tenant) => (
-                                  <option key={tenant.id} value={tenant.id}>
-                                    {tenant.name}
-                                  </option>
-                                ))}
-                              </select>
+                            <FieldShell
+                              label="Tenant"
+                              error={validationErrors.tenantId ?? field.state.meta.errors[0]}
+                            >
+                              <ThemedSelect
+                                value={String(field.state.value)}
+                                placeholder="Select tenant"
+                                options={tenants.map((tenant) => ({
+                                  value: String(tenant.id),
+                                  label: tenant.name,
+                                }))}
+                                onValueChange={(value) => field.handleChange(Number(value))}
+                              />
                             </FieldShell>
                           )}
                         </form.Field>
+                        <TextField form={form} name="legalName" label="Legal name" />
                         <form.Field name="industryId">
                           {(field) => (
-                            <FieldShell label="Industry" error={field.state.meta.errors[0]}>
-                              <select
-                                className="h-11 cursor-pointer rounded-xl border border-input bg-background px-3"
-                                value={field.state.value}
-                                onChange={(event) => field.handleChange(Number(event.target.value))}
-                              >
-                                {industries.map((industry) => (
-                                  <option key={industry.id} value={industry.id}>
-                                    {industry.name}
-                                  </option>
-                                ))}
-                              </select>
+                            <FieldShell
+                              label="Industry"
+                              error={validationErrors.industryId ?? field.state.meta.errors[0]}
+                            >
+                              <ThemedSelect
+                                value={String(field.state.value)}
+                                placeholder="Select industry"
+                                options={industries.map((industry) => ({
+                                  value: String(industry.id),
+                                  label: industry.name,
+                                }))}
+                                onValueChange={(value) => field.handleChange(Number(value))}
+                              />
                             </FieldShell>
                           )}
                         </form.Field>
+                        <div className="md:col-span-2">
+                          <TextField form={form} name="tagline" label="Tagline" />
+                        </div>
                       </div>
-                      <div className="grid gap-4 md:grid-cols-2">
-                        <TextField form={form} name="legalName" label="Legal name" />
-                        <TextField form={form} name="tagline" label="Tagline" />
-                      </div>
-                      <div className="grid gap-3 md:grid-cols-2">
+                      <div className="grid gap-4 pt-2 md:grid-cols-2">
                         <SwitchField
                           form={form}
                           name="isPrimary"
@@ -663,26 +823,469 @@ export function CompanyUpsertPage({
                 },
                 {
                   value: "registration",
-                  label: "Registration",
+                  label: "Communication",
                   content: (
-                    <div className="grid gap-4 rounded-2xl border border-border/70 bg-card/80 p-4 shadow-sm md:grid-cols-3 md:p-5">
-                      <TextField form={form} name="primaryEmail" label="Primary email" />
-                      <TextField form={form} name="primaryPhone" label="Primary phone" />
-                      <TextField form={form} name="website" label="Website" />
-                      <TextField
-                        form={form}
-                        name="registrationNumber"
-                        label="Registration number"
-                      />
-                      <TextField form={form} name="pan" label="PAN" />
-                      <TextField
-                        form={form}
-                        name="financialYearStart"
-                        label="Financial year start"
-                        type="date"
-                      />
-                      <TextField form={form} name="booksStart" label="Books start" type="date" />
+                    <div className="space-y-5">
+                      <CollectionCard
+                        title="Company Emails"
+                        description="Operational and communication email addresses."
+                        actionLabel="Add"
+                        onAdd={() =>
+                          form.setFieldValue("emails", [
+                            ...form.getFieldValue("emails"),
+                            { email: "", emailType: "", isActive: true },
+                          ])
+                        }
+                      >
+                        <form.Field name="emails">
+                          {(field) => (
+                            <div className="space-y-4">
+                              {field.state.value.map((email, index) => (
+                                <CollectionRow
+                                  key={index}
+                                  onRemove={() =>
+                                    field.handleChange(
+                                      field.state.value.filter(
+                                        (_, itemIndex) => itemIndex !== index,
+                                      ),
+                                    )
+                                  }
+                                >
+                                  <FieldShell label="Email" error={null}>
+                                    <Input
+                                      className="h-11 rounded-xl"
+                                      value={email.email}
+                                      onChange={(event) =>
+                                        field.handleChange(
+                                          field.state.value.map((item, itemIndex) =>
+                                            itemIndex === index
+                                              ? { ...item, email: event.target.value }
+                                              : item,
+                                          ),
+                                        )
+                                      }
+                                    />
+                                  </FieldShell>
+                                  <FieldShell label="Email Type" error={null}>
+                                    <Input
+                                      className="h-11 rounded-xl"
+                                      value={email.emailType}
+                                      onChange={(event) =>
+                                        field.handleChange(
+                                          field.state.value.map((item, itemIndex) =>
+                                            itemIndex === index
+                                              ? { ...item, emailType: event.target.value }
+                                              : item,
+                                          ),
+                                        )
+                                      }
+                                    />
+                                  </FieldShell>
+                                </CollectionRow>
+                              ))}
+                            </div>
+                          )}
+                        </form.Field>
+                      </CollectionCard>
+                      <CollectionCard
+                        title="Company Phones"
+                        description="Phone and messaging channels used by the company."
+                        actionLabel="Add"
+                        onAdd={() =>
+                          form.setFieldValue("phones", [
+                            ...form.getFieldValue("phones"),
+                            {
+                              phoneNumber: "",
+                              phoneType: "",
+                              isPrimary: form.getFieldValue("phones").length === 0,
+                              isActive: true,
+                            },
+                          ])
+                        }
+                      >
+                        <form.Field name="phones">
+                          {(field) => (
+                            <div className="space-y-4">
+                              {field.state.value.map((phone, index) => (
+                                <CollectionRow
+                                  key={index}
+                                  onRemove={() =>
+                                    field.handleChange(
+                                      field.state.value.filter(
+                                        (_, itemIndex) => itemIndex !== index,
+                                      ),
+                                    )
+                                  }
+                                >
+                                  <FieldShell label="Phone Number" error={null}>
+                                    <Input
+                                      className="h-11 rounded-xl"
+                                      value={phone.phoneNumber}
+                                      onChange={(event) =>
+                                        field.handleChange(
+                                          field.state.value.map((item, itemIndex) =>
+                                            itemIndex === index
+                                              ? { ...item, phoneNumber: event.target.value }
+                                              : item,
+                                          ),
+                                        )
+                                      }
+                                    />
+                                  </FieldShell>
+                                  <FieldShell label="Phone Type" error={null}>
+                                    <Input
+                                      className="h-11 rounded-xl"
+                                      value={phone.phoneType}
+                                      onChange={(event) =>
+                                        field.handleChange(
+                                          field.state.value.map((item, itemIndex) =>
+                                            itemIndex === index
+                                              ? { ...item, phoneType: event.target.value }
+                                              : item,
+                                          ),
+                                        )
+                                      }
+                                    />
+                                  </FieldShell>
+                                  <label className="flex items-center gap-3 pt-7 text-sm font-medium">
+                                    <input
+                                      type="checkbox"
+                                      checked={phone.isPrimary}
+                                      onChange={(event) =>
+                                        field.handleChange(
+                                          field.state.value.map((item, itemIndex) => ({
+                                            ...item,
+                                            isPrimary:
+                                              itemIndex === index ? event.target.checked : false,
+                                          })),
+                                        )
+                                      }
+                                    />
+                                    Primary phone
+                                  </label>
+                                </CollectionRow>
+                              ))}
+                            </div>
+                          )}
+                        </form.Field>
+                      </CollectionCard>
+                      <CollectionCard
+                        title="Social Links"
+                        description="Public brand links used in profile and storefront surfaces."
+                        actionLabel="Add"
+                        onAdd={() =>
+                          form.setFieldValue("socialLinks", [
+                            ...form.getFieldValue("socialLinks"),
+                            { platform: "", url: "", isActive: true },
+                          ])
+                        }
+                      >
+                        <form.Field name="socialLinks">
+                          {(field) => (
+                            <div className="space-y-4">
+                              {field.state.value.map((link, index) => (
+                                <CollectionRow
+                                  key={index}
+                                  onRemove={() =>
+                                    field.handleChange(
+                                      field.state.value.filter(
+                                        (_, itemIndex) => itemIndex !== index,
+                                      ),
+                                    )
+                                  }
+                                >
+                                  <FieldShell label="Platform" error={null}>
+                                    <Input
+                                      className="h-11 rounded-xl"
+                                      value={link.platform}
+                                      onChange={(event) =>
+                                        field.handleChange(
+                                          field.state.value.map((item, itemIndex) =>
+                                            itemIndex === index
+                                              ? { ...item, platform: event.target.value }
+                                              : item,
+                                          ),
+                                        )
+                                      }
+                                    />
+                                  </FieldShell>
+                                  <FieldShell label="URL" error={null}>
+                                    <Input
+                                      className="h-11 rounded-xl"
+                                      value={link.url}
+                                      onChange={(event) =>
+                                        field.handleChange(
+                                          field.state.value.map((item, itemIndex) =>
+                                            itemIndex === index
+                                              ? { ...item, url: event.target.value }
+                                              : item,
+                                          ),
+                                        )
+                                      }
+                                    />
+                                  </FieldShell>
+                                </CollectionRow>
+                              ))}
+                            </div>
+                          )}
+                        </form.Field>
+                      </CollectionCard>
+                      <div className="grid gap-4 rounded-2xl border border-border/70 bg-card/80 p-4 shadow-sm md:grid-cols-2 md:p-5">
+                        <TextField form={form} name="website" label="Website" />
+                      </div>
                     </div>
+                  ),
+                },
+                {
+                  value: "logos",
+                  label: "Logos",
+                  content: (
+                    <div className="space-y-5 rounded-2xl border border-border/70 bg-card/80 p-4 shadow-sm md:p-6">
+                      <form.Field name="logos">
+                        {(field) => (
+                          <div className="grid gap-x-6 gap-y-5 md:grid-cols-2">
+                            {companyLogoVariants.map((variant) => (
+                              <FieldShell key={variant.type} label={variant.label} error={null}>
+                                <Input
+                                  className="h-11 rounded-xl"
+                                  value={getLogoVariantUrl(field.state.value, variant.type)}
+                                  placeholder={`https://example.com/${variant.type}.png`}
+                                  onChange={(event) =>
+                                    field.handleChange(
+                                      updateLogoVariantUrl(
+                                        field.state.value,
+                                        variant.type,
+                                        event.target.value,
+                                      ),
+                                    )
+                                  }
+                                />
+                              </FieldShell>
+                            ))}
+                          </div>
+                        )}
+                      </form.Field>
+                    </div>
+                  ),
+                },
+                {
+                  value: "tax",
+                  label: "Tax Details",
+                  content: (
+                    <div className="space-y-6 rounded-2xl border border-border/70 bg-card/80 p-4 shadow-sm md:p-6">
+                      <div className="grid gap-x-6 gap-y-5 md:grid-cols-2">
+                        <TextField form={form} name="gstinUin" label="GSTIN / UIN" />
+                        <TextField form={form} name="pan" label="PAN" />
+                        <TextField form={form} name="msmeNo" label="MSME No" />
+                        <form.Field name="msmeCategory">
+                          {(field) => (
+                            <FieldShell
+                              label="MSME Category"
+                              error={validationErrors.msmeCategory ?? field.state.meta.errors[0]}
+                            >
+                              <ThemedSelect
+                                value={field.state.value ?? ""}
+                                placeholder="Select MSME category"
+                                options={msmeCategoryOptions}
+                                onValueChange={(value) => field.handleChange(value || null)}
+                              />
+                            </FieldShell>
+                          )}
+                        </form.Field>
+                        <TextField
+                          form={form}
+                          name="dateOfIncorporation"
+                          label="Date of incorporation"
+                          type="date"
+                        />
+                      </div>
+                      <div className="pt-1">
+                        <SwitchField
+                          form={form}
+                          name="tdsAvailable"
+                          label="TDS Available"
+                          description="Enable when this company has TDS applicability details."
+                        />
+                      </div>
+                      <TextField form={form} name="tan" label="TAN No" />
+                      <div className="grid gap-x-6 gap-y-5 md:grid-cols-2">
+                        <TextField form={form} name="tdsSection" label="TDS Section" />
+                        <NumberField form={form} name="tdsRatePercent" label="TDS Rate %" />
+                      </div>
+                      <SwitchField
+                        form={form}
+                        name="tcsAvailable"
+                        label="TCS Available"
+                        description="Enable when this company has TCS collection applicability."
+                      />
+                      <div className="grid gap-x-6 gap-y-5 md:grid-cols-2">
+                        <TextField form={form} name="tcsSection" label="TCS Section" />
+                        <NumberField form={form} name="tcsRatePercent" label="TCS Rate %" />
+                      </div>
+                    </div>
+                  ),
+                },
+                {
+                  value: "addressing",
+                  label: "Addressing",
+                  content: (
+                    <CollectionCard
+                      title="Address Book"
+                      description="Reusable company addresses linked to common location masters."
+                      actionLabel="Add"
+                      onAdd={() =>
+                        form.setFieldValue("addresses", [
+                          ...form.getFieldValue("addresses"),
+                          {
+                            addressTypeId: getDefaultAddressTypeId(addressTypes),
+                            addressLine1: "",
+                            addressLine2: null,
+                            cityId: null,
+                            districtId: null,
+                            stateId: null,
+                            countryId: null,
+                            pincodeId: null,
+                            latitude: null,
+                            longitude: null,
+                            isDefault: form.getFieldValue("addresses").length === 0,
+                            isActive: true,
+                          },
+                        ])
+                      }
+                    >
+                      <form.Field name="addresses">
+                        {(field) => (
+                          <div className="space-y-4">
+                            {field.state.value.map((address, index) => (
+                              <CollectionRow
+                                gridClassName="md:grid-cols-2"
+                                key={index}
+                                onRemove={() =>
+                                  field.handleChange(
+                                    field.state.value.filter((_, itemIndex) => itemIndex !== index),
+                                  )
+                                }
+                              >
+                                <div className="md:col-span-2">
+                                  <AddressTypeSelect
+                                    label="Address Type"
+                                    options={addressTypes}
+                                    value={address.addressTypeId}
+                                    onChange={(value) =>
+                                      updateCollectionItem(field, index, { addressTypeId: value })
+                                    }
+                                  />
+                                </div>
+                                <AddressInput
+                                  label="Address"
+                                  value={address.addressLine1}
+                                  onChange={(value) =>
+                                    updateCollectionItem(field, index, {
+                                      addressLine1: value ?? "",
+                                    })
+                                  }
+                                />
+                                <AddressInput
+                                  label="Area / Location"
+                                  value={address.addressLine2 ?? ""}
+                                  onChange={(value) =>
+                                    updateCollectionItem(field, index, { addressLine2: value })
+                                  }
+                                />
+                                <AddressLookupInput
+                                  label="Country"
+                                  moduleKey="countries"
+                                  options={locationLookups.countries}
+                                  value={address.countryId}
+                                  onChange={(value) =>
+                                    updateCollectionItem(field, index, { countryId: value })
+                                  }
+                                  onCreate={(label) =>
+                                    createLocationLookup("countries", label, address)
+                                  }
+                                />
+                                <AddressLookupInput
+                                  label="State"
+                                  moduleKey="states"
+                                  options={locationLookups.states}
+                                  value={address.stateId}
+                                  onChange={(value) =>
+                                    updateCollectionItem(field, index, { stateId: value })
+                                  }
+                                  onCreate={(label) =>
+                                    createLocationLookup("states", label, address)
+                                  }
+                                />
+                                <AddressLookupInput
+                                  label="District"
+                                  moduleKey="districts"
+                                  options={locationLookups.districts}
+                                  value={address.districtId}
+                                  onChange={(value) =>
+                                    updateCollectionItem(field, index, { districtId: value })
+                                  }
+                                  onCreate={(label) =>
+                                    createLocationLookup("districts", label, address)
+                                  }
+                                />
+                                <AddressLookupInput
+                                  label="City"
+                                  moduleKey="cities"
+                                  options={locationLookups.cities}
+                                  value={address.cityId}
+                                  onChange={(value) =>
+                                    updateCollectionItem(field, index, { cityId: value })
+                                  }
+                                  onCreate={(label) =>
+                                    createLocationLookup("cities", label, address)
+                                  }
+                                />
+                                <AddressLookupInput
+                                  label="Pincode"
+                                  moduleKey="pincodes"
+                                  options={locationLookups.pincodes}
+                                  value={address.pincodeId}
+                                  onChange={(value) =>
+                                    updateCollectionItem(field, index, { pincodeId: value })
+                                  }
+                                  onCreate={(label) =>
+                                    createLocationLookup("pincodes", label, address)
+                                  }
+                                />
+                                <label
+                                  className={
+                                    address.isDefault
+                                      ? "flex min-h-11 cursor-pointer items-center justify-between gap-4 self-end rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-emerald-950"
+                                      : "flex min-h-11 cursor-pointer items-center justify-between gap-4 self-end rounded-xl border border-border/70 bg-muted/10 px-4 py-2"
+                                  }
+                                >
+                                  <span>
+                                    <span className="block text-sm font-medium leading-tight">
+                                      Primary address
+                                    </span>
+                                    <span className="block text-xs leading-tight text-muted-foreground">
+                                      Used as the main company address.
+                                    </span>
+                                  </span>
+                                  <Switch
+                                    checked={address.isDefault}
+                                    aria-label="Primary address"
+                                    onCheckedChange={(checked) =>
+                                      field.handleChange(
+                                        field.state.value.map((item, itemIndex) => ({
+                                          ...item,
+                                          isDefault: itemIndex === index ? checked : false,
+                                        })),
+                                      )
+                                    }
+                                  />
+                                </label>
+                              </CollectionRow>
+                            ))}
+                          </div>
+                        )}
+                      </form.Field>
+                    </CollectionCard>
                   ),
                 },
                 {
@@ -698,7 +1301,15 @@ export function CompanyUpsertPage({
               ]}
             />
             {message ? (
-              <p className="text-sm font-medium text-muted-foreground">{message}</p>
+              <div
+                className={
+                  Object.keys(validationErrors).length
+                    ? "rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive"
+                    : "text-sm font-medium text-muted-foreground"
+                }
+              >
+                {message}
+              </div>
             ) : null}
             <Separator />
             <div className="flex flex-wrap items-center gap-3">
@@ -761,6 +1372,30 @@ function CompanyDetailsTable({ company }: { readonly company: CompanyRecord }) {
   return <SimpleRows rows={rows} />;
 }
 
+function CompanyTaxDetailsTable({ company }: { readonly company: CompanyRecord }) {
+  const rows: Array<[string, ReactNode]> = [
+    ["GSTIN / UIN", company.gstinUin ?? "-"],
+    ["PAN", company.pan ?? "-"],
+    ["Date of incorporation", company.dateOfIncorporation ?? "-"],
+    ["MSME No", company.msmeNo ?? "-"],
+    ["MSME Category", company.msmeCategory ?? "-"],
+    ["TAN", company.tan ?? "-"],
+    ["TDS Available", company.tdsAvailable ? "Yes" : "No"],
+    ["TDS Section", company.tdsAvailable ? (company.tdsSection ?? "-") : "-"],
+    [
+      "TDS Rate",
+      company.tdsAvailable && company.tdsRatePercent !== null ? `${company.tdsRatePercent}%` : "-",
+    ],
+    ["TCS Available", company.tcsAvailable ? "Yes" : "No"],
+    ["TCS Section", company.tcsAvailable ? (company.tcsSection ?? "-") : "-"],
+    [
+      "TCS Rate",
+      company.tcsAvailable && company.tcsRatePercent !== null ? `${company.tcsRatePercent}%` : "-",
+    ],
+  ];
+  return <SimpleRows rows={rows} />;
+}
+
 function SimpleRows({ rows }: { readonly rows: readonly (readonly [ReactNode, ReactNode])[] }) {
   if (rows.length === 0) return <p className="text-sm text-muted-foreground">No records.</p>;
   return (
@@ -791,12 +1426,474 @@ function FieldShell({
   readonly label: string;
 }) {
   return (
-    <div className="grid gap-2">
-      <Label className="text-sm font-medium">{label}</Label>
+    <div
+      className={
+        error
+          ? "grid gap-2 [&_button]:border-destructive [&_button]:focus-visible:ring-destructive/30 [&_input]:border-destructive [&_input]:focus-visible:ring-destructive/30"
+          : "grid gap-2"
+      }
+    >
+      <Label className={error ? "text-sm font-medium text-destructive" : "text-sm font-medium"}>
+        {label}
+      </Label>
       {children}
       {error ? <p className="text-xs text-destructive">{String(error)}</p> : null}
     </div>
   );
+}
+
+function CollectionCard({
+  actionLabel,
+  children,
+  description,
+  onAdd,
+  title,
+}: {
+  readonly actionLabel: string;
+  readonly children: ReactNode;
+  readonly description: string;
+  readonly onAdd: () => void;
+  readonly title: string;
+}) {
+  return (
+    <section className="rounded-2xl border border-border/70 bg-card/80 p-4 shadow-sm md:p-5">
+      <div className="mb-4 flex items-start justify-between gap-4">
+        <div>
+          <h3 className="text-base font-semibold text-foreground">{title}</h3>
+          <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+        </div>
+        <Button type="button" variant="outline" className="h-8 rounded-lg px-3" onClick={onAdd}>
+          <Plus className="size-4" />
+          {actionLabel}
+        </Button>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function CollectionRow({
+  children,
+  gridClassName = "md:grid-cols-[1fr_1fr_auto]",
+  onRemove,
+}: {
+  readonly children: ReactNode;
+  readonly gridClassName?: string;
+  readonly onRemove: () => void;
+}) {
+  return (
+    <div className="rounded-2xl border border-border/70 bg-background/65 p-4">
+      <div className="mb-4 flex justify-end">
+        <Button type="button" variant="ghost" className="h-8 gap-2 rounded-lg" onClick={onRemove}>
+          <Trash2 className="size-4" />
+          Remove
+        </Button>
+      </div>
+      <div className={`grid gap-x-6 gap-y-5 ${gridClassName}`}>{children}</div>
+    </div>
+  );
+}
+
+function AddressInput({
+  label,
+  onChange,
+  value,
+}: {
+  readonly label: string;
+  readonly onChange: (value: string | null) => void;
+  readonly value: string;
+}) {
+  return (
+    <FieldShell label={label} error={null}>
+      <Input
+        className="h-11 rounded-xl"
+        value={value}
+        onChange={(event) => onChange(event.target.value || null)}
+      />
+    </FieldShell>
+  );
+}
+
+function AddressTypeSelect({
+  label,
+  onChange,
+  options,
+  value,
+}: {
+  readonly label: string;
+  readonly onChange: (value: string | null) => void;
+  readonly options: readonly CommonRecord[];
+  readonly value: string | null;
+}) {
+  const selectOptions = getAddressTypeSelectOptions(options);
+  const resolvedValue = resolveAddressTypeValue(value, options) ?? getDefaultAddressTypeId(options);
+
+  return (
+    <FieldShell label={label} error={null}>
+      <ThemedSelect
+        value={resolvedValue ?? ""}
+        placeholder="Select address type"
+        options={
+          selectOptions.length
+            ? selectOptions
+            : [{ value: value ?? "", label: formatLookupFallback(value) || "Billing Address" }]
+        }
+        onValueChange={(nextValue) => onChange(nextValue || getDefaultAddressTypeId(options))}
+      />
+    </FieldShell>
+  );
+}
+
+function ThemedSelect({
+  onValueChange,
+  options,
+  placeholder,
+  value,
+}: {
+  readonly onValueChange: (value: string) => void;
+  readonly options: readonly ThemedSelectOption[];
+  readonly placeholder: string;
+  readonly value: string;
+}) {
+  const selectedOption = options.find((option) => option.value === value);
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          className="h-11 w-full cursor-pointer justify-between rounded-xl border-input bg-background px-3 text-left font-normal text-foreground shadow-sm hover:bg-accent/50"
+        >
+          <span
+            className={
+              selectedOption ? "min-w-0 truncate" : "min-w-0 truncate text-muted-foreground"
+            }
+          >
+            {selectedOption?.label ?? placeholder}
+          </span>
+          <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="start"
+        className="z-[120] max-h-72 w-[var(--radix-dropdown-menu-trigger-width)] overflow-y-auto rounded-xl p-1 shadow-xl"
+      >
+        {options.length ? (
+          options.map((option) => {
+            const isSelected = option.value === value;
+            return (
+              <DropdownMenuItem
+                key={option.value}
+                className="flex cursor-pointer items-center justify-between gap-3 rounded-lg px-3 py-2"
+                onSelect={() => onValueChange(option.value)}
+              >
+                <span className="min-w-0 truncate">{option.label}</span>
+                {isSelected ? (
+                  <Check className="size-4 shrink-0 text-emerald-600" strokeWidth={3} />
+                ) : null}
+              </DropdownMenuItem>
+            );
+          })
+        ) : (
+          <DropdownMenuItem disabled className="rounded-lg px-3 py-2 text-muted-foreground">
+            No options available
+          </DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function AddressLookupInput({
+  label,
+  moduleKey,
+  onChange,
+  onCreate,
+  options,
+  value,
+}: {
+  readonly label: string;
+  readonly moduleKey: LocationLookupKey;
+  readonly onChange: (value: string | null) => void;
+  readonly onCreate: (label: string) => Promise<CommonRecord | null>;
+  readonly options: readonly CommonRecord[];
+  readonly value: string | null;
+}) {
+  const [selectedValue, setSelectedValue] = useState<string | null>(value);
+  const selectedOption = findLookupOption(options, selectedValue);
+  const [query, setQuery] = useState(() =>
+    selectedOption
+      ? getLocationRecordLabel(moduleKey, selectedOption)
+      : formatLookupFallback(value),
+  );
+  const [isOpen, setIsOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const normalizedQuery = query.trim().toLowerCase();
+  const filteredOptions = options.filter((option) =>
+    getLocationRecordLabel(moduleKey, option).toLowerCase().includes(normalizedQuery),
+  );
+  const exactOption = options.find(
+    (option) => getLocationRecordLabel(moduleKey, option).toLowerCase() === normalizedQuery,
+  );
+  const canCreate = Boolean(query.trim()) && !exactOption;
+  const optionCount = filteredOptions.length + (canCreate ? 1 : 0);
+
+  useEffect(() => {
+    setSelectedValue(value);
+  }, [value]);
+
+  useEffect(() => {
+    setQuery(
+      selectedOption
+        ? getLocationRecordLabel(moduleKey, selectedOption)
+        : formatLookupFallback(selectedValue),
+    );
+  }, [moduleKey, selectedOption, selectedValue]);
+
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [query, options]);
+
+  function selectOption(option: CommonRecord) {
+    const nextValue = String(option.id);
+    setQuery(getLocationRecordLabel(moduleKey, option));
+    setSelectedValue(nextValue);
+    onChange(nextValue);
+    setIsOpen(false);
+  }
+
+  async function createAndSelect() {
+    const labelValue = query.trim();
+    if (!labelValue) return;
+    const record = await onCreate(labelValue);
+    if (!record) return;
+    const nextValue = String(record.id);
+    setQuery(getLocationRecordLabel(moduleKey, record));
+    setSelectedValue(nextValue);
+    onChange(nextValue);
+    setIsOpen(false);
+  }
+
+  async function selectActiveOption() {
+    if (optionCount === 0) return;
+    const activeOption = filteredOptions[activeIndex];
+    if (activeOption) {
+      selectOption(activeOption);
+      return;
+    }
+    if (canCreate && activeIndex === filteredOptions.length) {
+      await createAndSelect();
+    }
+  }
+
+  return (
+    <div className="relative z-10 grid gap-2 focus-within:z-[90]">
+      <Label className="text-sm font-medium">{label}</Label>
+      <Input
+        aria-autocomplete="list"
+        aria-expanded={isOpen}
+        role="combobox"
+        className="h-11 cursor-pointer rounded-xl"
+        value={query}
+        placeholder={`Search ${label.toLowerCase()}`}
+        onFocus={() => setIsOpen(true)}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowDown") {
+            event.preventDefault();
+            setIsOpen(true);
+            setActiveIndex((current) => (optionCount ? (current + 1) % optionCount : 0));
+            return;
+          }
+          if (event.key === "ArrowUp") {
+            event.preventDefault();
+            setIsOpen(true);
+            setActiveIndex((current) =>
+              optionCount ? (current - 1 + optionCount) % optionCount : 0,
+            );
+            return;
+          }
+          if (event.key === "Enter") {
+            event.preventDefault();
+            void selectActiveOption();
+            return;
+          }
+          if (event.key === "Escape") {
+            event.preventDefault();
+            setIsOpen(false);
+          }
+        }}
+        onBlur={() => {
+          if (exactOption) {
+            const nextValue = String(exactOption.id);
+            setSelectedValue(nextValue);
+            onChange(nextValue);
+          }
+          window.setTimeout(() => setIsOpen(false), 120);
+        }}
+        onChange={(event) => {
+          const nextQuery = event.target.value;
+          setQuery(nextQuery);
+          setIsOpen(true);
+          const matchingOption = options.find(
+            (option) =>
+              getLocationRecordLabel(moduleKey, option).toLowerCase() ===
+              nextQuery.trim().toLowerCase(),
+          );
+          const nextValue = matchingOption ? String(matchingOption.id) : null;
+          setSelectedValue(nextValue);
+          onChange(nextValue);
+        }}
+      />
+      {isOpen && optionCount > 0 ? (
+        <div
+          role="listbox"
+          className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-[100] max-h-60 overflow-y-auto overscroll-contain rounded-xl border border-border bg-card p-1 shadow-2xl ring-1 ring-black/5"
+          onMouseDown={(event) => event.preventDefault()}
+        >
+          {filteredOptions.map((option, index) => {
+            const isSelected = isLookupOptionSelected(option, selectedValue);
+            return (
+              <button
+                key={option.id}
+                role="option"
+                aria-selected={isSelected}
+                type="button"
+                className={
+                  activeIndex === index
+                    ? "flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg bg-muted px-3 py-2 text-left text-sm text-foreground"
+                    : "flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg bg-card px-3 py-2 text-left text-sm text-foreground hover:bg-muted"
+                }
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                  selectOption(option);
+                }}
+              >
+                <span className="min-w-0 truncate">
+                  {getLocationRecordLabel(moduleKey, option)}
+                </span>
+                {isSelected ? (
+                  <Check className="size-4 shrink-0 text-emerald-600" strokeWidth={3} />
+                ) : (
+                  <span className="size-4 shrink-0" />
+                )}
+              </button>
+            );
+          })}
+          {canCreate ? (
+            <button
+              type="button"
+              role="option"
+              aria-selected={activeIndex === filteredOptions.length}
+              className={
+                activeIndex === filteredOptions.length
+                  ? "block w-full cursor-pointer rounded-lg bg-muted px-3 py-2 text-left text-sm font-medium text-primary"
+                  : "block w-full cursor-pointer rounded-lg bg-card px-3 py-2 text-left text-sm font-medium text-primary hover:bg-muted"
+              }
+              onMouseDown={async (event) => {
+                event.preventDefault();
+                await createAndSelect();
+              }}
+            >
+              + Create {locationLookupLabel(moduleKey)} "{query.trim()}"
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function updateCollectionItem<T extends object>(
+  field: {
+    readonly state: { readonly value: readonly T[] };
+    readonly handleChange: (value: readonly T[]) => void;
+  },
+  index: number,
+  patch: Partial<T>,
+) {
+  field.handleChange(
+    field.state.value.map((item, itemIndex) =>
+      itemIndex === index ? { ...item, ...patch } : item,
+    ),
+  );
+}
+
+function getLogoVariantUrl(
+  logos: readonly CompanyUpsertInput["logos"][number][],
+  logoType: string,
+) {
+  return (
+    logos.find((logo) => normalizeLogoType(logo.logoType) === normalizeLogoType(logoType))
+      ?.logoUrl ?? ""
+  );
+}
+
+function updateLogoVariantUrl(
+  logos: readonly CompanyUpsertInput["logos"][number][],
+  logoType: string,
+  logoUrl: string,
+) {
+  const normalizedType = normalizeLogoType(logoType);
+  const nextLogo = { logoType, logoUrl, isActive: true };
+  const hasExistingLogo = logos.some((logo) => normalizeLogoType(logo.logoType) === normalizedType);
+
+  if (!hasExistingLogo) return [...logos, nextLogo];
+
+  return logos.map((logo) =>
+    normalizeLogoType(logo.logoType) === normalizedType ? { ...logo, logoUrl, logoType } : logo,
+  );
+}
+
+function normalizeLogoType(value: string) {
+  return value.trim().toLowerCase().replace(/\s+/g, "-");
+}
+
+const companyValidationFieldLabels: Record<string, string> = {
+  tenantId: "Tenant",
+  industryId: "Industry",
+  name: "Company name",
+  legalName: "Legal name",
+  tagline: "Tagline",
+  shortAbout: "Short about",
+  gstinUin: "GSTIN",
+  pan: "PAN",
+  dateOfIncorporation: "Date of incorporation",
+  msmeNo: "MSME No",
+  msmeCategory: "MSME Category",
+  tan: "TAN No",
+  tdsSection: "TDS Section",
+  tdsRatePercent: "TDS Rate %",
+  tcsSection: "TCS Section",
+  tcsRatePercent: "TCS Rate %",
+  website: "Website",
+  description: "Description",
+  primaryEmail: "Primary email",
+  primaryPhone: "Primary phone",
+};
+
+function buildCompanyValidationErrors(
+  issues: readonly {
+    readonly path: readonly (string | number | symbol)[];
+    readonly message: string;
+  }[],
+) {
+  const errors: Record<string, string> = {};
+  for (const issue of issues) {
+    const [fieldName] = issue.path;
+    if (typeof fieldName !== "string" || errors[fieldName]) continue;
+    errors[fieldName] = issue.message;
+  }
+  return errors;
+}
+
+function buildValidationBannerMessage(errors: Record<string, string>) {
+  const labels = Object.keys(errors).map(
+    (fieldName) => companyValidationFieldLabels[fieldName] ?? fieldName,
+  );
+  return labels.length
+    ? `Resolve validation errors before saving. Required fields: ${labels.join(", ")}.`
+    : "Resolve validation errors before saving.";
 }
 
 function TextField({
@@ -826,6 +1923,33 @@ function TextField({
   );
 }
 
+function NumberField({
+  form,
+  label,
+  name,
+}: {
+  readonly form: any;
+  readonly label: string;
+  readonly name: keyof CompanyUpsertInput;
+}) {
+  return (
+    <form.Field name={name}>
+      {(field: any) => (
+        <FieldShell label={label} error={field.state.meta.errors[0]}>
+          <Input
+            type="number"
+            className="h-11 rounded-xl"
+            value={field.state.value ?? ""}
+            onChange={(event) =>
+              field.handleChange(event.target.value === "" ? null : Number(event.target.value))
+            }
+          />
+        </FieldShell>
+      )}
+    </form.Field>
+  );
+}
+
 function SwitchField({
   description,
   form,
@@ -835,7 +1959,7 @@ function SwitchField({
   readonly description: string;
   readonly form: any;
   readonly label: string;
-  readonly name: "isPrimary" | "isActive";
+  readonly name: "isPrimary" | "isActive" | "tdsAvailable" | "tcsAvailable";
 }) {
   return (
     <form.Field name={name}>
@@ -874,17 +1998,149 @@ function defaultCompanyFormValues(
     legalName: company?.legalName ?? null,
     tagline: company?.tagline ?? null,
     shortAbout: company?.shortAbout ?? null,
-    registrationNumber: company?.registrationNumber ?? null,
+    gstinUin: company?.gstinUin ?? null,
     pan: company?.pan ?? null,
-    financialYearStart: company?.financialYearStart ?? null,
-    booksStart: company?.booksStart ?? null,
+    dateOfIncorporation: company?.dateOfIncorporation ?? null,
+    msmeNo: company?.msmeNo ?? null,
+    msmeCategory: company?.msmeCategory ?? null,
+    tan: company?.tan ?? null,
+    tdsAvailable: company?.tdsAvailable ?? false,
+    tdsSection: company?.tdsSection ?? null,
+    tdsRatePercent: company?.tdsRatePercent ?? null,
+    tcsAvailable: company?.tcsAvailable ?? false,
+    tcsSection: company?.tcsSection ?? null,
+    tcsRatePercent: company?.tcsRatePercent ?? null,
     website: company?.website ?? null,
     description: company?.description ?? null,
     primaryEmail: company?.primaryEmail ?? null,
     primaryPhone: company?.primaryPhone ?? null,
     isPrimary: company?.isPrimary ?? false,
     isActive: company?.isActive ?? true,
+    logos: companyLogoVariants.map((variant) => ({
+      logoType: variant.type,
+      logoUrl:
+        company?.logos.find(
+          (logo) => normalizeLogoType(logo.logoType) === normalizeLogoType(variant.type),
+        )?.logoUrl ?? "",
+      isActive:
+        company?.logos.find(
+          (logo) => normalizeLogoType(logo.logoType) === normalizeLogoType(variant.type),
+        )?.isActive ?? true,
+    })),
+    emails: company?.emails.length
+      ? company.emails.map((email) => ({
+          email: email.email,
+          emailType: email.emailType,
+          isActive: email.isActive,
+        }))
+      : [{ email: company?.primaryEmail ?? "", emailType: "Primary", isActive: true }],
+    phones: company?.phones.length
+      ? company.phones.map((phone) => ({
+          phoneNumber: phone.phoneNumber,
+          phoneType: phone.phoneType,
+          isPrimary: phone.isPrimary,
+          isActive: phone.isActive,
+        }))
+      : [
+          {
+            phoneNumber: company?.primaryPhone ?? "",
+            phoneType: "Mobile",
+            isPrimary: true,
+            isActive: true,
+          },
+        ],
+    socialLinks:
+      company?.socialLinks.map((link) => ({
+        platform: link.platform,
+        url: link.url,
+        isActive: link.isActive,
+      })) ?? [],
+    addresses:
+      company?.addresses.map((address) => ({
+        addressTypeId: address.addressTypeId,
+        addressLine1: address.addressLine1,
+        addressLine2: address.addressLine2,
+        cityId: address.cityId,
+        districtId: address.districtId,
+        stateId: address.stateId,
+        countryId: address.countryId,
+        pincodeId: address.pincodeId,
+        latitude: address.latitude,
+        longitude: address.longitude,
+        isDefault: address.isDefault,
+        isActive: address.isActive,
+      })) ?? [],
   };
+}
+
+function normalizeCompanyAddressTypes(
+  value: CompanyUpsertInput,
+  addressTypes: readonly CommonRecord[],
+): CompanyUpsertInput {
+  return {
+    ...value,
+    addresses: value.addresses.map((address) => ({
+      ...address,
+      addressTypeId:
+        resolveAddressTypeValue(address.addressTypeId, addressTypes) ??
+        getDefaultAddressTypeId(addressTypes) ??
+        address.addressTypeId,
+    })),
+  };
+}
+
+function getDefaultAddressTypeId(addressTypes: readonly CommonRecord[]) {
+  const [firstAddressType] = getAddressTypeSelectOptions(addressTypes);
+
+  return firstAddressType?.value ?? null;
+}
+
+function resolveAddressTypeValue(value: string | null, addressTypes: readonly CommonRecord[]) {
+  const selectOptions = getAddressTypeSelectOptions(addressTypes);
+  if (!value) return getDefaultAddressTypeId(addressTypes);
+  const directMatch = selectOptions.find((option) => option.value === String(value));
+  if (directMatch) return directMatch.value;
+  const labelMatch = getAddressTypeCandidates(value)
+    .map((candidate) =>
+      selectOptions.find(
+        (option) => normalizeLookupText(option.label) === normalizeLookupText(candidate),
+      ),
+    )
+    .find(Boolean);
+
+  return labelMatch?.value ?? null;
+}
+
+function getAddressTypeSelectOptions(addressTypes: readonly CommonRecord[]) {
+  return addressTypeDisplayOrder.reduce<ThemedSelectOption[]>((selectOptions, displayType) => {
+    const record = addressTypes.find((option) =>
+      displayType.matches.some((candidate) => matchesAddressTypeRecord(option, candidate)),
+    );
+    if (record) {
+      selectOptions.push({ value: String(record.id), label: displayType.label });
+    }
+    return selectOptions;
+  }, []);
+}
+
+function getAddressTypeCandidates(value: string) {
+  const cleanValue = formatLookupFallback(value);
+  return [cleanValue, cleanValue.replace(/\s+\d+$/g, "")].filter(Boolean);
+}
+
+function matchesAddressTypeRecord(option: CommonRecord, value: string) {
+  const normalizedValue = normalizeLookupText(value);
+  return (
+    normalizeLookupText(getCommonRecordLabel(option)) === normalizedValue ||
+    normalizeLookupText(String(option.code ?? "")) === normalizedValue
+  );
+}
+
+function normalizeLookupText(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "");
 }
 
 function getCancelPath(companyId: number | undefined, isEdit: boolean, returnTo: "list" | "show") {
@@ -894,4 +2150,125 @@ function getCancelPath(companyId: number | undefined, isEdit: boolean, returnTo:
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Please try again.";
+}
+
+async function loadLocationLookups(signal: AbortSignal): Promise<LocationLookupMap> {
+  const [countries, states, districts, cities, pincodes] = await Promise.all([
+    listCommonRecords("countries", { signal }),
+    listCommonRecords("states", { signal }),
+    listCommonRecords("districts", { signal }),
+    listCommonRecords("cities", { signal }),
+    listCommonRecords("pincodes", { signal }),
+  ]);
+
+  return { countries, states, districts, cities, pincodes };
+}
+
+function buildLocationCreatePayload(
+  moduleKey: LocationLookupKey,
+  label: string,
+  address: CompanyUpsertInput["addresses"][number],
+) {
+  const code = toLookupCode(label);
+  switch (moduleKey) {
+    case "countries":
+      return { code, name: label, phoneCode: null, isActive: true };
+    case "states": {
+      const countryId = toNumericId(address.countryId);
+      return countryId ? { countryId, code, name: label, isActive: true } : null;
+    }
+    case "districts": {
+      const stateId = toNumericId(address.stateId);
+      return stateId ? { stateId, code, name: label, isActive: true } : null;
+    }
+    case "cities": {
+      const stateId = toNumericId(address.stateId);
+      const districtId = toNumericId(address.districtId);
+      return stateId && districtId
+        ? { stateId, districtId, code, name: label, isActive: true }
+        : null;
+    }
+    case "pincodes": {
+      const countryId = toNumericId(address.countryId);
+      const stateId = toNumericId(address.stateId);
+      const districtId = toNumericId(address.districtId);
+      const cityId = toNumericId(address.cityId);
+      return countryId && stateId && districtId && cityId
+        ? {
+            countryId,
+            stateId,
+            districtId,
+            cityId,
+            code: label,
+            areaName: null,
+            isActive: true,
+          }
+        : null;
+    }
+  }
+}
+
+function getCommonRecordLabel(record: CommonRecord) {
+  const name = typeof record.name === "string" ? record.name : "";
+  const code = typeof record.code === "string" ? record.code : "";
+  const areaName = typeof record.areaName === "string" ? record.areaName : "";
+  return name || areaName || code || String(record.id);
+}
+
+function getLocationRecordLabel(moduleKey: LocationLookupKey, record: CommonRecord) {
+  const code = typeof record.code === "string" ? record.code.trim() : "";
+  if (moduleKey === "pincodes") return code || String(record.id);
+  return getCommonRecordLabel(record);
+}
+
+function findLookupOption(options: readonly CommonRecord[], value: string | null) {
+  if (!value) return undefined;
+  return options.find((option) => isLookupOptionSelected(option, value));
+}
+
+function isLookupOptionSelected(option: CommonRecord, value: string | null) {
+  if (!value) return false;
+  const optionId = String(option.id);
+  return optionId === String(value) || optionId === String(toNumericId(value));
+}
+
+function formatLookupFallback(value: string | null) {
+  if (!value) return "";
+  const rawValue = String(value);
+  const [, suffix] = rawValue.split(":");
+  return suffix ? titleCaseLookupValue(suffix) : rawValue;
+}
+
+function titleCaseLookupValue(value: string) {
+  return value
+    .split(/[-_\s]+/g)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function locationLookupLabel(moduleKey: LocationLookupKey) {
+  return (
+    {
+      countries: "Country",
+      states: "State",
+      districts: "District",
+      cities: "City",
+      pincodes: "Pincode",
+    } as const
+  )[moduleKey];
+}
+
+function toLookupCode(label: string) {
+  return label
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 40);
+}
+
+function toNumericId(value: string | null) {
+  const numberValue = Number(value);
+  return Number.isInteger(numberValue) && numberValue > 0 ? numberValue : null;
 }

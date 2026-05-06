@@ -18,7 +18,15 @@ const companyRecord: CompanyRecord = {
   tagline: null,
   shortAbout: null,
   registrationNumber: null,
+  gstinUin: null,
   pan: null,
+  dateOfIncorporation: null,
+  msmeNo: null,
+  msmeCategory: null,
+  tan: null,
+  tdsAvailable: false,
+  tdsSection: null,
+  tdsRatePercent: null,
   financialYearStart: null,
   booksStart: null,
   website: null,
@@ -94,9 +102,7 @@ describe("company write use cases", () => {
       isActive: false,
     });
 
-    expect(publishedEvents.map((event) => event.eventName)).toEqual([
-      "companies.company-updated",
-    ]);
+    expect(publishedEvents.map((event) => event.eventName)).toEqual(["companies.company-updated"]);
   });
 
   it("publishes company-deleted only after a successful soft delete", async () => {
@@ -108,8 +114,6 @@ describe("company write use cases", () => {
       publisher(publishedEvents),
     ).execute("missing");
 
-    expect(publishedEvents.map((event) => event.eventName)).toEqual([
-      "companies.company-deleted",
-    ]);
+    expect(publishedEvents.map((event) => event.eventName)).toEqual(["companies.company-deleted"]);
   });
 });

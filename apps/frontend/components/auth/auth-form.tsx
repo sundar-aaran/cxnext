@@ -7,6 +7,7 @@ import { z } from "zod";
 import { ArrowRight } from "lucide-react";
 import { Button, Input, Label } from "@cxnext/ui";
 import { useState } from "react";
+import { getDefaultApplicationContext } from "../../features/application-context/infrastructure/application-context-api";
 import { login } from "../../features/auth/infrastructure/auth-api";
 import { persistStoredAuthSession } from "../../features/auth/infrastructure/session-storage";
 
@@ -46,6 +47,12 @@ export function AuthForm({ mode }: AuthFormProps) {
             password: result.data.password ?? "",
           });
           persistStoredAuthSession(session);
+          try {
+            const context = await getDefaultApplicationContext();
+            persistStoredAuthSession({ ...session, context });
+          } catch {
+            persistStoredAuthSession(session);
+          }
           router.push(searchParams.get("next") ?? "/desk");
         } catch (error) {
           setSubmitError(error instanceof Error ? error.message : "Could not sign in.");

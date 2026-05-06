@@ -22,7 +22,7 @@ function fail(message) {
 
 function loadEnv() {
   if (!existsSync(envPath)) {
-    fail(`missing ${envPath}. Create it from .env.example and set database credentials.`);
+    fail(`missing ${envPath}. Create it from .env.sample and set database credentials.`);
   }
 
   const fileEnv = Object.fromEntries(

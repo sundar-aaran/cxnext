@@ -27,6 +27,9 @@ export function normalizeContactUpsert(
     gstin: emptyAsNull(params.gstin)?.toUpperCase() ?? null,
     msmeType: emptyAsNull(params.msmeType),
     msmeNo: emptyAsNull(params.msmeNo),
+    tan: emptyAsNull(params.tan)?.toUpperCase() ?? null,
+    tdsAvailable: params.tdsAvailable ?? false,
+    tcsAvailable: params.tcsAvailable ?? false,
     openingBalance: Number(params.openingBalance ?? 0),
     balanceType: emptyAsNull(params.balanceType),
     creditLimit: Number(params.creditLimit ?? 0),
@@ -67,6 +70,15 @@ export function normalizeContactUpsert(
       isPrimary: item.isPrimary ?? false,
       isActive: params.isActive ?? true,
     })),
+    socialLinks: (params.socialLinks ?? [])
+      .filter((item) => hasValue(item.url))
+      .map((item, index) => ({
+        id: existing?.socialLinks[index]?.id ?? `contact-social:${randomUUID()}`,
+        contactId,
+        platform: item.platform.trim() || "Website",
+        url: item.url.trim(),
+        isActive: item.isActive ?? true,
+      })),
     bankAccounts: (params.bankAccounts ?? [])
       .filter(
         (item) =>

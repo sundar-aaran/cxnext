@@ -16,14 +16,6 @@ export function prepareProductForSave(input: ProductUpsertInput): ProductUpsertI
   const name = input.name.trim();
   const sku = input.sku.trim().toUpperCase() || makeSku(name);
   const slug = input.slug.trim() || slugify(name);
-  const tags = input.tags.length
-    ? input.tags
-    : [
-        {
-          name: input.categoryName || input.productGroupName || "catalog",
-          isActive: true,
-        },
-      ];
 
   return {
     ...input,
@@ -36,8 +28,9 @@ export function prepareProductForSave(input: ProductUpsertInput): ProductUpsertI
     productGroupName: emptyAsNull(input.productGroupName),
     productTypeName: emptyAsNull(input.productTypeName),
     description: emptyAsNull(input.description),
-    shortDescription: emptyAsNull(input.shortDescription),
-    tags,
+    shortDescription: null,
+    images: [],
+    tags: [],
   };
 }
 

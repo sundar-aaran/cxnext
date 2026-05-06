@@ -6,21 +6,33 @@ import { usePathname, useRouter } from "next/navigation";
 import { DashboardShell } from "@cxnext/ui";
 import {
   Building2,
+  CalendarDays,
   Contact,
   CreditCard,
   Factory,
+  FileKey2,
   Flag,
   HandCoins,
   Package,
   ReceiptText,
+  Settings,
   ShoppingBag,
+  SlidersHorizontal,
+  ToggleLeft,
   Users,
   WalletCards,
 } from "lucide-react";
 import rootPackage from "../../../../../../package.json";
+import {
+  ApplicationContextRequestError,
+  getDefaultApplicationContext,
+} from "../../../application-context/infrastructure/application-context-api";
 import type { AuthSession } from "../../../auth/domain/auth";
 import { logout } from "../../../auth/infrastructure/auth-api";
-import { readStoredAuthSession } from "../../../auth/infrastructure/session-storage";
+import {
+  persistStoredApplicationContext,
+  readStoredAuthSession,
+} from "../../../auth/infrastructure/session-storage";
 import { commonMenuGroups, commonMenuLabels } from "../../../common/application/common-service";
 import { getDeskPortal } from "../../application/desk-registry";
 
@@ -41,6 +53,12 @@ const organisationNavItems = [
     id: "company",
     label: "Company",
     href: "/desk/company",
+    icon: <Building2 className="h-4 w-4" />,
+  },
+  {
+    id: "default-company",
+    label: "Default Company",
+    href: "/desk/default-company",
     icon: <Building2 className="h-4 w-4" />,
   },
 ] as const;
@@ -100,12 +118,41 @@ const entriesMenuLabels: Record<string, string> = Object.fromEntries(
   entriesNavItems.map((item) => [item.id, item.label]),
 );
 
+const settingsNavItems = [
+  {
+    id: "settings-core",
+    label: "Core Settings",
+    href: "/desk/settings/core",
+    icon: <FileKey2 className="h-4 w-4" />,
+  },
+  {
+    id: "settings-customise",
+    label: "Customise",
+    href: "/desk/settings/customise",
+    icon: <SlidersHorizontal className="h-4 w-4" />,
+  },
+  {
+    id: "settings-features",
+    label: "Features",
+    href: "/desk/settings/features",
+    icon: <ToggleLeft className="h-4 w-4" />,
+  },
+] as const;
+
+const settingsMenuLabels: Record<string, string> = {
+  core: "Core Settings",
+  customise: "Customise",
+  features: "Features",
+  settings: "Settings",
+};
+
 const commonGroupIcons: Record<string, ReactNode> = {
   Location: <Flag className="h-4 w-4" />,
   Contacts: <Contact className="h-4 w-4" />,
   Product: <Package className="h-4 w-4" />,
   Orders: <ShoppingBag className="h-4 w-4" />,
   Others: <WalletCards className="h-4 w-4" />,
+  Accounts: <CalendarDays className="h-4 w-4" />,
 };
 
 const commonSubGroups = commonMenuGroups.map((group) => ({
@@ -133,6 +180,10 @@ function getWorkspaceLabel(pathname: string, isDeskRoot: boolean, fallbackLabel:
   const [, root, portalId, moduleKey] = pathname.split("/");
   if (root === "desk" && portalId && entriesMenuLabels[portalId]) {
     return entriesMenuLabels[portalId];
+  }
+
+  if (root === "desk" && portalId === "settings") {
+    return settingsMenuLabels[moduleKey ?? portalId] ?? "Settings";
   }
 
   if (root === "desk" && portalId === "common" && moduleKey) {
@@ -165,6 +216,10 @@ export function DeskShell({ children }: { readonly children: ReactNode }) {
     ...item,
     active: pathname === item.href || pathname.startsWith(`${item.href}/`),
   }));
+  const settingsItems = settingsNavItems.map((item) => ({
+    ...item,
+    active: pathname === item.href || pathname.startsWith(`${item.href}/`),
+  }));
   const commonGroups = commonSubGroups.map((group) => ({
     ...group,
     items: group.items.map((item) => ({
@@ -174,8 +229,39 @@ export function DeskShell({ children }: { readonly children: ReactNode }) {
   }));
 
   useEffect(() => {
-    setSession(readStoredAuthSession());
-  }, [pathname]);
+    const storedSession = readStoredAuthSession();
+    setSession(storedSession);
+
+    if (!storedSession || storedSession.context) {
+      return;
+    }
+
+    const controller = new AbortController();
+    getDefaultApplicationContext({ signal: controller.signal })
+      .then((context) => {
+        const nextSession = persistStoredApplicationContext(context);
+        if (nextSession) {
+          setSession(nextSession);
+        }
+      })
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) {
+          return;
+        }
+
+        if (error instanceof ApplicationContextRequestError && error.status === 401) {
+          setSession(null);
+          router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+          return;
+        }
+
+        console.error(error);
+      });
+
+    return () => {
+      controller.abort();
+    };
+  }, [pathname, router]);
 
   async function handleLogout() {
     await logout();
@@ -185,7 +271,7 @@ export function DeskShell({ children }: { readonly children: ReactNode }) {
 
   return (
     <DashboardShell
-      brand="CODEXSUN COMME..."
+      brand={session?.context?.company.name ?? "CODEXSUN COMME..."}
       currentUser={
         session
           ? {
@@ -195,7 +281,7 @@ export function DeskShell({ children }: { readonly children: ReactNode }) {
           : undefined
       }
       workspace={workspaceLabel}
-      navItems={[...navItems, ...masterItems, ...entriesItems, ...adminItems]}
+      navItems={[...navItems, ...masterItems, ...entriesItems, ...settingsItems, ...adminItems]}
       navGroups={[
         {
           id: "organisation",
@@ -214,6 +300,12 @@ export function DeskShell({ children }: { readonly children: ReactNode }) {
           label: "Entries",
           icon: <ReceiptText className="size-4" />,
           items: entriesItems,
+        },
+        {
+          id: "settings",
+          label: "Settings",
+          icon: <Settings className="size-4" />,
+          items: settingsItems,
         },
         {
           id: "admin",

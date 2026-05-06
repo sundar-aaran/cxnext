@@ -80,5 +80,11 @@ function toCompanyRecord(record: CompanyApiRecord): CompanyRecord {
     id: Number(record.id),
     tenantId: Number(record.tenantId),
     industryId: Number(record.industryId),
+    addresses: record.addresses ?? [],
+    emails: record.emails ?? [],
+    phones: record.phones ?? [],
+    socialLinks: record.socialLinks ?? [],
+    bankAccounts: record.bankAccounts ?? [],
+    logos: record.logos ?? [],
   };
 }

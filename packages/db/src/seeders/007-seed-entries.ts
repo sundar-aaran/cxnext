@@ -14,7 +14,7 @@ export const seedEntriesSeeder = defineDatabaseSeeder({
   appId: "billing",
   moduleKey: "entries",
   name: "Seed basic billing entries",
-  order: 70,
+  order: 110,
   run: async ({ database }) => {
     const db = asQueryDatabase(database);
     await seedSale(db);

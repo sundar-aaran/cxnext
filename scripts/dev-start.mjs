@@ -1,41 +1,83 @@
 import { spawn } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { parseEnv } from "node:util";
+import { loadRootEnv, resolveRuntimeEnv } from "./runtime-env.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const pnpmCommand = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
 
-loadEnvFile(path.join(root, ".env"));
+loadRootEnv(root);
 
-function requireEnv(key) {
-  const value = process.env[key];
+const runtimeEnv = resolveRuntimeEnv();
+const frontendUrl = runtimeEnv.FRONTEND_URL;
+const backendUrl = runtimeEnv.BACKEND_URL;
+const backendHealthUrl = runtimeEnv.BACKEND_HEALTH_URL;
+const readinessTimeoutMs = Number(runtimeEnv.DEV_READY_TIMEOUT_MS ?? 60000);
 
-  if (!value) {
-    throw new Error(`${key} is required.`);
-  }
-
-  return value;
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
-function loadEnvFile(envPath) {
-  if (!existsSync(envPath)) {
-    return;
+async function checkUrl(url) {
+  try {
+    const response = await fetch(url);
+    return response.ok;
+  } catch {
+    return false;
   }
+}
 
-  const parsedEnv = parseEnv(readFileSync(envPath, "utf8"));
+async function waitForReadiness(child) {
+  const startedAt = Date.now();
+  let frontendReady = false;
+  let backendReady = false;
 
-  for (const [key, value] of Object.entries(parsedEnv)) {
-    if (value !== undefined && process.env[key] === undefined) {
-      process.env[key] = value;
+  process.stdout.write("Waiting for cxnext services to become ready...\n");
+
+  while (Date.now() - startedAt < readinessTimeoutMs) {
+    if (child.exitCode !== null) {
+      process.stdout.write(
+        `cxnext dev server exited before readiness with code ${child.exitCode}.\n`,
+      );
+      return;
     }
-  }
-}
 
-const frontendUrl = requireEnv("FRONTEND_URL");
-const backendUrl = requireEnv("BACKEND_URL");
-const backendHealthUrl = requireEnv("BACKEND_HEALTH_URL");
+    if (!backendReady) {
+      backendReady = await checkUrl(backendHealthUrl);
+    }
+
+    if (!frontendReady) {
+      frontendReady = await checkUrl(frontendUrl);
+    }
+
+    if (frontendReady && backendReady) {
+      process.stdout.write(
+        [
+          "",
+          "cxnext dev is ready.",
+          `frontend: ${frontendUrl}`,
+          `server: ${backendUrl}`,
+          `health: ${backendHealthUrl}`,
+          "",
+        ].join("\n"),
+      );
+      return;
+    }
+
+    await sleep(1000);
+  }
+
+  const pending = [
+    frontendReady ? null : `frontend ${frontendUrl}`,
+    backendReady ? null : `server health ${backendHealthUrl}`,
+  ].filter(Boolean);
+
+  process.stdout.write(
+    `cxnext dev started, but readiness timed out after ${readinessTimeoutMs}ms waiting for ${pending.join(", ")}.\n`,
+  );
+}
 
 function resolvePnpmInvocation() {
   const npmExecPath = process.env.npm_execpath;
@@ -108,11 +150,11 @@ function runTurbo() {
     shell: pnpm.shell,
     windowsHide: true,
     env: {
-      ...process.env,
+      ...runtimeEnv,
       FRONTEND_URL: frontendUrl,
       BACKEND_URL: backendUrl,
       BACKEND_HEALTH_URL: backendHealthUrl,
-      PORT: requireEnv("PORT"),
+      PORT: runtimeEnv.PORT,
     },
   });
 
@@ -128,6 +170,8 @@ function runTurbo() {
   child.once("exit", (code) => {
     process.exit(Number(code ?? 0));
   });
+
+  void waitForReadiness(child);
 }
 
 await runPreflight();

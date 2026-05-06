@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { AccountingYearsModule } from "./accounting-years/accounting-years.module";
 import { AddressTypesModule } from "./address-types/address-types.module";
 import { BankNamesModule } from "./bank-names/bank-names.module";
 import { BrandsModule } from "./brands/brands.module";
@@ -55,6 +56,7 @@ import { WarehousesModule } from "./warehouses/warehouses.module";
     StockRejectionTypesModule,
     CurrenciesModule,
     PaymentTermsModule,
+    AccountingYearsModule,
   ],
   providers: [CommonRegistryBootstrap],
 })

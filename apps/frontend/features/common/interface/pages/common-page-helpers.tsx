@@ -85,6 +85,7 @@ const moduleDescriptions: Record<string, string> = {
   stockRejectionTypes: "Maintain rejection reasons used in stock quality workflows.",
   currencies: "Maintain currencies used for pricing and accounting.",
   paymentTerms: "Maintain payment terms used in customer and vendor transactions.",
+  accountingYear: "Maintain financial periods that can be referenced across the workspace.",
 };
 
 export function getModuleDescription(moduleKey: string, label: string) {

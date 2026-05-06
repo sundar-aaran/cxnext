@@ -1,37 +1,14 @@
 import { spawn } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { parseEnv } from "node:util";
+import { loadRootEnv, resolveRuntimeEnv } from "./runtime-env.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const includeDesktop = process.argv.includes("--desktop");
 
-loadEnvFile(path.join(root, ".env"));
+loadRootEnv(root);
 
-function requireEnv(key) {
-  const value = process.env[key];
-
-  if (!value) {
-    throw new Error(`${key} is required.`);
-  }
-
-  return value;
-}
-
-function loadEnvFile(envPath) {
-  if (!existsSync(envPath)) {
-    return;
-  }
-
-  const parsedEnv = parseEnv(readFileSync(envPath, "utf8"));
-
-  for (const [key, value] of Object.entries(parsedEnv)) {
-    if (value !== undefined && process.env[key] === undefined) {
-      process.env[key] = value;
-    }
-  }
-}
+const runtimeEnv = resolveRuntimeEnv();
 
 function pnpmInvocation(args) {
   const npmExecPath = process.env.npm_execpath;
@@ -59,11 +36,11 @@ function spawnPnpm(args, name) {
     shell: pnpm.shell,
     windowsHide: true,
     env: {
-      ...process.env,
-      FRONTEND_URL: requireEnv("FRONTEND_URL"),
-      BACKEND_URL: requireEnv("BACKEND_URL"),
-      BACKEND_HEALTH_URL: requireEnv("BACKEND_HEALTH_URL"),
-      PORT: requireEnv("PORT"),
+      ...runtimeEnv,
+      FRONTEND_URL: runtimeEnv.FRONTEND_URL,
+      BACKEND_URL: runtimeEnv.BACKEND_URL,
+      BACKEND_HEALTH_URL: runtimeEnv.BACKEND_HEALTH_URL,
+      PORT: runtimeEnv.PORT,
     },
   });
 

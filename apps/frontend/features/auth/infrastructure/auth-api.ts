@@ -10,7 +10,10 @@ export async function login(input: { readonly login: string; readonly password: 
     method: "POST",
   });
 
-  if (!response.ok) throw new Error(`Login failed with status ${response.status}.`);
+  if (!response.ok) {
+    throw new Error(await readApiErrorMessage(response, "Username or password is wrong."));
+  }
+
   return (await response.json()) as AuthSession;
 }
 
@@ -74,4 +77,26 @@ export async function authFetch(input: RequestInfo | URL, init: RequestInit = {}
 
 function apiBaseUrl() {
   return getRequiredPublicApiUrl();
+}
+
+async function readApiErrorMessage(response: Response, fallback: string) {
+  try {
+    const body = (await response.json()) as {
+      readonly message?: unknown;
+      readonly error?: unknown;
+    };
+    const message = Array.isArray(body.message) ? body.message[0] : body.message;
+
+    if (typeof message === "string" && message.trim()) {
+      return message;
+    }
+
+    if (typeof body.error === "string" && body.error.trim()) {
+      return body.error;
+    }
+  } catch {
+    // Some failures are not JSON responses.
+  }
+
+  return fallback;
 }

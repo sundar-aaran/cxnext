@@ -51,7 +51,13 @@ export function ProductStatusSwitch({
   readonly onCheckedChange: (checked: boolean) => void;
 }) {
   return (
-    <div className="flex items-center justify-between rounded-md border border-border/70 px-4 py-3">
+    <div
+      className={
+        checked
+          ? "flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-950"
+          : "flex items-center justify-between rounded-xl border border-border/70 bg-muted/10 px-4 py-3"
+      }
+    >
       <div>
         <p className="text-sm font-medium">Active product</p>
         <p className="text-xs text-muted-foreground">Inactive products stay saved but hidden.</p>

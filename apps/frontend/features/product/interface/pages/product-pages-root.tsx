@@ -128,7 +128,7 @@ export function ProductListPage() {
           </Link>
         </Button>
       }
-      description="Create and review product, catalogue, price, stock, SEO, and storefront records."
+      description="Create and review billing and accounts product records."
       technicalName="page.product.list"
       title="Products"
     >
@@ -145,7 +145,7 @@ export function ProductListPage() {
           setCurrentPage(1);
         }}
         onShowAllColumns={() => setVisibleColumns(defaultProductColumnVisibility)}
-        searchPlaceholder="Search product, code, SKU, slug, category, brand, or tags"
+        searchPlaceholder="Search product, code, category, brand, or billing masters"
         searchValue={searchValue}
       />
       {loadError ? <MasterListEmptyState>{loadError}</MasterListEmptyState> : null}
@@ -157,7 +157,6 @@ export function ProductListPage() {
                 <ListHeader>#</ListHeader>
                 {visibleColumns.code ? <ListHeader>Code</ListHeader> : null}
                 {visibleColumns.name ? <ListHeader>Product</ListHeader> : null}
-                {visibleColumns.sku ? <ListHeader>SKU</ListHeader> : null}
                 {visibleColumns.category ? <ListHeader>Category</ListHeader> : null}
                 {visibleColumns.price ? <ListHeader>Price</ListHeader> : null}
                 {visibleColumns.stock ? <ListHeader>Stock</ListHeader> : null}
@@ -190,11 +189,6 @@ export function ProductListPage() {
                       >
                         {product.name}
                       </button>
-                    </td>
-                  ) : null}
-                  {visibleColumns.sku ? (
-                    <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground">
-                      {product.sku}
                     </td>
                   ) : null}
                   {visibleColumns.category ? (
@@ -350,11 +344,11 @@ export function ProductShowPage({ productId }: { readonly productId: number }) {
           <MasterListShowCard key="detail" title="Details" className="lg:col-span-2">
             <SimpleRows rows={productDetailRows(currentProduct)} />
           </MasterListShowCard>,
-          <MasterListShowCard key="catalogue" title="Catalogue">
-            <SimpleRows rows={productCatalogueRows(currentProduct)} />
+          <MasterListShowCard key="billing" title="Billing">
+            <SimpleRows rows={productBillingRows(currentProduct)} />
           </MasterListShowCard>,
-          <MasterListShowCard key="storefront" title="Storefront">
-            <SimpleRows rows={productStorefrontRows(currentProduct)} />
+          <MasterListShowCard key="notes" title="Notes">
+            <SimpleRows rows={[["Description", currentProduct.description ?? "-"]]} />
           </MasterListShowCard>,
         ]}
       />
@@ -458,8 +452,6 @@ function productDetailRows(product: ProductRecord): readonly (readonly [ReactNod
     ["ID", product.id],
     ["Code", product.code],
     ["Name", product.name],
-    ["Slug", product.slug],
-    ["SKU", product.sku],
     ["Base price", formatProductMoney(product.basePrice)],
     ["Cost price", formatProductMoney(product.costPrice)],
     ["Active", <StatusBadge key="active" isActive={product.isActive} />],
@@ -468,29 +460,12 @@ function productDetailRows(product: ProductRecord): readonly (readonly [ReactNod
   ];
 }
 
-function productCatalogueRows(
-  product: ProductRecord,
-): readonly (readonly [ReactNode, ReactNode])[] {
+function productBillingRows(product: ProductRecord): readonly (readonly [ReactNode, ReactNode])[] {
   return [
-    ["Brand", product.brandName ?? "-"],
-    ["Category", product.categoryName ?? "-"],
-    ["Group", product.productGroupName ?? "-"],
-    ["Type", product.productTypeName ?? "-"],
-    ["Variants", product.variantCount],
-    ["Attributes", product.attributeCount],
-    ["Tags", product.tagNames.length ? product.tagNames.join(", ") : "-"],
-  ];
-}
-
-function productStorefrontRows(
-  product: ProductRecord,
-): readonly (readonly [ReactNode, ReactNode])[] {
-  return [
-    ["Department", product.storefrontDepartment ?? "-"],
-    ["Featured", product.isFeatured ? "Yes" : "No"],
-    ["New arrival", product.isNewArrival ? "Yes" : "No"],
-    ["Best seller", product.isBestSeller ? "Yes" : "No"],
-    ["Primary image", product.primaryImageUrl ?? "-"],
+    ["Product Type", product.productTypeName ?? product.productTypeId ?? "-"],
+    ["HSN Code", product.hsnCodeId ?? "-"],
+    ["Unit", product.unitId ?? "-"],
+    ["GST Tax", product.taxId ?? "-"],
   ];
 }
 

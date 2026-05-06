@@ -13,7 +13,7 @@ export const createProductsMigration = defineDatabaseMigration({
   appId: "crm",
   moduleKey: "products",
   name: "Create products master table",
-  order: 60,
+  order: 95,
   up: async ({ database }) => {
     const queryDatabase = asQueryDatabase(database);
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { toast } from "sonner";
 import { Edit, MoreHorizontal, Plus, Trash2, X } from "lucide-react";
 import {
   Button,
@@ -329,8 +330,12 @@ export function CommonListPage({ moduleKey }: { readonly moduleKey: string }) {
           record={dialog.record}
           onClose={() => setDialog(null)}
           onSaved={async () => {
+            const savedAction = dialog.mode === "edit" ? "updated" : "created";
             setDialog(null);
-            setMessage("Record saved.");
+            setMessage(`${definition.label} ${savedAction}.`);
+            toast.success(`${definition.label} ${savedAction}`, {
+              description: "Changes are ready in the list.",
+            });
             await reload();
           }}
         />

@@ -19,15 +19,15 @@ export const databaseSeeders = [
   seedIndustriesSeeder,
   seedCompaniesSeeder,
   seedCommonLocationSeeder,
-  seedContactsSeeder,
-  seedProductsSeeder,
-  seedEntriesSeeder,
-  seedAuthRbacSeeder,
   ...locationCommonSeeders,
   ...contactsCommonSeeders,
+  seedContactsSeeder,
   ...productCommonSeeders,
   ...ordersCommonSeeders,
   ...othersCommonSeeders,
+  seedProductsSeeder,
+  seedEntriesSeeder,
+  seedAuthRbacSeeder,
 ] as const;
 
 export { seedTenantsSeeder };

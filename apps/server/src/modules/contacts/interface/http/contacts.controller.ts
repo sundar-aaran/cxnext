@@ -97,6 +97,9 @@ function parseContactRequest(body: ContactUpsertParams): ContactUpsertParams {
     gstin: toOptionalString(body.gstin),
     msmeType: toOptionalString(body.msmeType),
     msmeNo: toOptionalString(body.msmeNo),
+    tan: toOptionalString(body.tan),
+    tdsAvailable: body.tdsAvailable === true,
+    tcsAvailable: body.tcsAvailable === true,
     openingBalance: Number(body.openingBalance ?? 0),
     balanceType: toOptionalString(body.balanceType),
     creditLimit: Number(body.creditLimit ?? 0),
@@ -106,6 +109,7 @@ function parseContactRequest(body: ContactUpsertParams): ContactUpsertParams {
     addresses: Array.isArray(body.addresses) ? body.addresses : [],
     emails: Array.isArray(body.emails) ? body.emails : [],
     phones: Array.isArray(body.phones) ? body.phones : [],
+    socialLinks: Array.isArray(body.socialLinks) ? body.socialLinks : [],
     bankAccounts: Array.isArray(body.bankAccounts) ? body.bankAccounts : [],
     gstDetails: Array.isArray(body.gstDetails) ? body.gstDetails : [],
   };

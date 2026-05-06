@@ -1,3 +1,5 @@
+import type { ApplicationContext } from "../../application-context/domain/application-context";
+
 export interface AuthPermission {
   readonly id: string;
   readonly key: string;
@@ -42,6 +44,7 @@ export interface AuthSession {
   readonly tenant: AuthTenant;
   readonly user: AuthUser;
   readonly permissions: readonly string[];
+  readonly context?: ApplicationContext | null;
 }
 
 export interface AuthUserInput {

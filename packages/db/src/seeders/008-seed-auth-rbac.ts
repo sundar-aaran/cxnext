@@ -22,7 +22,7 @@ export const seedAuthRbacSeeder = defineDatabaseSeeder({
   appId: "security",
   moduleKey: "auth",
   name: "Seed auth roles, permissions, and default admin",
-  order: 90,
+  order: 900,
   run: async ({ database }) => {
     const db = asQueryDatabase(database);
     const now = new Date();

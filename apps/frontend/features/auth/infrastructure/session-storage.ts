@@ -1,4 +1,5 @@
 import type { AuthSession } from "../domain/auth";
+import type { ApplicationContext } from "../../application-context/domain/application-context";
 
 const authSessionStorageKey = "cxnext.auth.session";
 const authSessionCookieKey = "cxnext-auth";
@@ -26,6 +27,19 @@ export function persistStoredAuthSession(session: AuthSession) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(authSessionStorageKey, JSON.stringify(session));
   persistSessionCookie(session.expiresAt);
+}
+
+export function persistStoredApplicationContext(context: ApplicationContext) {
+  const session = readStoredAuthSession();
+  if (!session) return null;
+
+  const nextSession = { ...session, context };
+  persistStoredAuthSession(nextSession);
+  return nextSession;
+}
+
+export function readStoredApplicationContext() {
+  return readStoredAuthSession()?.context ?? null;
 }
 
 export function clearStoredAuthSession() {

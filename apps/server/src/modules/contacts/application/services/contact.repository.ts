@@ -5,6 +5,7 @@ import type {
   ContactGstDetailRecord,
   ContactPhoneRecord,
   ContactRecord,
+  ContactSocialLinkRecord,
 } from "../../domain/contact-record";
 
 export interface ContactAddressInput {
@@ -33,6 +34,12 @@ export interface ContactPhoneInput {
   readonly isPrimary?: boolean;
 }
 
+export interface ContactSocialLinkInput {
+  readonly platform: string;
+  readonly url: string;
+  readonly isActive?: boolean;
+}
+
 export interface ContactBankAccountInput {
   readonly bankName: string;
   readonly accountNumber: string;
@@ -59,6 +66,9 @@ export interface ContactUpsertParams {
   readonly gstin?: string | null;
   readonly msmeType?: string | null;
   readonly msmeNo?: string | null;
+  readonly tan?: string | null;
+  readonly tdsAvailable?: boolean;
+  readonly tcsAvailable?: boolean;
   readonly openingBalance?: number;
   readonly balanceType?: string | null;
   readonly creditLimit?: number;
@@ -68,6 +78,7 @@ export interface ContactUpsertParams {
   readonly addresses?: readonly ContactAddressInput[];
   readonly emails?: readonly ContactEmailInput[];
   readonly phones?: readonly ContactPhoneInput[];
+  readonly socialLinks?: readonly ContactSocialLinkInput[];
   readonly bankAccounts?: readonly ContactBankAccountInput[];
   readonly gstDetails?: readonly ContactGstDetailInput[];
 }
@@ -83,6 +94,9 @@ export interface NormalizedContactUpsertParams {
   readonly gstin: string | null;
   readonly msmeType: string | null;
   readonly msmeNo: string | null;
+  readonly tan: string | null;
+  readonly tdsAvailable: boolean;
+  readonly tcsAvailable: boolean;
   readonly openingBalance: number;
   readonly balanceType: string | null;
   readonly creditLimit: number;
@@ -92,6 +106,7 @@ export interface NormalizedContactUpsertParams {
   readonly addresses: readonly ContactAddressRecord[];
   readonly emails: readonly ContactEmailRecord[];
   readonly phones: readonly ContactPhoneRecord[];
+  readonly socialLinks: readonly ContactSocialLinkRecord[];
   readonly bankAccounts: readonly ContactBankAccountRecord[];
   readonly gstDetails: readonly ContactGstDetailRecord[];
 }

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import {
   Building2,
+  CalendarDays,
   ClipboardList,
   Crown,
   Factory,
@@ -23,6 +24,7 @@ export type DeskPortalId =
   | "tenant"
   | "industry"
   | "company"
+  | "default-company"
   | "contact";
 
 export interface DeskMenuItem {
@@ -209,6 +211,21 @@ export const deskPortals: readonly DeskPortalDefinition[] = [
         id: "company-list",
         label: "Companies",
         href: "/desk/company",
+        icon: <Building2 className="h-4 w-4" />,
+      },
+    ],
+  },
+  {
+    id: "default-company",
+    label: "Default Company",
+    href: "/desk/default-company",
+    badge: "Organisation",
+    summary: "Organisation default company workspace for the active application context.",
+    menuItems: [
+      {
+        id: "default-company-list",
+        label: "Default Company",
+        href: "/desk/default-company",
         icon: <Building2 className="h-4 w-4" />,
       },
     ],

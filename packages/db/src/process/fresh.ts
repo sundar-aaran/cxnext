@@ -9,8 +9,88 @@ interface NamedDatabaseObjectRow {
   readonly name: string;
 }
 
+const tableDropOrder = [
+  "auth_sessions",
+  "auth_user_roles",
+  "auth_users",
+  "auth_role_permissions",
+  "auth_roles",
+  "auth_permissions",
+  "receipt_allocations",
+  "receipts",
+  "payment_allocations",
+  "payments",
+  "purchase_items",
+  "purchases",
+  "sales_items",
+  "sales",
+  "products",
+  "common_payment_terms",
+  "common_currencies",
+  "common_stock_rejection_types",
+  "common_order_types",
+  "common_destinations",
+  "common_transports",
+  "common_warehouses",
+  "common_taxes",
+  "common_hsn_codes",
+  "common_units",
+  "common_styles",
+  "common_sizes",
+  "common_colours",
+  "common_brands",
+  "common_product_types",
+  "common_product_categories",
+  "common_product_groups",
+  "contact_gst_details",
+  "contact_bank_accounts",
+  "contact_social_links",
+  "contact_phones",
+  "contact_emails",
+  "contacts",
+  "common_bank_names",
+  "common_address_types",
+  "common_contact_types",
+  "common_contact_groups",
+  "common_pincodes",
+  "common_cities",
+  "common_districts",
+  "common_states",
+  "common_countries",
+  "company_bank_accounts",
+  "company_social_links",
+  "company_phones",
+  "company_emails",
+  "address_book",
+  "company_logos",
+  "default_companies",
+  "accounting_years",
+  "companies",
+  "industries",
+  "tenants",
+  "system_seeders",
+  "system_migrations",
+] as const;
+
+const tableDropPriority = new Map<string, number>(
+  tableDropOrder.map((tableName, index) => [tableName, index]),
+);
+
 function escapeMysqlIdentifier(value: string) {
   return `\`${value.replace(/`/g, "``")}\``;
+}
+
+function sortDatabaseObjectsForDrop(objectNames: readonly string[], kind: DatabaseObjectKind) {
+  if (kind === "view") {
+    return [...objectNames].sort((left, right) => left.localeCompare(right));
+  }
+
+  return [...objectNames].sort((left, right) => {
+    const leftPriority = tableDropPriority.get(left) ?? Number.MAX_SAFE_INTEGER;
+    const rightPriority = tableDropPriority.get(right) ?? Number.MAX_SAFE_INTEGER;
+
+    return leftPriority - rightPriority || left.localeCompare(right);
+  });
 }
 
 async function listDatabaseObjects(
@@ -40,7 +120,10 @@ async function dropDatabaseObjects(
     readonly logger?: DatabaseProcessLogger;
   },
 ) {
-  const objectNames = await listDatabaseObjects(database, options);
+  const objectNames = sortDatabaseObjectsForDrop(
+    await listDatabaseObjects(database, options),
+    options.kind,
+  );
   const keyword = options.kind === "view" ? "view" : "table";
 
   for (const objectName of objectNames) {

@@ -16,6 +16,9 @@ export function toContactResponse(contact: ContactRecord) {
     gstin: contact.gstin,
     msmeType: contact.msmeType,
     msmeNo: contact.msmeNo,
+    tan: contact.tan,
+    tdsAvailable: contact.tdsAvailable,
+    tcsAvailable: contact.tcsAvailable,
     openingBalance: contact.openingBalance,
     balanceType: contact.balanceType,
     creditLimit: contact.creditLimit,
@@ -30,6 +33,7 @@ export function toContactResponse(contact: ContactRecord) {
     addresses: contact.addresses,
     emails: contact.emails,
     phones: contact.phones,
+    socialLinks: contact.socialLinks,
     bankAccounts: contact.bankAccounts,
     gstDetails: contact.gstDetails,
   };

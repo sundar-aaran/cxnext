@@ -39,15 +39,18 @@ export async function getContact(contactId: number, options?: { readonly signal?
 }
 
 export async function upsertContact(input: ContactUpsertInput, contactId?: number) {
-  const response = await authFetch(`${getApiBaseUrl()}/contacts${contactId ? `/${contactId}` : ""}`, {
-    body: JSON.stringify(input),
-    cache: "no-store",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
+  const response = await authFetch(
+    `${getApiBaseUrl()}/contacts${contactId ? `/${contactId}` : ""}`,
+    {
+      body: JSON.stringify(input),
+      cache: "no-store",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      method: contactId ? "PATCH" : "POST",
     },
-    method: contactId ? "PATCH" : "POST",
-  });
+  );
 
   if (!response.ok) {
     throw new Error(`Contact save request failed with status ${response.status}.`);
@@ -76,5 +79,11 @@ function toContactRecord(record: ContactApiRecord): ContactRecord {
   return {
     ...record,
     id: Number(record.id),
+    addresses: record.addresses ?? [],
+    emails: record.emails ?? [],
+    phones: record.phones ?? [],
+    socialLinks: record.socialLinks ?? [],
+    bankAccounts: record.bankAccounts ?? [],
+    gstDetails: record.gstDetails ?? [],
   };
 }

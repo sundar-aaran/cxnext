@@ -58,7 +58,7 @@ export const seedProductsSeeder = defineDatabaseSeeder({
   appId: "crm",
   moduleKey: "products",
   name: "Seed default products",
-  order: 60,
+  order: 95,
   run: async ({ database }) => {
     const queryDatabase = asQueryDatabase(database);
 

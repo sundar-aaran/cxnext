@@ -10,6 +10,43 @@
 
 ## v-1.0.69
 
+### [v 1.0.69] 2026-05-06 - Consolidate Core Settings And Runtime Env
+
+- Added the Settings sidebar group with Core Settings, Customise, and Features pages.
+- Added a protected Core Settings API for reading and updating the repository root `.env` from the frontend.
+- Grouped Core Settings with animated tabs for Application, Frontend, Backend, Database, Security, Notifications, Payments, Env Policy, and `.env` reference.
+- Consolidated `.env` to minimal source values and derived duplicate runtime values at startup: `NODE_ENV`, `PORT`, `FRONTEND_URL`, `BACKEND_URL`, `BACKEND_HEALTH_URL`, and `NEXT_PUBLIC_API_URL`.
+- Removed duplicate `.env.example`, kept `.env.sample` as the single concise reference, and updated preflight guidance to point to `.env.sample`.
+- Replaced `FRONTEND_TARGET` with `APP_TYPE=shop` and added `APP_CLIENT=100`.
+- Added server enum-backed select options for `APP_TYPE` and `APP_CLIENT`, including `100 - Developer Edition`, and connected them to Core Settings saves.
+- Added an Env Policy view that marks managed, excluded, and review-needed env keys; excluded keys are removed when Core Settings saves.
+- Updated server, frontend, desktop, and dev/start scripts to derive URLs from `APP_HOST` and port values.
+- Persisted dashboard side-menu open groups in local storage so expanded groups survive page navigation while still loading compact initially.
+- Upgraded the pinned package manager from `pnpm@10.33.2` to `pnpm@10.33.3`.
+- Revalidated the affected UI, frontend, server, desktop, and types workspaces with focused typechecks/builds.
+
+### [v 1.0.69] 2026-05-03 - Move Accounting Years To Common Master
+
+- Moved Accounting Year into the common master flow with `/common/accounting-years` CRUD and `/desk/common/accountingYear` navigation.
+- Removed tenant, industry, company, and default ownership columns from `accounting_years`; the shared period is now unique by name, start date, and end date.
+- Extended common master serialization and forms for accounting-year fields: name, start date, end date, and books start.
+- Refactored company seeding and default-company selection to reference shared accounting-year rows.
+- Removed the dedicated accounting-year application-context write path and standalone frontend list page.
+- Revalidated the affected DB, server, and frontend workspaces with focused typechecks.
+
+### [v 1.0.69] 2026-05-03 - Refine Company Tax Details Form
+
+- Renamed the company upsert identity tab to Details and arranged the opening fields into cleaner two-column rows.
+- Reworked the Tax Details tab into grouped GST, MSME, TDS, TAN, and TCS rows.
+- Added company TCS availability, section, and rate fields through the schema, API, GraphQL model, repository, seed data, and frontend form.
+
+### [v 1.0.69] 2026-05-03 - Add Company Communication And Address Book
+
+- Renamed the company upsert Registration tab to Communication and added card-based multiple email, phone, and social-link sections with Add/Remove controls.
+- Added a global `address_book` table keyed by owner type and owner id, replacing separate company/contact address storage and carrying common location master ids for country, state, district, city, and pincode.
+- Wired company and contact address persistence to the shared address book and added an Addressing tab for company address-book rows.
+- Removed company Registration Number and moved Date of incorporation into the Tax Details tab after MSME Category.
+
 ### [v 1.0.69] 2026-05-02 - Stabilize Auth Env And Frontend Runtime
 
 - Standardized runtime configuration around the root `.env`, keeping database and app URLs sourced from the shared `DB_*`, `FRONTEND_URL`, `BACKEND_URL`, and `NEXT_PUBLIC_API_URL` variables.

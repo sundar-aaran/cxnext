@@ -41,6 +41,12 @@ export interface CommonMasterUpsertRequest {
   readonly decimal_places?: unknown;
   readonly dueDays?: unknown;
   readonly due_days?: unknown;
+  readonly startDate?: unknown;
+  readonly start_date?: unknown;
+  readonly endDate?: unknown;
+  readonly end_date?: unknown;
+  readonly booksStart?: unknown;
+  readonly books_start?: unknown;
   readonly showOnStorefrontTopMenu?: unknown;
   readonly show_on_storefront_top_menu?: unknown;
   readonly showOnStorefrontCatalog?: unknown;
@@ -146,6 +152,9 @@ function parseCommonMasterRequest(body: CommonMasterUpsertRequest): CommonMaster
     addressLine2: toNullableStringValue(body.addressLine2 ?? body.address_line2),
     decimalPlaces: toNumberValue(body.decimalPlaces ?? body.decimal_places),
     dueDays: toNumberValue(body.dueDays ?? body.due_days),
+    startDate: toNullableStringValue(body.startDate ?? body.start_date),
+    endDate: toNullableStringValue(body.endDate ?? body.end_date),
+    booksStart: toNullableStringValue(body.booksStart ?? body.books_start),
     showOnStorefrontTopMenu: toBooleanValue(
       body.showOnStorefrontTopMenu ?? body.show_on_storefront_top_menu,
     ),

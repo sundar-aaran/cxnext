@@ -9,13 +9,13 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "db:migrate": "tsc -p tsconfig.json && node dist/cli.js migrate",
-    "db:prepare": "tsc -p tsconfig.json && node dist/cli.js prepare",
-    "db:fresh": "tsc -p tsconfig.json && node dist/cli.js fresh --yes",
-    "db:refresh": "tsc -p tsconfig.json && node dist/cli.js refresh --yes",
-    "db:seed": "tsc -p tsconfig.json && node dist/cli.js seed",
-    "db:status": "tsc -p tsconfig.json && node dist/cli.js status",
+    "build": "pnpm --filter @cxnext/types build && tsc -p tsconfig.json",
+    "db:migrate": "pnpm --filter @cxnext/types build && tsc -p tsconfig.json && node dist/cli.js migrate",
+    "db:prepare": "pnpm --filter @cxnext/types build && tsc -p tsconfig.json && node dist/cli.js prepare",
+    "db:fresh": "pnpm --filter @cxnext/types build && tsc -p tsconfig.json && node dist/cli.js fresh --yes",
+    "db:refresh": "pnpm --filter @cxnext/types build && tsc -p tsconfig.json && node dist/cli.js refresh --yes",
+    "db:seed": "pnpm --filter @cxnext/types build && tsc -p tsconfig.json && node dist/cli.js seed",
+    "db:status": "pnpm --filter @cxnext/types build && tsc -p tsconfig.json && node dist/cli.js status",
     "lint": "eslint . --config ../../eslint.config.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

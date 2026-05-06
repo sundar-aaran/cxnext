@@ -33,6 +33,9 @@ type CommonMasterRow = Record<string, unknown> & {
   readonly address_line2?: string | null;
   readonly decimal_places?: number | string | null;
   readonly due_days?: number | string | null;
+  readonly start_date?: Date | string | null;
+  readonly end_date?: Date | string | null;
+  readonly books_start?: Date | string | null;
   readonly show_on_storefront_top_menu?: boolean | number | null;
   readonly show_on_storefront_catalog?: boolean | number | null;
   readonly is_active: boolean | number;
@@ -106,6 +109,8 @@ export class KyselyCommonMasterRepository implements CommonMasterRepository, OnM
     const definition = getCommonMasterDefinition(moduleKey);
     const now = new Date();
 
+    await this.ensureUniqueAccountingYear(moduleKey, params);
+
     const [result] = await this.queryDatabase()
       .insertInto(definition.tableName)
       .values({
@@ -132,6 +137,7 @@ export class KyselyCommonMasterRepository implements CommonMasterRepository, OnM
   ): Promise<CommonMasterRecord | null> {
     const recordId = Number(id);
     const definition = getCommonMasterDefinition(moduleKey);
+    await this.ensureUniqueAccountingYear(moduleKey, params, recordId);
     await this.queryDatabase()
       .updateTable(definition.tableName)
       .set({
@@ -174,6 +180,42 @@ export class KyselyCommonMasterRepository implements CommonMasterRepository, OnM
 
   private queryDatabase() {
     return this.connection.db as unknown as DynamicQueryDatabase;
+  }
+
+  private async ensureUniqueAccountingYear(
+    moduleKey: CommonMasterModuleKey,
+    params: CommonMasterUpsertParams,
+    currentRecordId?: number,
+  ) {
+    if (moduleKey !== "accountingYear") {
+      return;
+    }
+
+    const name = params.name?.trim() ?? "";
+    const startDate = params.startDate?.trim() ?? "";
+    const endDate = params.endDate?.trim() ?? "";
+
+    if (!name || !startDate || !endDate) {
+      return;
+    }
+
+    let query = this.queryDatabase()
+      .selectFrom("accounting_years")
+      .selectAll()
+      .where("name", "=", name)
+      .where("start_date", "=", startDate)
+      .where("end_date", "=", endDate)
+      .where("deleted_at", "is", null);
+
+    if (currentRecordId) {
+      query = query.where("id", "!=", currentRecordId);
+    }
+
+    const existingRecord = await query.executeTakeFirst();
+
+    if (existingRecord) {
+      throw new Error("Accounting year already exists.");
+    }
   }
 }
 
@@ -260,6 +302,15 @@ function toDatabasePayload(
         payload.due_days =
           params.dueDays === null || params.dueDays === undefined ? 0 : Number(params.dueDays);
         break;
+      case "startDate":
+        payload.start_date = params.startDate?.trim() || null;
+        break;
+      case "endDate":
+        payload.end_date = params.endDate?.trim() || null;
+        break;
+      case "booksStart":
+        payload.books_start = params.booksStart?.trim() || null;
+        break;
       case "showOnStorefrontTopMenu":
         payload.show_on_storefront_top_menu = Boolean(params.showOnStorefrontTopMenu);
         break;
@@ -309,6 +360,9 @@ function toCommonMasterRecord(row: CommonMasterRow): CommonMasterRecord {
         ? null
         : Number(row.decimal_places),
     dueDays: row.due_days === null || row.due_days === undefined ? null : Number(row.due_days),
+    startDate: toDateOnly(row.start_date),
+    endDate: toDateOnly(row.end_date),
+    booksStart: toDateOnly(row.books_start),
     showOnStorefrontTopMenu:
       row.show_on_storefront_top_menu === null ||
       row.show_on_storefront_top_menu === undefined
@@ -327,4 +381,16 @@ function toCommonMasterRecord(row: CommonMasterRow): CommonMasterRecord {
 
 function toDate(value: Date | string): Date {
   return value instanceof Date ? value : new Date(value);
+}
+
+function toDateOnly(value: Date | string | null | undefined) {
+  if (!value) return null;
+  if (value instanceof Date) {
+    return [
+      value.getFullYear(),
+      String(value.getMonth() + 1).padStart(2, "0"),
+      String(value.getDate()).padStart(2, "0"),
+    ].join("-");
+  }
+  return value.slice(0, 10);
 }

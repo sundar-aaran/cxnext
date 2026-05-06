@@ -19,7 +19,8 @@ export type CommonMasterModuleKey =
   | "orderTypes"
   | "stockRejectionTypes"
   | "currencies"
-  | "paymentTerms";
+  | "paymentTerms"
+  | "accountingYear";
 
 export type CommonMasterColumnKey =
   | "code"
@@ -42,6 +43,9 @@ export type CommonMasterColumnKey =
   | "addressLine2"
   | "decimalPlaces"
   | "dueDays"
+  | "startDate"
+  | "endDate"
+  | "booksStart"
   | "showOnStorefrontTopMenu"
   | "showOnStorefrontCatalog"
   | "isActive";
@@ -159,7 +163,7 @@ export const commonMasterDefinitions = {
     key: "taxes",
     tableName: "common_taxes",
     label: "Taxes",
-    listOrder: ["name", "asc"],
+    listOrder: ["rate_percent", "asc"],
     writableColumns: ["code", "name", "taxType", "ratePercent", "description", "isActive"],
   },
   warehouses: {
@@ -223,6 +227,13 @@ export const commonMasterDefinitions = {
     label: "Payment Terms",
     listOrder: ["name", "asc"],
     writableColumns: ["code", "name", "description", "dueDays", "isActive"],
+  },
+  accountingYear: {
+    key: "accountingYear",
+    tableName: "accounting_years",
+    label: "Accounting Year",
+    listOrder: ["start_date", "desc"],
+    writableColumns: ["name", "startDate", "endDate", "booksStart", "isActive"],
   },
 } as const satisfies Record<CommonMasterModuleKey, CommonMasterDefinition>;
 

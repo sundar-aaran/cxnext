@@ -53,12 +53,13 @@ export function filterProducts({
     return [
       product.code,
       product.name,
-      product.sku,
-      product.slug,
       product.brandName,
       product.categoryName,
       product.productGroupName,
-      ...product.tagNames,
+      product.productTypeName,
+      product.hsnCodeId,
+      product.unitId,
+      product.taxId,
     ]
       .filter(Boolean)
       .some((value) => String(value).toLowerCase().includes(normalizedSearch));

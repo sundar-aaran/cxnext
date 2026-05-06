@@ -23,7 +23,7 @@ export class LoginUseCase {
     const user = await this.repository.findUserByLogin(params.login);
 
     if (!user || !user.isActive || !this.passwords.verify(params.password, user.passwordHash)) {
-      throw new UnauthorizedException("Invalid username/email or password.");
+      throw new UnauthorizedException("Username or password is wrong.");
     }
 
     const sessionId = randomUUID();

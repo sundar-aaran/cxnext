@@ -36,17 +36,29 @@ export interface CompaniesTable {
   readonly legal_name: string | null;
   readonly tagline: string | null;
   readonly short_about: string | null;
-  readonly registration_number: string | null;
+  readonly gstin_uin: string | null;
   readonly pan: string | null;
-  readonly financial_year_start: ColumnType<
+  readonly date_of_incorporation: ColumnType<
     Date | null,
     Date | string | null | undefined,
     Date | string | null
   >;
-  readonly books_start: ColumnType<
-    Date | null,
-    Date | string | null | undefined,
-    Date | string | null
+  readonly msme_no: string | null;
+  readonly msme_category: string | null;
+  readonly tan: string | null;
+  readonly tds_available: Generated<boolean>;
+  readonly tds_section: string | null;
+  readonly tds_rate_percent: ColumnType<
+    number | null,
+    number | string | null | undefined,
+    number | string | null
+  >;
+  readonly tcs_available: Generated<boolean>;
+  readonly tcs_section: string | null;
+  readonly tcs_rate_percent: ColumnType<
+    number | null,
+    number | string | null | undefined,
+    number | string | null
   >;
   readonly website: string | null;
   readonly description: string | null;
@@ -59,6 +71,33 @@ export interface CompaniesTable {
   readonly deleted_at: NullableTimestampColumn;
 }
 
+export interface AccountingYearsTable {
+  readonly id: Generated<number>;
+  readonly name: string;
+  readonly start_date: ColumnType<Date, Date | string | undefined, Date | string>;
+  readonly end_date: ColumnType<Date, Date | string | undefined, Date | string>;
+  readonly books_start: ColumnType<
+    Date | null,
+    Date | string | null | undefined,
+    Date | string | null
+  >;
+  readonly is_active: Generated<boolean>;
+  readonly created_at: TimestampColumn;
+  readonly updated_at: TimestampColumn;
+  readonly deleted_at: NullableTimestampColumn;
+}
+
+export interface DefaultCompaniesTable {
+  readonly id: Generated<number>;
+  readonly tenant_id: number;
+  readonly industry_id: number;
+  readonly company_id: number;
+  readonly accounting_year_id: number;
+  readonly is_active: Generated<boolean>;
+  readonly created_at: TimestampColumn;
+  readonly updated_at: TimestampColumn;
+}
+
 export interface CompanyLogosTable {
   readonly id: Generated<number>;
   readonly company_id: number;
@@ -69,17 +108,28 @@ export interface CompanyLogosTable {
   readonly updated_at: TimestampColumn;
 }
 
-export interface CompanyAddressesTable {
+export interface AddressBookTable {
   readonly id: Generated<number>;
-  readonly company_id: number;
-  readonly address_type: string;
+  readonly owner_type: string;
+  readonly owner_id: number;
+  readonly address_type_id: string | null;
   readonly address_line1: string;
   readonly address_line2: string | null;
-  readonly city: string | null;
-  readonly district: string | null;
-  readonly state: string | null;
-  readonly country: string | null;
-  readonly pincode: string | null;
+  readonly city_id: string | null;
+  readonly district_id: string | null;
+  readonly state_id: string | null;
+  readonly country_id: string | null;
+  readonly pincode_id: string | null;
+  readonly latitude: ColumnType<
+    number | null,
+    number | string | null | undefined,
+    number | string | null
+  >;
+  readonly longitude: ColumnType<
+    number | null,
+    number | string | null | undefined,
+    number | string | null
+  >;
   readonly is_default: Generated<boolean>;
   readonly is_active: Generated<boolean>;
   readonly created_at: TimestampColumn;
@@ -102,6 +152,16 @@ export interface CompanyPhonesTable {
   readonly phone_number: string;
   readonly phone_type: string;
   readonly is_primary: Generated<boolean>;
+  readonly is_active: Generated<boolean>;
+  readonly created_at: TimestampColumn;
+  readonly updated_at: TimestampColumn;
+}
+
+export interface CompanySocialLinksTable {
+  readonly id: Generated<number>;
+  readonly company_id: number;
+  readonly platform: string;
+  readonly url: string;
   readonly is_active: Generated<boolean>;
   readonly created_at: TimestampColumn;
   readonly updated_at: TimestampColumn;
@@ -134,6 +194,9 @@ export interface ContactsTable {
   readonly gstin: string | null;
   readonly msme_type: string | null;
   readonly msme_no: string | null;
+  readonly tan: string | null;
+  readonly tds_available: Generated<boolean>;
+  readonly tcs_available: Generated<boolean>;
   readonly opening_balance: ColumnType<number, number | string | undefined, number | string>;
   readonly balance_type: string | null;
   readonly credit_limit: ColumnType<number, number | string | undefined, number | string>;
@@ -145,33 +208,6 @@ export interface ContactsTable {
   readonly created_at: TimestampColumn;
   readonly updated_at: TimestampColumn;
   readonly deleted_at: NullableTimestampColumn;
-}
-
-export interface ContactAddressesTable {
-  readonly id: Generated<number>;
-  readonly contact_id: number;
-  readonly address_type_id: string | null;
-  readonly address_line1: string;
-  readonly address_line2: string | null;
-  readonly city_id: string | null;
-  readonly district_id: string | null;
-  readonly state_id: string | null;
-  readonly country_id: string | null;
-  readonly pincode_id: string | null;
-  readonly latitude: ColumnType<
-    number | null,
-    number | string | null | undefined,
-    number | string | null
-  >;
-  readonly longitude: ColumnType<
-    number | null,
-    number | string | null | undefined,
-    number | string | null
-  >;
-  readonly is_default: Generated<boolean>;
-  readonly is_active: Generated<boolean>;
-  readonly created_at: TimestampColumn;
-  readonly updated_at: TimestampColumn;
 }
 
 export interface ContactEmailsTable {
@@ -191,6 +227,16 @@ export interface ContactPhonesTable {
   readonly phone_number: string;
   readonly phone_type: string;
   readonly is_primary: Generated<boolean>;
+  readonly is_active: Generated<boolean>;
+  readonly created_at: TimestampColumn;
+  readonly updated_at: TimestampColumn;
+}
+
+export interface ContactSocialLinksTable {
+  readonly id: Generated<number>;
+  readonly contact_id: number;
+  readonly platform: string;
+  readonly url: string;
   readonly is_active: Generated<boolean>;
   readonly created_at: TimestampColumn;
   readonly updated_at: TimestampColumn;
@@ -494,18 +540,21 @@ export interface CommonPincodesTable {
 }
 
 export interface DatabaseSchema {
+  readonly address_book: AddressBookTable;
+  readonly accounting_years: AccountingYearsTable;
   readonly companies: CompaniesTable;
-  readonly company_addresses: CompanyAddressesTable;
   readonly company_bank_accounts: CompanyBankAccountsTable;
   readonly company_emails: CompanyEmailsTable;
   readonly company_logos: CompanyLogosTable;
   readonly company_phones: CompanyPhonesTable;
-  readonly contact_addresses: ContactAddressesTable;
+  readonly company_social_links: CompanySocialLinksTable;
   readonly contact_bank_accounts: ContactBankAccountsTable;
   readonly contact_emails: ContactEmailsTable;
   readonly contact_gst_details: ContactGstDetailsTable;
   readonly contact_phones: ContactPhonesTable;
+  readonly contact_social_links: ContactSocialLinksTable;
   readonly contacts: ContactsTable;
+  readonly default_companies: DefaultCompaniesTable;
   readonly common_cities: CommonCitiesTable;
   readonly common_countries: CommonCountriesTable;
   readonly common_districts: CommonDistrictsTable;

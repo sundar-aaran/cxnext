@@ -147,7 +147,7 @@ export const seedContactsSeeder = defineDatabaseSeeder({
   appId: "crm",
   moduleKey: "contacts",
   name: "Seed default contacts",
-  order: 50,
+  order: 65,
   run: async ({ database }) => {
     const queryDatabase = asQueryDatabase(database);
 
@@ -193,9 +193,10 @@ export const seedContactsSeeder = defineDatabaseSeeder({
 
       for (const address of contact.addresses) {
         await queryDatabase
-          .insertInto("contact_addresses")
+          .insertInto("address_book")
           .values({
-            contact_id: contactId,
+            owner_type: "contact",
+            owner_id: contactId,
             ...address,
             is_active: true,
             created_at: timestamp,

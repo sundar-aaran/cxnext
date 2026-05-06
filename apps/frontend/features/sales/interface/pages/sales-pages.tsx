@@ -57,6 +57,10 @@ export function SalesListPage() {
     const hide = show();
     listSales({ signal: controller.signal })
       .then(setRecords)
+      .catch((error) => {
+        if (isAbortError(error)) return;
+        toast.error("Could not load sales", { description: getErrorMessage(error) });
+      })
       .finally(() => {
         if (!controller.signal.aborted) hide();
       });
@@ -263,6 +267,10 @@ export function SalesShowPage({
     const hide = show();
     getSales(salesId, { signal: controller.signal })
       .then(setRecord)
+      .catch((error) => {
+        if (isAbortError(error)) return;
+        toast.error("Could not load sales", { description: getErrorMessage(error) });
+      })
       .finally(() => {
         if (!controller.signal.aborted) hide();
       });
@@ -276,10 +284,14 @@ export function SalesShowPage({
     const controller = new AbortController();
     listCompanies({ signal: controller.signal })
       .then((companies) => {
+        if (controller.signal.aborted) return;
         const company = companies.find((item) => item.isPrimary) ?? companies[0] ?? null;
         setIndustryName(company?.industryName ?? null);
       })
-      .catch(() => setIndustryName(null));
+      .catch((error) => {
+        if (isAbortError(error)) return;
+        setIndustryName(null);
+      });
     return () => controller.abort();
   }, []);
 
@@ -411,4 +423,8 @@ function ListHeader({
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Please try again.";
+}
+
+function isAbortError(error: unknown) {
+  return error instanceof DOMException && error.name === "AbortError";
 }

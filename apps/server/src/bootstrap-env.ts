@@ -33,3 +33,43 @@ if (envFilePath) {
     }
   }
 }
+
+function isPresent(value: string | undefined) {
+  return value !== undefined && value !== "";
+}
+
+function urlHost(host: string | undefined) {
+  return host === "0.0.0.0" || host === "::" ? "localhost" : (host ?? "localhost");
+}
+
+function runtimeProtocol() {
+  return process.env.TLS_ENABLED === "true" ? "https" : "http";
+}
+
+function composeUrl(hostKey: string, httpPortKey: string, httpsPortKey: string) {
+  const scheme = runtimeProtocol();
+  const port = scheme === "https" ? process.env[httpsPortKey] : process.env[httpPortKey];
+
+  if (!isPresent(port)) {
+    return undefined;
+  }
+
+  return `${scheme}://${urlHost(process.env[hostKey])}:${port}`;
+}
+
+process.env.NODE_ENV = process.env.NODE_ENV || process.env.APP_ENV || "development";
+process.env.FRONTEND_URL =
+  process.env.FRONTEND_URL ||
+  composeUrl("APP_HOST", "FRONTEND_HTTP_PORT", "FRONTEND_HTTPS_PORT");
+process.env.PORT = process.env.PORT || process.env.APP_HTTP_PORT || process.env.APP_HTTPS_PORT;
+
+if (!process.env.BACKEND_URL && isPresent(process.env.PORT)) {
+  process.env.BACKEND_URL = `${runtimeProtocol()}://${urlHost(process.env.APP_HOST)}:${process.env.PORT}`;
+}
+
+process.env.BACKEND_HEALTH_URL =
+  process.env.BACKEND_HEALTH_URL ||
+  (process.env.BACKEND_URL ? `${process.env.BACKEND_URL}/health` : undefined);
+process.env.NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL;
+process.env.AUTH_TOKEN_EXPIRES_SECONDS =
+  process.env.AUTH_TOKEN_EXPIRES_SECONDS || process.env.JWT_EXPIRES_IN_SECONDS;

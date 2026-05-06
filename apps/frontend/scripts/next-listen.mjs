@@ -4,8 +4,11 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { clearTimeout, setTimeout } from "node:timers";
 import { parseEnv } from "node:util";
+import { resolveRuntimeEnv } from "../../../scripts/runtime-env.mjs";
 
 loadEnvFromRoot();
+const runtimeEnv = resolveRuntimeEnv();
+Object.assign(process.env, runtimeEnv);
 
 const args = process.argv.slice(2);
 const mode = args[0] ?? "dev";
@@ -14,12 +17,14 @@ const nodeEnv = mode === "start" || mode === "build" ? "production" : "developme
 const require = createRequire(import.meta.url);
 const nextBin = require.resolve("next/dist/bin/next");
 const port =
-  mode === "build" ? null : (readOptionValue(nextArgs, "--port") ?? requireEnv("FRONTEND_HTTP_PORT"));
+  mode === "build"
+    ? null
+    : (readOptionValue(nextArgs, "--port") ?? requireEnv("FRONTEND_HTTP_PORT"));
 const host =
   mode === "build"
     ? null
-    : (readOptionValue(nextArgs, "--hostname") ?? requireEnv("FRONTEND_HOST"));
-const frontendUrl = port && host ? `http://${host}:${port}` : null;
+    : (readOptionValue(nextArgs, "--hostname") ?? requireEnv("APP_HOST"));
+const frontendUrl = port && host ? `http://${printableHost(host)}:${port}` : null;
 
 function printFrontendUrl() {
   if (frontendUrl) {
@@ -106,4 +111,8 @@ function readOptionValue(values, name) {
   }
 
   return values[index + 1];
+}
+
+function printableHost(host) {
+  return host === "0.0.0.0" || host === "::" ? "localhost" : host;
 }

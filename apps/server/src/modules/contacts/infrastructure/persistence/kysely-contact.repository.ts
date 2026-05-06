@@ -12,6 +12,7 @@ import type {
   ContactGstDetailRecord,
   ContactPhoneRecord,
   ContactRecord,
+  ContactSocialLinkRecord,
 } from "../../domain/contact-record";
 
 type DateValue = Date | string;
@@ -29,6 +30,9 @@ interface ContactBaseRow {
   readonly gstin: string | null;
   readonly msme_type: string | null;
   readonly msme_no: string | null;
+  readonly tan: string | null;
+  readonly tds_available: boolean | number;
+  readonly tcs_available: boolean | number;
   readonly opening_balance: string | number;
   readonly balance_type: string | null;
   readonly credit_limit: string | number;
@@ -127,6 +131,9 @@ export class KyselyContactRepository implements ContactRepository, OnModuleDestr
         gstin: params.gstin,
         msme_type: params.msmeType,
         msme_no: params.msmeNo,
+        tan: params.tan,
+        tds_available: params.tdsAvailable,
+        tcs_available: params.tcsAvailable,
         opening_balance: params.openingBalance,
         balance_type: params.balanceType,
         credit_limit: params.creditLimit,
@@ -182,6 +189,9 @@ export class KyselyContactRepository implements ContactRepository, OnModuleDestr
         "contacts.gstin",
         "contacts.msme_type",
         "contacts.msme_no",
+        "contacts.tan",
+        "contacts.tds_available",
+        "contacts.tcs_available",
         "contacts.opening_balance",
         "contacts.balance_type",
         "contacts.credit_limit",
@@ -198,10 +208,11 @@ export class KyselyContactRepository implements ContactRepository, OnModuleDestr
 
   private async toContactRecord(row: ContactBaseRow): Promise<ContactRecord> {
     const contactId = Number(row.id);
-    const [addresses, emails, phones, bankAccounts, gstDetails] = await Promise.all([
+    const [addresses, emails, phones, socialLinks, bankAccounts, gstDetails] = await Promise.all([
       this.listAddresses(contactId),
       this.listEmails(contactId),
       this.listPhones(contactId),
+      this.listSocialLinks(contactId),
       this.listBankAccounts(contactId),
       this.listGstDetails(contactId),
     ]);
@@ -219,6 +230,9 @@ export class KyselyContactRepository implements ContactRepository, OnModuleDestr
       gstin: row.gstin,
       msmeType: row.msme_type,
       msmeNo: row.msme_no,
+      tan: row.tan,
+      tdsAvailable: Boolean(row.tds_available),
+      tcsAvailable: Boolean(row.tcs_available),
       openingBalance: Number(row.opening_balance),
       balanceType: row.balance_type,
       creditLimit: Number(row.credit_limit),
@@ -233,6 +247,7 @@ export class KyselyContactRepository implements ContactRepository, OnModuleDestr
       addresses,
       emails,
       phones,
+      socialLinks,
       bankAccounts,
       gstDetails,
     };
@@ -245,11 +260,16 @@ export class KyselyContactRepository implements ContactRepository, OnModuleDestr
   ) {
     await Promise.all([
       this.connection.db
-        .deleteFrom("contact_addresses")
-        .where("contact_id", "=", contactId)
+        .deleteFrom("address_book")
+        .where("owner_type", "=", "contact")
+        .where("owner_id", "=", contactId)
         .execute(),
       this.connection.db.deleteFrom("contact_emails").where("contact_id", "=", contactId).execute(),
       this.connection.db.deleteFrom("contact_phones").where("contact_id", "=", contactId).execute(),
+      this.connection.db
+        .deleteFrom("contact_social_links")
+        .where("contact_id", "=", contactId)
+        .execute(),
       this.connection.db
         .deleteFrom("contact_bank_accounts")
         .where("contact_id", "=", contactId)
@@ -263,9 +283,10 @@ export class KyselyContactRepository implements ContactRepository, OnModuleDestr
     await Promise.all([
       insertIfAny(
         params.addresses,
-        this.connection.db.insertInto("contact_addresses").values(
+        this.connection.db.insertInto("address_book").values(
           params.addresses.map((item) => ({
-            contact_id: contactId,
+            owner_type: "contact",
+            owner_id: contactId,
             address_type_id: item.addressTypeId,
             address_line1: item.addressLine1,
             address_line2: item.addressLine2,
@@ -312,6 +333,19 @@ export class KyselyContactRepository implements ContactRepository, OnModuleDestr
         ),
       ),
       insertIfAny(
+        params.socialLinks,
+        this.connection.db.insertInto("contact_social_links").values(
+          params.socialLinks.map((item) => ({
+            contact_id: contactId,
+            platform: item.platform,
+            url: item.url,
+            is_active: item.isActive,
+            created_at: timestamp,
+            updated_at: timestamp,
+          })),
+        ),
+      ),
+      insertIfAny(
         params.bankAccounts,
         this.connection.db.insertInto("contact_bank_accounts").values(
           params.bankAccounts.map((item) => ({
@@ -347,15 +381,16 @@ export class KyselyContactRepository implements ContactRepository, OnModuleDestr
 
   private async listAddresses(contactId: number): Promise<readonly ContactAddressRecord[]> {
     const rows = await this.connection.db
-      .selectFrom("contact_addresses")
+      .selectFrom("address_book")
       .selectAll()
-      .where("contact_id", "=", contactId)
+      .where("owner_type", "=", "contact")
+      .where("owner_id", "=", contactId)
       .orderBy("id", "asc")
       .execute();
 
     return rows.map((row) => ({
       id: String(row.id),
-      contactId: String(row.contact_id),
+      contactId: String(row.owner_id),
       addressTypeId: row.address_type_id,
       addressLine1: row.address_line1,
       addressLine2: row.address_line2,
@@ -428,6 +463,23 @@ export class KyselyContactRepository implements ContactRepository, OnModuleDestr
     }));
   }
 
+  private async listSocialLinks(contactId: number): Promise<readonly ContactSocialLinkRecord[]> {
+    const rows = await this.connection.db
+      .selectFrom("contact_social_links")
+      .selectAll()
+      .where("contact_id", "=", contactId)
+      .orderBy("id", "asc")
+      .execute();
+
+    return rows.map((row) => ({
+      id: String(row.id),
+      contactId: String(row.contact_id),
+      platform: row.platform,
+      url: row.url,
+      isActive: Boolean(row.is_active),
+    }));
+  }
+
   private async listGstDetails(contactId: number): Promise<readonly ContactGstDetailRecord[]> {
     const rows = await this.connection.db
       .selectFrom("contact_gst_details")
@@ -471,6 +523,9 @@ function toContactValues(
     gstin: params.gstin,
     msme_type: params.msmeType,
     msme_no: params.msmeNo,
+    tan: params.tan,
+    tds_available: params.tdsAvailable,
+    tcs_available: params.tcsAvailable,
     opening_balance: params.openingBalance,
     balance_type: params.balanceType,
     credit_limit: params.creditLimit,

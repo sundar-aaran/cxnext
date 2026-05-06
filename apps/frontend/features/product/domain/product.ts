@@ -111,7 +111,6 @@ export interface ProductUpsertInput {
 export type ProductColumnId =
   | "code"
   | "name"
-  | "sku"
   | "category"
   | "price"
   | "stock"
@@ -127,7 +126,6 @@ export const productColumnCatalog: readonly {
 }[] = [
   { id: "code", label: "Code" },
   { id: "name", label: "Product" },
-  { id: "sku", label: "SKU" },
   { id: "category", label: "Category" },
   { id: "price", label: "Price" },
   { id: "stock", label: "Stock" },
@@ -138,7 +136,6 @@ export const productColumnCatalog: readonly {
 export const defaultProductColumnVisibility: Record<ProductColumnId, boolean> = {
   code: true,
   name: true,
-  sku: true,
   category: true,
   price: true,
   stock: true,

@@ -12,6 +12,9 @@ export function createDefaultContactFormValues(): ContactUpsertInput {
     gstin: null,
     msmeType: null,
     msmeNo: null,
+    tan: null,
+    tdsAvailable: false,
+    tcsAvailable: false,
     openingBalance: 0,
     balanceType: null,
     creditLimit: 0,
@@ -35,6 +38,7 @@ export function createDefaultContactFormValues(): ContactUpsertInput {
     ],
     emails: [{ email: "", emailType: "primary", isPrimary: true }],
     phones: [{ phoneNumber: "", phoneType: "mobile", isPrimary: true }],
+    socialLinks: [],
     bankAccounts: [],
     gstDetails: [],
   };
@@ -52,6 +56,9 @@ export function toContactFormValues(contact: ContactRecord): ContactUpsertInput 
     gstin: contact.gstin,
     msmeType: contact.msmeType,
     msmeNo: contact.msmeNo,
+    tan: contact.tan,
+    tdsAvailable: contact.tdsAvailable,
+    tcsAvailable: contact.tcsAvailable,
     openingBalance: contact.openingBalance,
     balanceType: contact.balanceType,
     creditLimit: contact.creditLimit,
@@ -87,6 +94,11 @@ export function toContactFormValues(contact: ContactRecord): ContactUpsertInput 
           isPrimary: phone.isPrimary,
         }))
       : createDefaultContactFormValues().phones,
+    socialLinks: contact.socialLinks.map((link) => ({
+      platform: link.platform,
+      url: link.url,
+      isActive: link.isActive,
+    })),
     bankAccounts: contact.bankAccounts.map((bankAccount) => ({
       bankName: bankAccount.bankName,
       accountNumber: bankAccount.accountNumber,

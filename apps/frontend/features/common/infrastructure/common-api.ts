@@ -29,6 +29,7 @@ const commonEndpointByKey: Record<string, string> = {
   stockRejectionTypes: "stock-rejection-types",
   currencies: "currencies",
   paymentTerms: "payment-terms",
+  accountingYear: "accounting-years",
 };
 
 export async function listCommonModules(options?: { readonly signal?: AbortSignal }) {
@@ -67,7 +68,12 @@ export async function createCommonRecord(moduleKey: string, payload: Record<stri
   );
 
   if (!response.ok) {
-    throw new Error(`Common create request failed with status ${response.status}.`);
+    throw new Error(
+      await readCommonApiError(
+        response,
+        `Common create request failed with status ${response.status}.`,
+      ),
+    );
   }
 
   return (await response.json()) as CommonRecord;
@@ -84,7 +90,12 @@ export async function updateCommonRecord(
   );
 
   if (!response.ok) {
-    throw new Error(`Common update request failed with status ${response.status}.`);
+    throw new Error(
+      await readCommonApiError(
+        response,
+        `Common update request failed with status ${response.status}.`,
+      ),
+    );
   }
 
   return (await response.json()) as CommonRecord;
@@ -119,6 +130,28 @@ function request(method: "POST" | "PATCH", payload: Record<string, unknown>) {
     headers: { Accept: "application/json", "Content-Type": "application/json" },
     method,
   };
+}
+
+async function readCommonApiError(response: Response, fallback: string) {
+  try {
+    const body = (await response.json()) as {
+      readonly message?: unknown;
+      readonly error?: unknown;
+    };
+    const message = Array.isArray(body.message) ? body.message[0] : body.message;
+
+    if (typeof message === "string" && message.trim()) {
+      return message;
+    }
+
+    if (typeof body.error === "string" && body.error.trim()) {
+      return body.error;
+    }
+  } catch {
+    // Some responses are not JSON.
+  }
+
+  return fallback;
 }
 
 function getApiBaseUrl() {

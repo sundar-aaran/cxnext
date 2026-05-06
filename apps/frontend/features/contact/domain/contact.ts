@@ -35,6 +35,14 @@ export interface ContactPhone {
   readonly isActive: boolean;
 }
 
+export interface ContactSocialLink {
+  readonly id: string;
+  readonly contactId: string;
+  readonly platform: string;
+  readonly url: string;
+  readonly isActive: boolean;
+}
+
 export interface ContactBankAccount {
   readonly id: string;
   readonly contactId: string;
@@ -69,6 +77,9 @@ export interface ContactRecord {
   readonly gstin: string | null;
   readonly msmeType: string | null;
   readonly msmeNo: string | null;
+  readonly tan: string | null;
+  readonly tdsAvailable: boolean;
+  readonly tcsAvailable: boolean;
   readonly openingBalance: number;
   readonly balanceType: string | null;
   readonly creditLimit: number;
@@ -83,6 +94,7 @@ export interface ContactRecord {
   readonly addresses: readonly ContactAddress[];
   readonly emails: readonly ContactEmail[];
   readonly phones: readonly ContactPhone[];
+  readonly socialLinks: readonly ContactSocialLink[];
   readonly bankAccounts: readonly ContactBankAccount[];
   readonly gstDetails: readonly ContactGstDetail[];
 }
@@ -98,6 +110,9 @@ export interface ContactUpsertInput {
   readonly gstin: string | null;
   readonly msmeType: string | null;
   readonly msmeNo: string | null;
+  readonly tan: string | null;
+  readonly tdsAvailable: boolean;
+  readonly tcsAvailable: boolean;
   readonly openingBalance: number;
   readonly balanceType: string | null;
   readonly creditLimit: number;
@@ -107,6 +122,7 @@ export interface ContactUpsertInput {
   readonly addresses: readonly ContactAddressInput[];
   readonly emails: readonly ContactEmailInput[];
   readonly phones: readonly ContactPhoneInput[];
+  readonly socialLinks: readonly ContactSocialLinkInput[];
   readonly bankAccounts: readonly ContactBankAccountInput[];
   readonly gstDetails: readonly ContactGstDetailInput[];
 }
@@ -135,6 +151,12 @@ export interface ContactPhoneInput {
   readonly phoneNumber: string;
   readonly phoneType: string;
   readonly isPrimary: boolean;
+}
+
+export interface ContactSocialLinkInput {
+  readonly platform: string;
+  readonly url: string;
+  readonly isActive: boolean;
 }
 
 export interface ContactBankAccountInput {

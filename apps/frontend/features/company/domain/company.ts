@@ -10,10 +10,18 @@ export interface CompanyRecord {
   readonly legalName: string | null;
   readonly tagline: string | null;
   readonly shortAbout: string | null;
-  readonly registrationNumber: string | null;
+  readonly gstinUin: string | null;
   readonly pan: string | null;
-  readonly financialYearStart: string | null;
-  readonly booksStart: string | null;
+  readonly dateOfIncorporation: string | null;
+  readonly msmeNo: string | null;
+  readonly msmeCategory: string | null;
+  readonly tan: string | null;
+  readonly tdsAvailable: boolean;
+  readonly tdsSection: string | null;
+  readonly tdsRatePercent: number | null;
+  readonly tcsAvailable: boolean;
+  readonly tcsSection: string | null;
+  readonly tcsRatePercent: number | null;
   readonly website: string | null;
   readonly description: string | null;
   readonly primaryEmail: string | null;
@@ -27,6 +35,7 @@ export interface CompanyRecord {
   readonly addresses: readonly CompanyAddressRecord[];
   readonly emails: readonly CompanyEmailRecord[];
   readonly phones: readonly CompanyPhoneRecord[];
+  readonly socialLinks: readonly CompanySocialLinkRecord[];
   readonly bankAccounts: readonly CompanyBankAccountRecord[];
 }
 
@@ -39,14 +48,18 @@ export interface CompanyLogoRecord {
 
 export interface CompanyAddressRecord {
   readonly id: string;
-  readonly addressType: string;
+  readonly ownerType: "company" | "contact";
+  readonly ownerId: string;
+  readonly addressTypeId: string | null;
   readonly addressLine1: string;
   readonly addressLine2: string | null;
-  readonly city: string | null;
-  readonly district: string | null;
-  readonly state: string | null;
-  readonly country: string | null;
-  readonly pincode: string | null;
+  readonly cityId: string | null;
+  readonly districtId: string | null;
+  readonly stateId: string | null;
+  readonly countryId: string | null;
+  readonly pincodeId: string | null;
+  readonly latitude: number | null;
+  readonly longitude: number | null;
   readonly isDefault: boolean;
   readonly isActive: boolean;
 }
@@ -63,6 +76,13 @@ export interface CompanyPhoneRecord {
   readonly phoneNumber: string;
   readonly phoneType: string;
   readonly isPrimary: boolean;
+  readonly isActive: boolean;
+}
+
+export interface CompanySocialLinkRecord {
+  readonly id: string;
+  readonly platform: string;
+  readonly url: string;
   readonly isActive: boolean;
 }
 
@@ -85,17 +105,31 @@ export type CompanyUpsertInput = Pick<
   | "legalName"
   | "tagline"
   | "shortAbout"
-  | "registrationNumber"
+  | "gstinUin"
   | "pan"
-  | "financialYearStart"
-  | "booksStart"
+  | "dateOfIncorporation"
+  | "msmeNo"
+  | "msmeCategory"
+  | "tan"
+  | "tdsAvailable"
+  | "tdsSection"
+  | "tdsRatePercent"
+  | "tcsAvailable"
+  | "tcsSection"
+  | "tcsRatePercent"
   | "website"
   | "description"
   | "primaryEmail"
   | "primaryPhone"
   | "isPrimary"
   | "isActive"
->;
+> & {
+  readonly logos: readonly Omit<CompanyLogoRecord, "id">[];
+  readonly addresses: readonly Omit<CompanyAddressRecord, "id" | "ownerType" | "ownerId">[];
+  readonly emails: readonly Omit<CompanyEmailRecord, "id">[];
+  readonly phones: readonly Omit<CompanyPhoneRecord, "id">[];
+  readonly socialLinks: readonly Omit<CompanySocialLinkRecord, "id">[];
+};
 
 export type CompanyStatusFilter = "all" | "active" | "inactive";
 export type CompanyColumnId = "name" | "tenant" | "industry" | "status" | "updated";

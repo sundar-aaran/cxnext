@@ -25,16 +25,29 @@ interface CompanyUpsertRequest {
   readonly legalName?: unknown;
   readonly tagline?: unknown;
   readonly shortAbout?: unknown;
-  readonly registrationNumber?: unknown;
+  readonly gstinUin?: unknown;
   readonly pan?: unknown;
-  readonly financialYearStart?: unknown;
-  readonly booksStart?: unknown;
+  readonly dateOfIncorporation?: unknown;
+  readonly msmeNo?: unknown;
+  readonly msmeCategory?: unknown;
+  readonly tan?: unknown;
+  readonly tdsAvailable?: unknown;
+  readonly tdsSection?: unknown;
+  readonly tdsRatePercent?: unknown;
+  readonly tcsAvailable?: unknown;
+  readonly tcsSection?: unknown;
+  readonly tcsRatePercent?: unknown;
   readonly website?: unknown;
   readonly description?: unknown;
   readonly primaryEmail?: unknown;
   readonly primaryPhone?: unknown;
   readonly isPrimary?: unknown;
   readonly isActive?: unknown;
+  readonly logos?: unknown;
+  readonly addresses?: unknown;
+  readonly emails?: unknown;
+  readonly phones?: unknown;
+  readonly socialLinks?: unknown;
 }
 
 @Controller("companies")
@@ -111,17 +124,113 @@ function parseCompanyRequest(body: CompanyUpsertRequest) {
     legalName: typeof body.legalName === "string" ? body.legalName : null,
     tagline: typeof body.tagline === "string" ? body.tagline : null,
     shortAbout: typeof body.shortAbout === "string" ? body.shortAbout : null,
-    registrationNumber:
-      typeof body.registrationNumber === "string" ? body.registrationNumber : null,
+    gstinUin: typeof body.gstinUin === "string" ? body.gstinUin : null,
     pan: typeof body.pan === "string" ? body.pan : null,
-    financialYearStart:
-      typeof body.financialYearStart === "string" ? body.financialYearStart : null,
-    booksStart: typeof body.booksStart === "string" ? body.booksStart : null,
+    dateOfIncorporation:
+      typeof body.dateOfIncorporation === "string" ? body.dateOfIncorporation : null,
+    msmeNo: typeof body.msmeNo === "string" ? body.msmeNo : null,
+    msmeCategory: typeof body.msmeCategory === "string" ? body.msmeCategory : null,
+    tan: typeof body.tan === "string" ? body.tan : null,
+    tdsAvailable: body.tdsAvailable === true,
+    tdsSection: typeof body.tdsSection === "string" ? body.tdsSection : null,
+    tdsRatePercent: numberOrNull(body.tdsRatePercent),
+    tcsAvailable: body.tcsAvailable === true,
+    tcsSection: typeof body.tcsSection === "string" ? body.tcsSection : null,
+    tcsRatePercent: numberOrNull(body.tcsRatePercent),
     website: typeof body.website === "string" ? body.website : null,
     description: typeof body.description === "string" ? body.description : null,
     primaryEmail: typeof body.primaryEmail === "string" ? body.primaryEmail : null,
     primaryPhone: typeof body.primaryPhone === "string" ? body.primaryPhone : null,
     isPrimary: Boolean(body.isPrimary),
     isActive: Boolean(body.isActive),
+    logos: parseLogos(body.logos),
+    addresses: parseAddresses(body.addresses),
+    emails: parseEmails(body.emails),
+    phones: parsePhones(body.phones),
+    socialLinks: parseSocialLinks(body.socialLinks),
   };
+}
+
+function parseLogos(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value.map((item) => {
+    const record = item as Record<string, unknown>;
+    return {
+      logoUrl: typeof record.logoUrl === "string" ? record.logoUrl : "",
+      logoType: typeof record.logoType === "string" ? record.logoType : "logo",
+      isActive: record.isActive !== false,
+    };
+  });
+}
+
+function parseAddresses(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value.map((item) => {
+    const record = item as Record<string, unknown>;
+    return {
+      addressTypeId: typeof record.addressTypeId === "string" ? record.addressTypeId : null,
+      addressLine1: typeof record.addressLine1 === "string" ? record.addressLine1 : "",
+      addressLine2: typeof record.addressLine2 === "string" ? record.addressLine2 : null,
+      cityId: typeof record.cityId === "string" ? record.cityId : null,
+      districtId: typeof record.districtId === "string" ? record.districtId : null,
+      stateId: typeof record.stateId === "string" ? record.stateId : null,
+      countryId: typeof record.countryId === "string" ? record.countryId : null,
+      pincodeId: typeof record.pincodeId === "string" ? record.pincodeId : null,
+      latitude: numberOrNull(record.latitude),
+      longitude: numberOrNull(record.longitude),
+      isDefault: record.isDefault === true,
+      isActive: record.isActive !== false,
+    };
+  });
+}
+
+function parseEmails(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value.map((item) => {
+    const record = item as Record<string, unknown>;
+    return {
+      email: typeof record.email === "string" ? record.email : "",
+      emailType: typeof record.emailType === "string" ? record.emailType : "primary",
+      isPrimary: record.isPrimary === true,
+      isActive: record.isActive !== false,
+    };
+  });
+}
+
+function parsePhones(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value.map((item) => {
+    const record = item as Record<string, unknown>;
+    return {
+      phoneNumber: typeof record.phoneNumber === "string" ? record.phoneNumber : "",
+      phoneType: typeof record.phoneType === "string" ? record.phoneType : "mobile",
+      isPrimary: record.isPrimary === true,
+      isActive: record.isActive !== false,
+    };
+  });
+}
+
+function parseSocialLinks(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value.map((item) => {
+    const record = item as Record<string, unknown>;
+    return {
+      platform: typeof record.platform === "string" ? record.platform : "",
+      url: typeof record.url === "string" ? record.url : "",
+      isActive: record.isActive !== false,
+    };
+  });
+}
+
+function numberOrNull(value: unknown) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string" && value.trim()) {
+    const parsedValue = Number(value);
+    return Number.isFinite(parsedValue) ? parsedValue : null;
+  }
+
+  return null;
 }

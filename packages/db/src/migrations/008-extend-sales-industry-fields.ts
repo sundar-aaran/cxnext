@@ -12,7 +12,7 @@ export const extendSalesIndustryFieldsMigration = defineDatabaseMigration({
   appId: "billing",
   moduleKey: "entries",
   name: "Extend sales entries with industry print fields",
-  order: 71,
+  order: 111,
   up: async ({ database }) => {
     const db = asQueryDatabase(database);
 

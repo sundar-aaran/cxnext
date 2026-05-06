@@ -1,4 +1,4 @@
-import { commonDefinition, simpleRowsWithDefault } from "./common-master-definitions";
+import { commonDefinition, simpleRows, simpleRowsWithDefault } from "./common-master-definitions";
 import { createCommonMasterSeeder } from "./common-master-seeder";
 
 export const contactsCommonSeeders = [
@@ -35,12 +35,11 @@ export const contactsCommonSeeders = [
   createCommonMasterSeeder(
     commonDefinition("addressTypes"),
     62,
-    simpleRowsWithDefault([
-      ["BILL", "Billing"],
-      ["SHIP", "Shipping"],
-      ["PRIMARY", "Primary"],
-      ["SECONDARY", "Secondary"],
-      ["THIRD", "Third"],
+    simpleRows([
+      ["BILL", "Billing Address"],
+      ["SHIP", "Shipping Address"],
+      ["SECONDARY", "Secondary Address"],
+      ["THIRD", "Third Address"],
     ]),
   ),
   createCommonMasterSeeder(

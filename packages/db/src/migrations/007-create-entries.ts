@@ -12,7 +12,7 @@ export const createEntriesMigration = defineDatabaseMigration({
   appId: "billing",
   moduleKey: "entries",
   name: "Create basic billing entry tables",
-  order: 70,
+  order: 110,
   up: async ({ database }) => {
     const db = asQueryDatabase(database);
     await createBillingTable(db, "sales", "invoice_no", "invoice_date", "customer");

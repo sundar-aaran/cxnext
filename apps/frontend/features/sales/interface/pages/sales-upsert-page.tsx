@@ -37,16 +37,26 @@ export function SalesUpsertPage({ salesId }: { readonly salesId?: number }) {
     const controller = new AbortController();
     void listSalesContactLookups({ signal: controller.signal })
       .then(setContacts)
-      .catch(() => setContacts([]));
+      .catch((error) => {
+        if (isAbortError(error)) return;
+        setContacts([]);
+      });
     void listSalesProductLookups({ signal: controller.signal })
       .then(setProducts)
-      .catch(() => setProducts([]));
+      .catch((error) => {
+        if (isAbortError(error)) return;
+        setProducts([]);
+      });
     void listCompanies({ signal: controller.signal })
       .then((companies) => {
+        if (controller.signal.aborted) return;
         const company = companies.find((item) => item.isPrimary) ?? companies[0] ?? null;
         setIndustryName(company?.industryName ?? null);
       })
-      .catch(() => setIndustryName(null));
+      .catch((error) => {
+        if (isAbortError(error)) return;
+        setIndustryName(null);
+      });
     return () => controller.abort();
   }, []);
 
@@ -127,4 +137,8 @@ export function SalesUpsertPage({ salesId }: { readonly salesId?: number }) {
 
 function createSalesVoucherInput(): SalesInput {
   return { ...defaultSalesInput(), items: [], placeOfSupply: salesTypeOptions[0].value };
+}
+
+function isAbortError(error: unknown) {
+  return error instanceof DOMException && error.name === "AbortError";
 }

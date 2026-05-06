@@ -33,6 +33,14 @@ export interface ContactPhoneRecord {
   readonly isActive: boolean;
 }
 
+export interface ContactSocialLinkRecord {
+  readonly id: string;
+  readonly contactId: string;
+  readonly platform: string;
+  readonly url: string;
+  readonly isActive: boolean;
+}
+
 export interface ContactBankAccountRecord {
   readonly id: string;
   readonly contactId: string;
@@ -67,6 +75,9 @@ export interface ContactRecord {
   readonly gstin: string | null;
   readonly msmeType: string | null;
   readonly msmeNo: string | null;
+  readonly tan: string | null;
+  readonly tdsAvailable: boolean;
+  readonly tcsAvailable: boolean;
   readonly openingBalance: number;
   readonly balanceType: string | null;
   readonly creditLimit: number;
@@ -81,6 +92,7 @@ export interface ContactRecord {
   readonly addresses: readonly ContactAddressRecord[];
   readonly emails: readonly ContactEmailRecord[];
   readonly phones: readonly ContactPhoneRecord[];
+  readonly socialLinks: readonly ContactSocialLinkRecord[];
   readonly bankAccounts: readonly ContactBankAccountRecord[];
   readonly gstDetails: readonly ContactGstDetailRecord[];
 }

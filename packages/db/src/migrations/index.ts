@@ -20,16 +20,16 @@ export const databaseMigrations = [
   createIndustriesMigration,
   createCompaniesMigration,
   createCommonLocationMigration,
+  ...locationCommonMigrations,
+  ...contactsCommonMigrations,
   createContactsMigration,
+  ...productCommonMigrations,
+  ...ordersCommonMigrations,
+  ...othersCommonMigrations,
   createProductsMigration,
   createEntriesMigration,
   extendSalesIndustryFieldsMigration,
   createAuthRbacMigration,
-  ...locationCommonMigrations,
-  ...contactsCommonMigrations,
-  ...productCommonMigrations,
-  ...ordersCommonMigrations,
-  ...othersCommonMigrations,
 ] as const;
 
 export { createTenantsMigration };

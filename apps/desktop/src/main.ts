@@ -6,6 +6,41 @@ import { registerIpcHandlers } from "./ipc";
 
 loadEnvFromRoot();
 
+function isPresent(value: string | undefined) {
+  return value !== undefined && value !== "";
+}
+
+function urlHost(host: string | undefined) {
+  return host === "0.0.0.0" || host === "::" ? "localhost" : (host ?? "localhost");
+}
+
+function runtimeProtocol() {
+  return process.env.TLS_ENABLED === "true" ? "https" : "http";
+}
+
+function composeUrl(httpPortKey: string, httpsPortKey: string) {
+  const scheme = runtimeProtocol();
+  const port = scheme === "https" ? process.env[httpsPortKey] : process.env[httpPortKey];
+
+  if (!isPresent(port)) {
+    return undefined;
+  }
+
+  return `${scheme}://${urlHost(process.env.APP_HOST)}:${port}`;
+}
+
+process.env.PORT = process.env.PORT || process.env.APP_HTTP_PORT || process.env.APP_HTTPS_PORT;
+process.env.FRONTEND_URL =
+  process.env.FRONTEND_URL || composeUrl("FRONTEND_HTTP_PORT", "FRONTEND_HTTPS_PORT");
+process.env.BACKEND_URL =
+  process.env.BACKEND_URL ||
+  (isPresent(process.env.PORT)
+    ? `${runtimeProtocol()}://${urlHost(process.env.APP_HOST)}:${process.env.PORT}`
+    : undefined);
+process.env.BACKEND_HEALTH_URL =
+  process.env.BACKEND_HEALTH_URL ||
+  (process.env.BACKEND_URL ? `${process.env.BACKEND_URL}/health` : undefined);
+
 function requireEnv(key: string) {
   const value = process.env[key];
 

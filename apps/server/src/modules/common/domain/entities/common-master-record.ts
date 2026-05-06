@@ -20,6 +20,9 @@ export interface CommonMasterRecord {
   readonly addressLine2?: string | null;
   readonly decimalPlaces?: number | null;
   readonly dueDays?: number | null;
+  readonly startDate?: string | null;
+  readonly endDate?: string | null;
+  readonly booksStart?: string | null;
   readonly showOnStorefrontTopMenu?: boolean | null;
   readonly showOnStorefrontCatalog?: boolean | null;
   readonly isActive: boolean;

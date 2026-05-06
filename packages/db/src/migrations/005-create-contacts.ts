@@ -13,7 +13,7 @@ export const createContactsMigration = defineDatabaseMigration({
   appId: "crm",
   moduleKey: "contacts",
   name: "Create contacts and contact detail tables",
-  order: 50,
+  order: 65,
   up: async ({ database }) => {
     const queryDatabase = asQueryDatabase(database);
 
@@ -32,6 +32,9 @@ export const createContactsMigration = defineDatabaseMigration({
       .addColumn("gstin", "varchar(30)")
       .addColumn("msme_type", "varchar(40)")
       .addColumn("msme_no", "varchar(80)")
+      .addColumn("tan", "varchar(30)")
+      .addColumn("tds_available", "boolean", (column) => column.notNull().defaultTo(false))
+      .addColumn("tcs_available", "boolean", (column) => column.notNull().defaultTo(false))
       .addColumn("opening_balance", sql`double`, (column) => column.notNull().defaultTo(0))
       .addColumn("balance_type", "varchar(20)")
       .addColumn("credit_limit", sql`double`, (column) => column.notNull().defaultTo(0))
@@ -65,31 +68,6 @@ export const createContactsMigration = defineDatabaseMigration({
       .execute();
 
     await queryDatabase.schema
-      .createTable("contact_addresses")
-      .ifNotExists()
-      .addColumn("id", "bigint", (column) => column.primaryKey().autoIncrement())
-      .addColumn("contact_id", "bigint", (column) => column.notNull())
-      .addColumn("address_type_id", "varchar(80)")
-      .addColumn("address_line1", "varchar(240)", (column) => column.notNull())
-      .addColumn("address_line2", "varchar(240)")
-      .addColumn("city_id", "varchar(80)")
-      .addColumn("district_id", "varchar(80)")
-      .addColumn("state_id", "varchar(80)")
-      .addColumn("country_id", "varchar(80)")
-      .addColumn("pincode_id", "varchar(80)")
-      .addColumn("latitude", sql`double`)
-      .addColumn("longitude", sql`double`)
-      .addColumn("is_default", "boolean", (column) => column.notNull().defaultTo(false))
-      .addColumn("is_active", "boolean", (column) => column.notNull().defaultTo(true))
-      .addColumn("created_at", "datetime", (column) =>
-        column.notNull().defaultTo(sql`CURRENT_TIMESTAMP`),
-      )
-      .addColumn("updated_at", "datetime", (column) =>
-        column.notNull().defaultTo(sql`CURRENT_TIMESTAMP`),
-      )
-      .execute();
-
-    await queryDatabase.schema
       .createTable("contact_emails")
       .ifNotExists()
       .addColumn("id", "bigint", (column) => column.primaryKey().autoIncrement())
@@ -114,6 +92,22 @@ export const createContactsMigration = defineDatabaseMigration({
       .addColumn("phone_number", "varchar(80)", (column) => column.notNull())
       .addColumn("phone_type", "varchar(80)", (column) => column.notNull())
       .addColumn("is_primary", "boolean", (column) => column.notNull().defaultTo(false))
+      .addColumn("is_active", "boolean", (column) => column.notNull().defaultTo(true))
+      .addColumn("created_at", "datetime", (column) =>
+        column.notNull().defaultTo(sql`CURRENT_TIMESTAMP`),
+      )
+      .addColumn("updated_at", "datetime", (column) =>
+        column.notNull().defaultTo(sql`CURRENT_TIMESTAMP`),
+      )
+      .execute();
+
+    await queryDatabase.schema
+      .createTable("contact_social_links")
+      .ifNotExists()
+      .addColumn("id", "bigint", (column) => column.primaryKey().autoIncrement())
+      .addColumn("contact_id", "bigint", (column) => column.notNull())
+      .addColumn("platform", "varchar(80)", (column) => column.notNull())
+      .addColumn("url", "varchar(240)", (column) => column.notNull())
       .addColumn("is_active", "boolean", (column) => column.notNull().defaultTo(true))
       .addColumn("created_at", "datetime", (column) =>
         column.notNull().defaultTo(sql`CURRENT_TIMESTAMP`),
