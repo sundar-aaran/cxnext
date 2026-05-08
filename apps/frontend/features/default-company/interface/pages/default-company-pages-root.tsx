@@ -111,8 +111,12 @@ export function DefaultCompanyListPage() {
                 >
                   <td className="px-4 py-2.5 text-muted-foreground">{index + 1}</td>
                   <td className="px-4 py-2.5 text-muted-foreground">{record.tenant.name}</td>
-                  <td className="px-4 py-2.5 text-muted-foreground">{record.industry.name}</td>
-                  <td className="px-4 py-2.5 font-medium text-foreground">{record.company.name}</td>
+                  <td className="px-4 py-2.5 text-muted-foreground">
+                    {formatIndustryLabel(record.industry.code, record.industry.name)}
+                  </td>
+                  <td className="px-4 py-2.5 font-medium text-foreground">
+                    {formatCompanyLabel(record.company.code, record.company.name)}
+                  </td>
                   <td className="px-4 py-2.5 text-muted-foreground">
                     {record.accountingYear.name}
                   </td>
@@ -164,6 +168,14 @@ export function DefaultCompanyListPage() {
       ) : null}
     </CommonListPageFrame>
   );
+}
+
+function formatIndustryLabel(code: string | null | undefined, name: string) {
+  return code ? `${code} - ${name}` : name;
+}
+
+function formatCompanyLabel(code: string | null | undefined, name: string) {
+  return code ? `${code} - ${name}` : name;
 }
 
 function DefaultCompanyDialog({
@@ -233,7 +245,7 @@ function DefaultCompanyDialog({
               >
                 {companies.map((company) => (
                   <option key={company.id} value={company.id}>
-                    {company.name}
+                    {formatCompanyLabel(company.code, company.name)}
                   </option>
                 ))}
               </select>

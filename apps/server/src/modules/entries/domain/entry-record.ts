@@ -48,6 +48,10 @@ export interface BillingEntryRecord {
   readonly dueDate: Date | null;
   readonly ewayBillNo: string | null;
   readonly ewayBillDate: Date | null;
+  readonly eInvoiceIrn: string | null;
+  readonly eInvoiceAckNo: string | null;
+  readonly eInvoiceAckDate: Date | null;
+  readonly eInvoiceSignedQr: string | null;
   readonly supplierInvoiceNo: string | null;
   readonly supplierInvoiceDate: Date | null;
   readonly subtotal: number;

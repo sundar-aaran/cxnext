@@ -26,6 +26,7 @@ export class IndustryAggregate {
   private payload() {
     return {
       id: this.industry.id,
+      code: this.industry.code,
       name: this.industry.name,
       isActive: this.industry.isActive,
     };

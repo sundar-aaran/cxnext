@@ -50,6 +50,7 @@ import {
 } from "../../domain/industry";
 
 const industrySchema = z.object({
+  code: z.string().trim().min(2, "Enter industry code"),
   name: z.string().trim().min(2, "Enter industry name"),
   isActive: z.boolean(),
 });
@@ -179,7 +180,7 @@ export function IndustryListPage() {
           setSearchValue(nextValue);
           setCurrentPage(1);
         }}
-        searchPlaceholder="Search industry, status, or id"
+        searchPlaceholder="Search industry, code, status, or id"
         searchValue={searchValue}
       />
 
@@ -193,6 +194,11 @@ export function IndustryListPage() {
                 <th className="w-16 border-b border-border/70 px-4 py-2.5 text-left font-medium text-foreground">
                   #
                 </th>
+                {visibleColumns.code ? (
+                  <th className="border-b border-border/70 px-4 py-2.5 text-left font-medium text-foreground">
+                    Code
+                  </th>
+                ) : null}
                 {visibleColumns.name ? (
                   <th className="border-b border-border/70 px-4 py-2.5 text-left font-medium text-foreground">
                     Industry
@@ -222,6 +228,11 @@ export function IndustryListPage() {
                   <td className="px-4 py-2.5 text-muted-foreground">
                     {(currentPage - 1) * rowsPerPage + index + 1}
                   </td>
+                  {visibleColumns.code ? (
+                    <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground">
+                      {industry.code}
+                    </td>
+                  ) : null}
                   {visibleColumns.name ? (
                     <td className="px-4 py-2.5">
                       <button
@@ -456,6 +467,7 @@ export function IndustryUpsertPage({
   const form = useForm({
     defaultValues: {
       name: existingIndustry?.name ?? "",
+      code: existingIndustry?.code ?? "",
       isActive: existingIndustry?.isActive ?? true,
     },
     onSubmit: async ({ value }) => {
@@ -507,6 +519,7 @@ export function IndustryUpsertPage({
 
         if (record) {
           form.setFieldValue("name", record.name);
+          form.setFieldValue("code", record.code);
           form.setFieldValue("isActive", record.isActive);
         }
       })
@@ -571,7 +584,7 @@ export function IndustryUpsertPage({
         </Button>
       }
       description={
-        isEdit ? "Update industry identity and active status." : "Create an industry record."
+        isEdit ? "Update industry code, identity, and active status." : "Create an industry record."
       }
       technicalName="page.industry.upsert"
       title={isEdit ? "Edit industry" : "New industry"}
@@ -586,6 +599,30 @@ export function IndustryUpsertPage({
               void form.handleSubmit();
             }}
           >
+            <form.Field
+              name="code"
+              validators={{
+                onChange: ({ value }) => {
+                  const result = industrySchema.shape.code.safeParse(value);
+                  return result.success ? undefined : result.error.issues[0]?.message;
+                },
+              }}
+            >
+              {(field) => (
+                <FieldShell error={field.state.meta.errors[0]} label="Industry code">
+                  <Input
+                    name={field.name}
+                    value={field.state.value}
+                    placeholder="GARMENTS"
+                    className="h-11 rounded-xl font-mono uppercase"
+                    onBlur={field.handleBlur}
+                    onChange={(event) =>
+                      field.handleChange(normalizeIndustryCodeInput(event.target.value))
+                    }
+                  />
+                </FieldShell>
+              )}
+            </form.Field>
             <form.Field
               name="name"
               validators={{
@@ -676,6 +713,7 @@ function IndustryDetailsTable({ industry }: { readonly industry: IndustryRecord 
       <table className="w-full border-collapse text-sm">
         <tbody>
           <IndustryDetailsRow label="ID" value={String(industry.id)} />
+          <IndustryDetailsRow label="Code" value={industry.code} />
           <IndustryDetailsRow label="Name" value={industry.name} />
           <IndustryDetailsRow
             label="Active"
@@ -739,4 +777,8 @@ function getIndustryCancelPath(
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Please try again.";
+}
+
+function normalizeIndustryCodeInput(value: string) {
+  return value.toUpperCase().replace(/[^A-Z0-9]+/g, "_").replace(/^_+/, "");
 }

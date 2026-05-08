@@ -27,6 +27,10 @@ export interface BillingEntryInput {
   readonly dueDate?: string | Date | null;
   readonly ewayBillNo?: string | null;
   readonly ewayBillDate?: string | Date | null;
+  readonly eInvoiceIrn?: string | null;
+  readonly eInvoiceAckNo?: string | null;
+  readonly eInvoiceAckDate?: string | Date | null;
+  readonly eInvoiceSignedQr?: string | null;
   readonly supplierInvoiceNo?: string | null;
   readonly supplierInvoiceDate?: string | Date | null;
   readonly roundOff?: number;

@@ -6,6 +6,9 @@ export class IndustryModel {
   public id!: string;
 
   @Field()
+  public code!: string;
+
+  @Field()
   public name!: string;
 
   @Field()

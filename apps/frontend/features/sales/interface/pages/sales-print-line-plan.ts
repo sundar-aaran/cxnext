@@ -1,4 +1,8 @@
 import type { SalesIndustryKind, SalesItemInput } from "../../domain/sales";
+import {
+  salesLayoutFromIndustry,
+  type SalesBillingLayout,
+} from "../../application/sales-billing-layout-service";
 
 export const salesPrintMinimumItemLineBudget = 27;
 export const salesPrintMaximumItemLineBudget = 27;
@@ -18,13 +22,16 @@ export type SalesPrintLineRow =
 export function getSalesPrintLinePlan(
   items: readonly SalesItemInput[],
   industryKind: SalesIndustryKind,
+  salesLayout?: SalesBillingLayout,
 ): {
   readonly requiresTwoPageTemplate: boolean;
   readonly lineBudget: number;
   readonly rows: readonly SalesPrintLineRow[];
   readonly usedLines: number;
 } {
-  const itemLineCounts = items.map((item) => getSalesItemPrintLineCount(item, industryKind));
+  const itemLineCounts = items.map((item) =>
+    getSalesItemPrintLineCount(item, industryKind, salesLayout),
+  );
   const lineBudget = getSalesPrintLineBudget(itemLineCounts);
   let usedLines = 0;
   let requiresTwoPageTemplate = false;
@@ -51,29 +58,29 @@ export function getSalesPrintLinePlan(
   return { lineBudget, requiresTwoPageTemplate, rows, usedLines };
 }
 
-export function getSalesItemPrintLineCount(item: SalesItemInput, industryKind: SalesIndustryKind) {
-  if (industryKind === "offset") {
-    return Math.max(
-      getClampedPrintLineCount(item.poNo ?? "", 6),
-      getClampedPrintLineCount(item.dcNo ?? "", 6),
-      getClampedPrintLineCount(item.productName, 32),
-    );
-  }
+export function getSalesItemPrintLineCount(
+  item: SalesItemInput,
+  industryKind: SalesIndustryKind,
+  salesLayout?: SalesBillingLayout,
+) {
+  const layout = salesLayout ?? salesLayoutFromIndustry(industryKind);
+  const lineCounts = [getClampedPrintLineCount(item.productName, 32)];
+
+  if (layout.usePo) lineCounts.push(getClampedPrintLineCount(item.poNo ?? "", 6));
+  if (layout.useDc) lineCounts.push(getClampedPrintLineCount(item.dcNo ?? "", 6));
+  if (layout.useSize) lineCounts.push(getClampedPrintLineCount(item.size ?? "", 8));
+  if (layout.useColour) lineCounts.push(getClampedPrintLineCount(item.colour ?? "", 9));
 
   if (industryKind === "garment") {
-    return Math.max(
-      getClampedPrintLineCount(item.productName, 34),
-      getClampedPrintLineCount(item.description ?? "", 24),
-      getClampedPrintLineCount(item.size ?? "", 8),
-      getClampedPrintLineCount(item.colour ?? "", 9),
-    );
+    lineCounts.push(getClampedPrintLineCount(item.description ?? "", 24));
+    return Math.max(...lineCounts);
   }
 
-  return Math.max(
-    getClampedPrintLineCount(item.productName, 34),
-    getClampedPrintLineCount(item.description ?? "", 30),
-    getClampedPrintLineCount(item.size ?? "", 10),
-  );
+  if (industryKind === "upvc") {
+    lineCounts.push(getClampedPrintLineCount(item.description ?? "", 30));
+  }
+
+  return Math.max(...lineCounts);
 }
 
 export function getClampedPrintLineCount(value: string, charactersPerLine: number, maxLines = 3) {

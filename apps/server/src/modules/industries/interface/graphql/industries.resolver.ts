@@ -32,6 +32,7 @@ export class IndustriesResolver {
 function toIndustryModel(industry: IndustryRecord): IndustryModel {
   return {
     id: industry.id,
+    code: industry.code,
     name: industry.name,
     isActive: industry.isActive,
     createdAt: industry.createdAt.toISOString(),

@@ -2,6 +2,7 @@ import type { MasterListColumnOption, MasterListFilterOption } from "@cxnext/ui"
 
 export interface IndustryRecord {
   readonly id: number;
+  readonly code: string;
   readonly name: string;
   readonly isActive: boolean;
   readonly createdAt: string;
@@ -10,12 +11,13 @@ export interface IndustryRecord {
 }
 
 export interface IndustryUpsertInput {
+  readonly code: string;
   readonly name: string;
   readonly isActive: boolean;
 }
 
 export type IndustryStatusFilter = "all" | "active" | "inactive";
-export type IndustryColumnId = "name" | "status" | "updated";
+export type IndustryColumnId = "code" | "name" | "status" | "updated";
 
 export const industryStatusFilters: readonly MasterListFilterOption[] = [
   { id: "all", label: "All industries" },
@@ -24,6 +26,7 @@ export const industryStatusFilters: readonly MasterListFilterOption[] = [
 ];
 
 export const industryColumnCatalog = [
+  { id: "code", label: "Code" },
   { id: "name", label: "Industry" },
   { id: "status", label: "Status" },
   { id: "updated", label: "Updated" },
@@ -33,6 +36,7 @@ export const industryColumnCatalog = [
 }[];
 
 export const defaultIndustryColumnVisibility: Record<IndustryColumnId, boolean> = {
+  code: true,
   name: true,
   status: true,
   updated: true,

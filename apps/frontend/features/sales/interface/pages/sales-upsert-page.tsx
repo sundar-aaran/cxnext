@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Copy, Mail } from "lucide-react";
 import { toast } from "sonner";
 import {
   Button,
@@ -15,14 +15,23 @@ import {
 } from "@cxnext/ui";
 import {
   getSales,
+  listSales,
   listSalesContactLookups,
   listSalesProductLookups,
   prepareSalesInput,
   upsertSales,
 } from "../../application/sales-service";
 import { listCompanies } from "../../../company/application/company-service";
-import { defaultSalesInput, type SalesInput, type SalesLookupOption } from "../../domain/sales";
+import { getCoreEnvSettings } from "../../../settings/infrastructure/core-settings-api";
+import { loadSoftwareSettings } from "../../../settings/application/software-settings-service";
+import {
+  defaultSalesInput,
+  type SalesInput,
+  type SalesLookupOption,
+  type SalesRecord,
+} from "../../domain/sales";
 import { SalesVoucherTabs, salesTypeOptions } from "../components/sales-voucher-form";
+import { EntryCollaborationPanel } from "../../../entries/interface/components/entry-collaboration-panel";
 
 export function SalesUpsertPage({ salesId }: { readonly salesId?: number }) {
   const router = useRouter();
@@ -30,6 +39,8 @@ export function SalesUpsertPage({ salesId }: { readonly salesId?: number }) {
   const isEdit = Boolean(salesId);
   const [form, setForm] = useState<SalesInput>(createSalesVoucherInput());
   const [contacts, setContacts] = useState<readonly SalesLookupOption[]>([]);
+  const [diagnostic, setDiagnostic] = useState<SalesDiagnostic | null>(null);
+  const [industryCode, setIndustryCode] = useState<string | null>(null);
   const [industryName, setIndustryName] = useState<string | null>(null);
   const [products, setProducts] = useState<readonly SalesLookupOption[]>([]);
 
@@ -47,14 +58,39 @@ export function SalesUpsertPage({ salesId }: { readonly salesId?: number }) {
         if (isAbortError(error)) return;
         setProducts([]);
       });
-    void listCompanies({ signal: controller.signal })
-      .then((companies) => {
+    if (!salesId) {
+      const configuredDocumentNo = nextSalesDocumentNo();
+      void listSales({ signal: controller.signal })
+        .then((records) => {
+          if (controller.signal.aborted) return;
+          const documentNo = nextSalesDocumentNo(records);
+          setForm((current) =>
+            current.documentNo === configuredDocumentNo || !current.documentNo.trim()
+              ? { ...current, documentNo }
+              : current,
+          );
+        })
+        .catch((error) => {
+          if (!isAbortError(error)) {
+            setForm((current) =>
+              current.documentNo.trim() ? current : { ...current, documentNo: configuredDocumentNo },
+            );
+          }
+        });
+    }
+    void Promise.all([
+      listCompanies({ signal: controller.signal }),
+      getCoreEnvSettings({ signal: controller.signal }).catch(() => null),
+    ])
+      .then(([companies, settings]) => {
         if (controller.signal.aborted) return;
         const company = companies.find((item) => item.isPrimary) ?? companies[0] ?? null;
+        setIndustryCode(getAppTypeFromSettings(settings) ?? company?.industryCode ?? null);
         setIndustryName(company?.industryName ?? null);
       })
       .catch((error) => {
         if (isAbortError(error)) return;
+        setIndustryCode(null);
         setIndustryName(null);
       });
     return () => controller.abort();
@@ -66,13 +102,25 @@ export function SalesUpsertPage({ salesId }: { readonly salesId?: number }) {
     void getSales(salesId)
       .then((record) => {
         if (!record) return;
+        setDiagnostic(null);
         setForm({
           ...defaultSalesInput(),
           ...record,
           documentDate: record.documentDate.slice(0, 10),
+          dueDate: record.dueDate ? record.dueDate.slice(0, 10) : null,
+          eInvoiceAckDate: record.eInvoiceAckDate ? record.eInvoiceAckDate.slice(0, 10) : null,
           ewayBillDate: record.ewayBillDate ? record.ewayBillDate.slice(0, 10) : null,
           placeOfSupply: record.placeOfSupply ?? salesTypeOptions[0].value,
         });
+      })
+      .catch((error) => {
+        const message = getErrorMessage(error);
+        setDiagnostic({
+          message,
+          source: `GET /entries/sales/${salesId}`,
+          title: "Could not load sales invoice",
+        });
+        toast.error("Could not load sales invoice", { description: message });
       })
       .finally(hide);
   }, [salesId, show]);
@@ -81,6 +129,7 @@ export function SalesUpsertPage({ salesId }: { readonly salesId?: number }) {
     const hide = show();
     try {
       const saved = await upsertSales(prepareSalesInput(form), salesId);
+      setDiagnostic(null);
       toast.success(isEdit ? "Sales updated" : "Sales created");
       if (printAfterSave) {
         router.push(`/desk/sales/${saved.id}?print=1`);
@@ -88,8 +137,14 @@ export function SalesUpsertPage({ salesId }: { readonly salesId?: number }) {
       }
       router.push(`/desk/sales/${saved.id}`);
     } catch (error) {
+      const message = getErrorMessage(error);
+      setDiagnostic({
+        message,
+        source: `${salesId ? "PATCH" : "POST"} /entries/sales${salesId ? `/${salesId}` : ""}`,
+        title: "Could not save sales invoice",
+      });
       toast.error("Could not save sales", {
-        description: error instanceof Error ? error.message : "Please try again.",
+        description: message,
       });
     } finally {
       hide();
@@ -98,47 +153,173 @@ export function SalesUpsertPage({ salesId }: { readonly salesId?: number }) {
 
   return (
     <MasterListPageFrame
+      action={
+        <div className="flex flex-wrap justify-end gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            className="rounded-xl"
+            onClick={() =>
+              toast.info("Email send is ready for mail provider integration.", {
+                description: `${form.documentNo || "This sales invoice"} can be sent once SMTP/API credentials are configured.`,
+              })
+            }
+          >
+            <Mail className="size-4" />
+            Send to Email
+          </Button>
+          <Button asChild type="button" variant="outline" className="rounded-xl">
+            <Link href="/desk/sales">
+              <ArrowLeft className="size-4" />
+              Back
+            </Link>
+          </Button>
+        </div>
+      }
+      className="w-[calc(100%-2rem)] max-w-[1500px] sm:w-[calc(100%-3rem)] lg:w-[calc(100%-4rem)]"
       description="Create a tabbed sales voucher with item-level GST totals."
       technicalName="page.entries.sales.upsert"
       title={isEdit ? "Edit sales" : "New sales"}
     >
       <MasterListUpsertLayout>
-        <MasterListUpsertCard className="overflow-hidden p-0">
+        <MasterListUpsertCard className="overflow-hidden p-0 [&>div]:p-0">
           <form
             onSubmit={(event) => {
               event.preventDefault();
               void save();
             }}
           >
-            <div className="p-4 md:p-5">
+            <div className="px-0 pb-4 pt-3 md:pb-5">
               <SalesVoucherTabs
                 contacts={contacts}
                 form={form}
+                industryCode={industryCode}
                 industryName={industryName}
                 products={products}
                 setForm={setForm}
               />
             </div>
-            <div className="flex flex-wrap justify-end gap-3 border-t border-border/70 bg-muted/20 px-4 py-4 md:px-6">
+            <div className="flex flex-wrap justify-start gap-3 border-t border-border/70 bg-muted/20 px-4 py-4 md:px-6">
+              <SavePrintButtons saveLabel="Save" onSavePrint={() => void save(true)} />
               <Button asChild type="button" variant="outline" className="rounded-xl">
                 <Link href={salesId ? `/desk/sales/${salesId}` : "/desk/sales"}>
                   <ArrowLeft className="size-4" />
-                  Back
+                  Cancel
                 </Link>
               </Button>
-              <SavePrintButtons saveLabel="Save" onSavePrint={() => void save(true)} />
             </div>
           </form>
         </MasterListUpsertCard>
+        {diagnostic ? <SalesDiagnosticBanner diagnostic={diagnostic} /> : null}
+        <EntryCollaborationPanel
+          entryId={salesId ?? null}
+          entryKind="sales"
+          entryLabel={form.documentNo || "this sales invoice"}
+        />
       </MasterListUpsertLayout>
     </MasterListPageFrame>
   );
 }
 
+interface SalesDiagnostic {
+  readonly message: string;
+  readonly source: string;
+  readonly title: string;
+}
+
+function SalesDiagnosticBanner({ diagnostic }: { readonly diagnostic: SalesDiagnostic }) {
+  async function copyError() {
+    const text = [
+      diagnostic.title,
+      `Source: ${diagnostic.source}`,
+      `Message: ${diagnostic.message}`,
+    ].join("\n");
+
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("Error copied");
+    } catch {
+      toast.error("Could not copy error");
+    }
+  }
+
+  return (
+    <div className="relative rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 pr-12 text-sm">
+      <Button
+        type="button"
+        size="icon"
+        variant="ghost"
+        className="absolute right-2 top-2 size-8 rounded-md text-destructive hover:bg-destructive/10"
+        onClick={() => void copyError()}
+        aria-label="Copy error"
+      >
+        <Copy className="size-4" />
+      </Button>
+      <div className="font-semibold text-destructive">{diagnostic.title}</div>
+      <div className="mt-1 text-foreground">{diagnostic.message}</div>
+      <div className="mt-2 font-mono text-xs text-muted-foreground">{diagnostic.source}</div>
+    </div>
+  );
+}
+
 function createSalesVoucherInput(): SalesInput {
-  return { ...defaultSalesInput(), items: [], placeOfSupply: salesTypeOptions[0].value };
+  return {
+    ...defaultSalesInput(),
+    documentNo: nextSalesDocumentNo(),
+    items: [],
+    placeOfSupply: salesTypeOptions[0].value,
+  };
+}
+
+function nextSalesDocumentNo(records: readonly Pick<SalesRecord, "documentNo">[] = []) {
+  const settings = loadSoftwareSettings().salesDocumentSettings;
+  const prefix = settings.invoicePrefix.trim();
+  const serialStart = settings.invoiceSerialStart.trim() || "1";
+  const startNumber = parseSerialNumber(serialStart) ?? 1;
+  const serialWidth = serialStart.length;
+  const existingSerials = records
+    .map((record) => parseExistingInvoiceSerial(record.documentNo, prefix))
+    .filter((value): value is number => value !== null);
+  const nextSerial = existingSerials.length
+    ? Math.max(startNumber - 1, ...existingSerials) + 1
+    : startNumber;
+
+  return formatSalesDocumentNo(prefix, nextSerial, serialWidth);
+}
+
+function parseExistingInvoiceSerial(documentNo: string, prefix: string) {
+  const trimmedDocumentNo = documentNo.trim();
+  const serialText = prefix
+    ? trimmedDocumentNo.toLowerCase().startsWith(`${prefix.toLowerCase()}-`)
+      ? trimmedDocumentNo.slice(prefix.length + 1)
+      : ""
+    : trimmedDocumentNo;
+
+  return parseSerialNumber(serialText);
+}
+
+function parseSerialNumber(value: string) {
+  return /^\d+$/.test(value) ? Number.parseInt(value, 10) : null;
+}
+
+function formatSalesDocumentNo(prefix: string, serial: number, width: number) {
+  const serialText = String(serial).padStart(width, "0");
+  return [prefix, serialText].filter(Boolean).join("-");
+}
+
+function getAppTypeFromSettings(
+  settings: Awaited<ReturnType<typeof getCoreEnvSettings>> | null,
+) {
+  return settings?.groups
+    .flatMap((group) => group.settings)
+    .find((setting) => setting.key === "APP_TYPE")
+    ?.value.trim() || null;
 }
 
 function isAbortError(error: unknown) {
   return error instanceof DOMException && error.name === "AbortError";
+}
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Please try again.";
 }

@@ -26,6 +26,7 @@ export class CompanyAggregate {
   private payload() {
     return {
       id: this.company.id,
+      code: this.company.code,
       name: this.company.name,
       tenantId: this.company.tenantId,
       industryId: this.company.industryId,

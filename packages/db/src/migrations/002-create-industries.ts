@@ -21,6 +21,7 @@ export const createIndustriesMigration = defineDatabaseMigration({
       .createTable("industries")
       .ifNotExists()
       .addColumn("id", "bigint", (column) => column.primaryKey().autoIncrement())
+      .addColumn("code", "varchar(64)", (column) => column.notNull())
       .addColumn("name", "varchar(160)", (column) => column.notNull())
       .addColumn("is_active", "boolean", (column) => column.notNull().defaultTo(true))
       .addColumn("created_at", "datetime", (column) =>
@@ -30,6 +31,14 @@ export const createIndustriesMigration = defineDatabaseMigration({
         column.notNull().defaultTo(sql`CURRENT_TIMESTAMP`),
       )
       .addColumn("deleted_at", "datetime")
+      .execute();
+
+    await queryDatabase.schema
+      .createIndex("uq_industries_code")
+      .ifNotExists()
+      .on("industries")
+      .column("code")
+      .unique()
       .execute();
 
     await queryDatabase.schema

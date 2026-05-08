@@ -102,6 +102,7 @@ const msmeCategoryOptions: readonly ThemedSelectOption[] = [
 const companySchema = z.object({
   tenantId: z.number().int().positive(),
   industryId: z.number().int().positive(),
+  code: z.string().trim().min(2, "Enter company code"),
   name: z.string().trim().min(2, "Enter company name"),
   legalName: z.string().nullable(),
   tagline: z.string().nullable(),
@@ -272,7 +273,7 @@ export function CompanyListPage() {
           setSearchValue(nextValue);
           setCurrentPage(1);
         }}
-        searchPlaceholder="Search company, tenant, industry, status, or id"
+        searchPlaceholder="Search company, code, tenant, industry, status, or id"
         searchValue={searchValue}
       />
       {loadError ? <MasterListEmptyState>{loadError}</MasterListEmptyState> : null}
@@ -284,6 +285,7 @@ export function CompanyListPage() {
                 <th className="w-16 border-b border-border/70 px-4 py-2.5 text-left font-medium text-foreground">
                   #
                 </th>
+                {visibleColumns.code ? <ListHeader>Code</ListHeader> : null}
                 {visibleColumns.name ? <ListHeader>Company</ListHeader> : null}
                 {visibleColumns.tenant ? <ListHeader>Tenant</ListHeader> : null}
                 {visibleColumns.industry ? <ListHeader>Industry</ListHeader> : null}
@@ -303,6 +305,11 @@ export function CompanyListPage() {
                   <td className="px-4 py-2.5 text-muted-foreground">
                     {(currentPage - 1) * rowsPerPage + index + 1}
                   </td>
+                  {visibleColumns.code ? (
+                    <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground">
+                      {company.code}
+                    </td>
+                  ) : null}
                   {visibleColumns.name ? (
                     <td className="px-4 py-2.5">
                       <button
@@ -321,7 +328,9 @@ export function CompanyListPage() {
                     <td className="px-4 py-2.5 text-muted-foreground">{company.tenantName}</td>
                   ) : null}
                   {visibleColumns.industry ? (
-                    <td className="px-4 py-2.5 text-muted-foreground">{company.industryName}</td>
+                    <td className="px-4 py-2.5 text-muted-foreground">
+                      {formatIndustryLabel(company.industryCode, company.industryName)}
+                    </td>
                   ) : null}
                   {visibleColumns.status ? (
                     <td className="px-4 py-2.5">
@@ -499,9 +508,9 @@ export function CompanyShowPage({ companyId }: { readonly companyId: number }) {
           </Button>
         </div>
       }
-      description={`${currentCompany.tenantName} / ${currentCompany.industryName}`}
+      description={`${currentCompany.tenantName} / ${formatIndustryLabel(currentCompany.industryCode, currentCompany.industryName)}`}
       technicalName="page.company.show"
-      title={currentCompany.name}
+      title={formatCompanyLabel(currentCompany.code, currentCompany.name)}
     >
       <MasterListShowLayout
         cards={[
@@ -725,7 +734,7 @@ export function CompanyUpsertPage({
       }
       description={
         isEdit
-          ? "Update company identity, tenant, industry, and active status."
+          ? "Update company code, identity, tenant, industry, and active status."
           : "Create a tenant and industry specific company record."
       }
       technicalName="page.company.upsert"
@@ -749,6 +758,22 @@ export function CompanyUpsertPage({
                   content: (
                     <div className="space-y-6 rounded-2xl border border-border/70 bg-card/80 p-4 shadow-sm md:p-6">
                       <div className="grid gap-x-6 gap-y-5 md:grid-cols-2">
+                        <form.Field name="code">
+                          {(field) => (
+                            <FieldShell
+                              label="Company code"
+                              error={validationErrors.code ?? field.state.meta.errors[0]}
+                            >
+                              <Input
+                                className="h-11 rounded-xl font-mono uppercase"
+                                value={field.state.value}
+                                onChange={(event) =>
+                                  field.handleChange(normalizeCodeInput(event.target.value))
+                                }
+                              />
+                            </FieldShell>
+                          )}
+                        </form.Field>
                         <form.Field name="name">
                           {(field) => (
                             <FieldShell
@@ -793,7 +818,7 @@ export function CompanyUpsertPage({
                                 placeholder="Select industry"
                                 options={industries.map((industry) => ({
                                   value: String(industry.id),
-                                  label: industry.name,
+                                  label: formatIndustryLabel(industry.code, industry.name),
                                 }))}
                                 onValueChange={(value) => field.handleChange(Number(value))}
                               />
@@ -1357,8 +1382,9 @@ function StatusBadge({ isActive }: { readonly isActive: boolean }) {
 function CompanyDetailsTable({ company }: { readonly company: CompanyRecord }) {
   const rows: Array<[string, ReactNode]> = [
     ["ID", company.id],
+    ["Code", company.code],
     ["Tenant", company.tenantName],
-    ["Industry", company.industryName],
+    ["Industry", formatIndustryLabel(company.industryCode, company.industryName)],
     ["Name", company.name],
     ["Legal name", company.legalName ?? "-"],
     ["Primary email", company.primaryEmail ?? "-"],
@@ -1852,6 +1878,7 @@ function normalizeLogoType(value: string) {
 const companyValidationFieldLabels: Record<string, string> = {
   tenantId: "Tenant",
   industryId: "Industry",
+  code: "Company code",
   name: "Company name",
   legalName: "Legal name",
   tagline: "Tagline",
@@ -1994,6 +2021,7 @@ function defaultCompanyFormValues(
   return {
     tenantId: company?.tenantId ?? tenantId,
     industryId: company?.industryId ?? industryId,
+    code: company?.code ?? "",
     name: company?.name ?? "",
     legalName: company?.legalName ?? null,
     tagline: company?.tagline ?? null,
@@ -2150,6 +2178,18 @@ function getCancelPath(companyId: number | undefined, isEdit: boolean, returnTo:
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Please try again.";
+}
+
+function formatIndustryLabel(code: string | null | undefined, name: string) {
+  return code ? `${code} - ${name}` : name;
+}
+
+function formatCompanyLabel(code: string | null | undefined, name: string) {
+  return code ? `${code} - ${name}` : name;
+}
+
+function normalizeCodeInput(value: string) {
+  return value.toUpperCase().replace(/[^A-Z0-9]+/g, "_").replace(/^_+/, "");
 }
 
 async function loadLocationLookups(signal: AbortSignal): Promise<LocationLookupMap> {

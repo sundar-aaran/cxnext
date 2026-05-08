@@ -1,6 +1,7 @@
 import type { IndustryRecord } from "../../domain/industry-record";
 
 export interface IndustryUpsertParams {
+  readonly code: string;
   readonly name: string;
   readonly isActive: boolean;
 }

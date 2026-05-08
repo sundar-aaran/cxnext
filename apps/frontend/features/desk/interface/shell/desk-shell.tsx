@@ -17,8 +17,6 @@ import {
   ReceiptText,
   Settings,
   ShoppingBag,
-  SlidersHorizontal,
-  ToggleLeft,
   Users,
   WalletCards,
 } from "lucide-react";
@@ -126,23 +124,16 @@ const settingsNavItems = [
     icon: <FileKey2 className="h-4 w-4" />,
   },
   {
-    id: "settings-customise",
-    label: "Customise",
-    href: "/desk/settings/customise",
-    icon: <SlidersHorizontal className="h-4 w-4" />,
-  },
-  {
-    id: "settings-features",
-    label: "Features",
-    href: "/desk/settings/features",
-    icon: <ToggleLeft className="h-4 w-4" />,
+    id: "settings-billing-layout",
+    label: "Sales Settings",
+    href: "/desk/settings/billing-layout",
+    icon: <ReceiptText className="h-4 w-4" />,
   },
 ] as const;
 
 const settingsMenuLabels: Record<string, string> = {
   core: "Core Settings",
-  customise: "Customise",
-  features: "Features",
+  "billing-layout": "Sales Settings",
   settings: "Settings",
 };
 

@@ -3,22 +3,18 @@
 import { useMemo, type ReactNode } from "react";
 import { calculateSalesTotals } from "../../application/sales-service";
 import {
+  resolveSalesBillingLayout,
+  type SalesBillingLayout,
+} from "../../application/sales-billing-layout-service";
+import {
   getSalesIndustryKind,
   type SalesIndustryKind,
   type SalesItemInput,
   type SalesRecord,
 } from "../../domain/sales";
+import type { CompanyRecord } from "../../../company/domain/company";
 import { MainPrintTemplate } from "./main-print-template";
 import { getSalesPrintLinePlan } from "./sales-print-line-plan";
-import { portalQrPath } from "./sales-print-qr";
-
-const company = {
-  name: "S K TEX",
-  address: ["Tirupur, Tamil Nadu", "India"],
-  contact: "Mobile: - | Email: -",
-  gstin: "GSTIN: -",
-  bank: ["ACCOUNT NO : -", "IFSC CODE : -", "BANK NAME : -", "BRANCH : -"],
-};
 
 const tableClass = "w-full border-collapse border border-gray-400";
 const baseCell = "border-r border-gray-400 align-top p-[3px]";
@@ -28,11 +24,15 @@ const totalItemCell = `${lineItemCell} border-y border-gray-400`;
 const times = "font-['Times_New_Roman']";
 
 export function SalesInvoiceDocument({
+  company,
   industryName,
   record,
+  salesLayout: providedSalesLayout,
 }: {
+  readonly company?: CompanyRecord | null;
   readonly industryName?: string | null;
   readonly record: SalesRecord;
+  readonly salesLayout?: SalesBillingLayout;
 }) {
   const totals = useMemo(
     () => calculateSalesTotals(record.items, Number(record.roundOff ?? 0)),
@@ -41,8 +41,13 @@ export function SalesInvoiceDocument({
   const gstPercent = record.items[0]?.taxRate ?? 0;
   const isCgstSgst = (record.placeOfSupply ?? "cgst-sgst") !== "igst";
   const industryKind = getSalesIndustryKind(industryName);
-  const itemColumns = getPrintItemColumns(industryKind);
-  const itemLinePlan = getSalesPrintLinePlan(record.items, industryKind);
+  const salesLayout = providedSalesLayout ?? resolveSalesBillingLayout(industryName);
+  const itemColumns = getPrintItemColumns(industryKind, salesLayout);
+  const itemLinePlan = getSalesPrintLinePlan(record.items, industryKind, salesLayout);
+  const companyName = printableText(company?.legalName) || printableText(company?.name);
+  const companyAddressLines = company ? companyAddress(company) : [];
+  const companyContactLine = company ? companyContact(company) : "";
+  const companyBank = company ? primaryBankAccount(company) : null;
 
   return (
     <MainPrintTemplate>
@@ -55,23 +60,21 @@ export function SalesInvoiceDocument({
         <tbody>
           <tr>
             <td className={`${baseCell} h-[160px] w-[145px] border-r-0 text-center align-middle`}>
-              <div className="inline-flex size-[100px] items-center justify-center rounded-full border-2 border-black text-[32px] font-bold">
-                SK
-              </div>
+              <CompanyLogo company={company ?? null} companyName={companyName} />
             </td>
             <td className={`${baseCell} text-center leading-[1.6]`}>
-              <div className={`${times} text-[34px] font-bold leading-tight`}>{company.name}</div>
-              {company.address.map((line) => (
+              <div className={`${times} text-[34px] font-bold leading-tight`}>{companyName}</div>
+              {companyAddressLines.map((line) => (
                 <div key={line} className={times}>
                   {line}
                 </div>
               ))}
-              <div className={times}>{company.contact}</div>
-              <div className={times}>{company.gstin}</div>
+              {companyContactLine ? <div className={times}>{companyContactLine}</div> : null}
+              {company?.gstinUin ? <div className={times}>GSTIN: {company.gstinUin}</div> : null}
             </td>
             <td className={`${baseCell} w-[160px] border-r-0 align-middle`}>
               <div className="mx-auto flex size-[150px] items-center justify-center p-[2px]">
-                <EInvoiceBarcode className="size-full" />
+                <EInvoiceQrData value={record.eInvoiceSignedQr} />
               </div>
             </td>
           </tr>
@@ -159,10 +162,9 @@ export function SalesInvoiceDocument({
           </tr>
           <tr>
             <td rowSpan={2} colSpan={5} className={`${baseCell} p-[3px] text-[8px] leading-tight`}>
-              We hereby certify that our registration under the GST Act 2017 is in force on the date
-              on which sale of goods specified in this invoice is made by us and the sale is
-              effected in the regular course of business. All disputes are subject to Tirupur
-              Jurisdiction Only.
+              {company?.gstinUin
+                ? "We hereby certify that our registration under the GST Act 2017 is in force on the date on which sale of goods specified in this invoice is made by us and the sale is effected in the regular course of business."
+                : ""}
             </td>
             <SummaryLabel>Taxable Value</SummaryLabel>
             <SummaryValue>{money(totals.taxableAmount)}</SummaryValue>
@@ -190,13 +192,7 @@ export function SalesInvoiceDocument({
               colSpan={5}
               className={`${baseCell} p-[3px] text-[9px] font-bold leading-tight`}
             >
-              {company.bank.slice(0, 4).map((line) => (
-                <div key={line} className="grid grid-cols-[94px_8px_1fr]">
-                  <span>{line.split(":")[0]}</span>
-                  <span>:</span>
-                  <span>{line.split(":")[1]?.trim() ?? ""}</span>
-                </div>
-              ))}
+              <BankDetailsBlock bank={companyBank} />
             </td>
             <SummaryLabel>&nbsp;</SummaryLabel>
             <SummaryValue>&nbsp;</SummaryValue>
@@ -222,7 +218,7 @@ export function SalesInvoiceDocument({
               Receiver Sign
             </td>
             <td colSpan={5} className={`${baseCell} h-[34px] border-r-0 p-[3px] text-left`}>
-              For <b className={times}>{company.name}</b>
+              For <b className={times}>{companyName}</b>
             </td>
           </tr>
           <tr>
@@ -291,7 +287,7 @@ function renderPrintCell(
     description: item.description ?? "",
     gst: money(gst),
     hsnCode: item.hsnCodeId ?? "",
-    particulars: item.productName,
+    particulars: printableText(item.productName),
     poNo: item.poNo ?? "",
     price: money(item.rate),
     quantity: item.quantity,
@@ -345,11 +341,14 @@ function PartyAddressBlock({
   readonly partyName: string;
 }) {
   const addressLines = normalizedPartyAddress(address);
+  const displayPartyName = printableText(partyName);
 
   return (
     <div className="leading-[1.15]">
       <div>{label}</div>
-      <div className="text-[11px] font-bold uppercase tracking-[0.08em]">M/s. {partyName}</div>
+      <div className="text-[11px] font-bold uppercase tracking-[0.08em]">
+        {displayPartyName ? `M/s. ${displayPartyName}` : ""}
+      </div>
       {addressLines.map((line) => (
         <div key={`${label}-${line}`} className={times}>
           {line}
@@ -358,12 +357,12 @@ function PartyAddressBlock({
       <div className="grid grid-cols-[74px_8px_1fr]">
         <span>GSTIN/UIN</span>
         <span>:</span>
-        <span>33ACLFA3246K1ZD</span>
+        <span />
       </div>
       <div className="grid grid-cols-[74px_8px_1fr]">
         <span>State Name</span>
         <span>:</span>
-        <span>Tamil Nadu, Code : 33</span>
+        <span />
       </div>
     </div>
   );
@@ -379,7 +378,7 @@ function BillDetailsBlock({ record }: { readonly record: SalesRecord }) {
         <BillValue strong>{formatDate(record.documentDate)}</BillValue>
       </BillDetailsLine>
       <BillDetailsLine label="Reference:">
-        <BillValue>{record.referenceNo ?? "-"}</BillValue>
+        <BillValue>{record.referenceNo ?? ""}</BillValue>
       </BillDetailsLine>
     </div>
   );
@@ -421,20 +420,18 @@ function BillValue({
 function EInvoiceQrSection({ record }: { readonly record: SalesRecord }) {
   return (
     <div className="w-full space-y-[1px] break-words text-[9.5px] font-semibold leading-[1.25] [overflow-wrap:anywhere]">
-      <EInvoiceDetailsLine label="IRN :">
-        d0732c714c535f442a986e095c14b891e54abf3c31fee3 41317e39dbca497646
-      </EInvoiceDetailsLine>
+      <EInvoiceDetailsLine label="IRN :">{record.eInvoiceIrn ?? ""}</EInvoiceDetailsLine>
       <EInvoiceDetailsPair
         leftLabel="Ack No. :"
-        leftValue="152624292778890"
+        leftValue={record.eInvoiceAckNo ?? ""}
         rightLabel="Ack Date :"
-        rightValue="6-Jan-26"
+        rightValue={record.eInvoiceAckDate ? formatDate(record.eInvoiceAckDate) : ""}
       />
       <EInvoiceDetailsPair
         leftLabel="E-Way Bill No. :"
-        leftValue={record.ewayBillNo ?? "-"}
+        leftValue={record.ewayBillNo ?? ""}
         rightLabel="Date :"
-        rightValue={record.ewayBillDate ? formatDate(record.ewayBillDate) : "-"}
+        rightValue={record.ewayBillDate ? formatDate(record.ewayBillDate) : ""}
       />
     </div>
   );
@@ -488,17 +485,65 @@ function EInvoiceInlineDetail({
   );
 }
 
-function EInvoiceBarcode({ className }: { readonly className: string }) {
+function CompanyLogo({
+  company,
+  companyName,
+}: {
+  readonly company: CompanyRecord | null;
+  readonly companyName: string;
+}) {
+  const logoUrl = company?.logos.find((logo) => logo.isActive)?.logoUrl.trim();
+  if (logoUrl) {
+    return <img src={logoUrl} alt={companyName} className="mx-auto max-h-[105px] max-w-[120px] object-contain" />;
+  }
+
+  const initials = companyName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("");
+
+  return initials ? (
+    <div className="inline-flex size-[100px] items-center justify-center rounded-full border-2 border-black text-[32px] font-bold">
+      {initials}
+    </div>
+  ) : null;
+}
+
+function EInvoiceQrData({ value }: { readonly value: string | null }) {
+  const qrData = printableText(value);
+  if (!qrData) return null;
+
   return (
-    <svg
-      aria-hidden="true"
-      className={`border border-gray-700 bg-white ${className}`}
-      shapeRendering="crispEdges"
-      viewBox="0 0 49 49"
-    >
-      <rect width="49" height="49" fill="white" />
-      <path d={portalQrPath} fill="black" />
-    </svg>
+    <div className="size-full overflow-hidden border border-gray-700 bg-white p-1 text-[6px] leading-[1.05] [overflow-wrap:anywhere]">
+      {qrData}
+    </div>
+  );
+}
+
+function BankDetailsBlock({
+  bank,
+}: {
+  readonly bank: CompanyRecord["bankAccounts"][number] | null;
+}) {
+  const rows = [
+    ["ACCOUNT NO", bank?.accountNumber],
+    ["IFSC CODE", bank?.ifsc],
+    ["BANK NAME", bank?.bankName],
+    ["BRANCH", bank?.branch],
+  ] as const;
+
+  return (
+    <>
+      {rows.map(([label, value]) => (
+        <div key={label} className="grid grid-cols-[94px_8px_1fr]">
+          <span>{label}</span>
+          <span>:</span>
+          <span>{printableText(value)}</span>
+        </div>
+      ))}
+    </>
   );
 }
 
@@ -526,15 +571,20 @@ type SalesPrintColumn = {
   readonly widthClass: string;
 };
 
-function getPrintItemColumns(industryKind: SalesIndustryKind): readonly SalesPrintColumn[] {
+function getPrintItemColumns(
+  industryKind: SalesIndustryKind,
+  salesLayout: SalesBillingLayout,
+): readonly SalesPrintColumn[] {
   if (industryKind === "garment") {
     return [
       column("serialNo", "S.No", "w-[4%]"),
       column("hsnCode", "HSN Code", "w-[7%]"),
+      ...(salesLayout.usePo ? [column("poNo", "PO.No", "w-[6%]")] : []),
+      ...(salesLayout.useDc ? [column("dcNo", "DC.No", "w-[6%]")] : []),
       column("particulars", "Particulars", "w-auto", "left"),
       column("description", "Description", "w-[13%]", "left"),
-      column("size", "Size", "w-[5%]"),
-      column("colour", "Colour", "w-[6%]"),
+      ...(salesLayout.useSize ? [column("size", "Size", "w-[5%]")] : []),
+      ...(salesLayout.useColour ? [column("colour", "Colour", "w-[6%]")] : []),
       ...amountColumns,
     ];
   }
@@ -542,9 +592,12 @@ function getPrintItemColumns(industryKind: SalesIndustryKind): readonly SalesPri
   if (industryKind === "upvc") {
     return [
       column("serialNo", "S.No", "w-[4%]"),
+      ...(salesLayout.usePo ? [column("poNo", "PO.No", "w-[6%]")] : []),
+      ...(salesLayout.useDc ? [column("dcNo", "DC.No", "w-[6%]")] : []),
       column("particulars", "Particulars", "w-auto", "left"),
       column("description", "Description", "w-[16%]", "left"),
-      column("size", "Size", "w-[6%]"),
+      ...(salesLayout.useSize ? [column("size", "Size", "w-[6%]")] : []),
+      ...(salesLayout.useColour ? [column("colour", "Colour", "w-[6%]")] : []),
       column("areaSq", "Area Sq", "w-[7%]", "right"),
       ...amountColumns,
     ];
@@ -552,10 +605,12 @@ function getPrintItemColumns(industryKind: SalesIndustryKind): readonly SalesPri
 
   return [
     column("serialNo", "S.No", "w-[4.33%]"),
-    column("poNo", "PO.No", "w-[6.33%]"),
-    column("dcNo", "DC.No", "w-[7.33%]"),
+    ...(salesLayout.usePo ? [column("poNo", "PO.No", "w-[6.33%]")] : []),
+    ...(salesLayout.useDc ? [column("dcNo", "DC.No", "w-[7.33%]")] : []),
     column("particulars", "Particulars", "w-auto", "left"),
     column("hsnCode", "HSN Code", "w-[7.5%]"),
+    ...(salesLayout.useSize ? [column("size", "Size", "w-[5%]")] : []),
+    ...(salesLayout.useColour ? [column("colour", "Colour", "w-[6%]")] : []),
     ...amountColumns,
   ];
 }
@@ -578,23 +633,54 @@ function column(
   return { align, id, label, widthClass };
 }
 
-function normalizedPartyAddress(value: string | null) {
-  const lines = value?.split(/\r?\n|,\s*/).filter(Boolean) ?? [];
-  return lines.length >= 3 ? lines : dummyPartyAddress;
+function companyAddress(company: CompanyRecord) {
+  const address =
+    company.addresses.find((item) => item.isDefault && item.isActive) ??
+    company.addresses.find((item) => item.isActive) ??
+    company.addresses[0];
+
+  return [address?.addressLine1, address?.addressLine2].map(printableText).filter(Boolean);
 }
 
-const dummyPartyAddress = [
-  "SF No. 593, 3rd Street",
-  "Anna Nagar Extension, KPN Colony , Near old bus stand",
-  "Tirupur - 641602",
-] as const;
+function companyContact(company: CompanyRecord) {
+  const phone =
+    printableText(company.primaryPhone) ||
+    printableText(company.phones.find((item) => item.isPrimary && item.isActive)?.phoneNumber) ||
+    printableText(company.phones.find((item) => item.isActive)?.phoneNumber);
+  const email =
+    printableText(company.primaryEmail) ||
+    printableText(company.emails.find((item) => item.isActive)?.email);
+  return [
+    phone ? `Mobile: ${phone}` : "",
+    email ? `Email: ${email}` : "",
+  ]
+    .filter(Boolean)
+    .join(" | ");
+}
+
+function primaryBankAccount(company: CompanyRecord) {
+  return (
+    company.bankAccounts.find((item) => item.isPrimary && item.isActive) ??
+    company.bankAccounts.find((item) => item.isActive) ??
+    null
+  );
+}
+
+function normalizedPartyAddress(value: string | null) {
+  return value
+    ?.split(/\r?\n|,\s*/)
+    .map((line) => line.trim())
+    .filter(Boolean) ?? [];
+}
 
 function sumQty(items: readonly SalesItemInput[]) {
   return items.reduce((sum, item) => sum + item.quantity, 0);
 }
 
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en-GB").format(new Date(value)).replaceAll("/", "-");
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("en-GB").format(date).replaceAll("/", "-");
 }
 
 function money(value: number) {
@@ -605,4 +691,8 @@ function amountInWords(value: number) {
   const rounded = Math.round(value);
   if (rounded === 0) return "Zero";
   return `${rounded.toLocaleString("en-IN")} Rupees`;
+}
+
+function printableText(value: string | null | undefined) {
+  return value?.trim() ?? "";
 }

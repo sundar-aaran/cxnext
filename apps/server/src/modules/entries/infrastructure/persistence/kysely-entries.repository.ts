@@ -236,6 +236,10 @@ export class KyselyEntriesRepository implements EntriesRepository, OnModuleDestr
       dueDate: dateOrNull(row.due_date),
       ewayBillNo: stringOrNull(row.eway_bill_no),
       ewayBillDate: dateOrNull(row.eway_bill_date),
+      eInvoiceIrn: stringOrNull(row.e_invoice_irn),
+      eInvoiceAckNo: stringOrNull(row.e_invoice_ack_no),
+      eInvoiceAckDate: dateOrNull(row.e_invoice_ack_date),
+      eInvoiceSignedQr: stringOrNull(row.e_invoice_signed_qr),
       supplierInvoiceNo: stringOrNull(row.supplier_invoice_no),
       supplierInvoiceDate: dateOrNull(row.supplier_invoice_date),
       subtotal: numberValue(row.subtotal),
@@ -364,6 +368,10 @@ function toBillingRow(
         price_list_id: input.priceListId,
         eway_bill_no: input.ewayBillNo,
         eway_bill_date: input.ewayBillDate,
+        e_invoice_irn: input.eInvoiceIrn,
+        e_invoice_ack_no: input.eInvoiceAckNo,
+        e_invoice_ack_date: input.eInvoiceAckDate,
+        e_invoice_signed_qr: input.eInvoiceSignedQr,
       }
     : {
         ...common,

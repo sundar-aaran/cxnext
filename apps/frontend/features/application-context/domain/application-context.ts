@@ -6,11 +6,13 @@ export interface ApplicationContextTenant {
 
 export interface ApplicationContextIndustry {
   readonly id: string;
+  readonly code: string;
   readonly name: string;
 }
 
 export interface ApplicationContextCompany {
   readonly id: string;
+  readonly code: string;
   readonly name: string;
   readonly legalName: string | null;
   readonly gstinUin: string | null;

@@ -21,6 +21,7 @@ import { toCompanyResponse } from "./company-response";
 interface CompanyUpsertRequest {
   readonly tenantId?: unknown;
   readonly industryId?: unknown;
+  readonly code?: unknown;
   readonly name?: unknown;
   readonly legalName?: unknown;
   readonly tagline?: unknown;
@@ -120,6 +121,7 @@ function parseCompanyRequest(body: CompanyUpsertRequest) {
   return {
     tenantId: Number(body.tenantId),
     industryId: Number(body.industryId),
+    code: typeof body.code === "string" ? body.code : "",
     name: typeof body.name === "string" ? body.name : "",
     legalName: typeof body.legalName === "string" ? body.legalName : null,
     tagline: typeof body.tagline === "string" ? body.tagline : null,

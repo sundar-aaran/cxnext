@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { CheckCircle2, FileKey2, Save, SlidersHorizontal, ToggleLeft } from "lucide-react";
+import { CheckCircle2, FileKey2, ReceiptText, Save } from "lucide-react";
 import {
   AnimatedTabs,
   Badge,
@@ -20,13 +20,17 @@ import {
   useGlobalLoader,
 } from "@cxnext/ui";
 import {
+  hasPublishedSoftwareSettings,
   loadSoftwareSettings,
   saveSoftwareSettings,
   updateCustomiseSetting,
   updateFeatureSetting,
+  updateSalesBillingLayoutSetting,
+  updateSalesDocumentSetting,
 } from "../../application/software-settings-service";
 import {
   defaultSoftwareSettingsState,
+  type SalesDocumentSettings,
   type SoftwareSettingsState,
   type SoftwareToggleSetting,
 } from "../../domain/software-settings";
@@ -38,7 +42,9 @@ import {
   type CoreEnvPolicyItem,
   type CoreEnvSettingsResponse,
   type CoreEnvSetting,
+  type CoreEnvSettingOption,
 } from "../../infrastructure/core-settings-api";
+import { listIndustries } from "../../../industry/application/industry-service";
 
 export function SettingsIndexPage() {
   return (
@@ -47,7 +53,7 @@ export function SettingsIndexPage() {
       technicalName="page.settings.index"
       title="Settings"
     >
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2">
         <SettingsLinkCard
           description="Edit grouped runtime .env values for application, frontend, backend, database, and security."
           href="/desk/settings/core"
@@ -55,16 +61,10 @@ export function SettingsIndexPage() {
           title="Core Settings"
         />
         <SettingsLinkCard
-          description="Application shape, print layout, master data, and workflow options by industry/client."
-          href="/desk/settings/customise"
-          icon={<SlidersHorizontal className="size-5" />}
-          title="Customise"
-        />
-        <SettingsLinkCard
-          description="Feature switches for modules that can later be persisted per industry or client."
-          href="/desk/settings/features"
-          icon={<ToggleLeft className="size-5" />}
-          title="Features"
+          description="Configure sales billing item fields by selected industry."
+          href="/desk/settings/billing-layout"
+          icon={<ReceiptText className="size-5" />}
+          title="Sales Settings"
         />
       </div>
     </CommonListPageFrame>
@@ -73,6 +73,7 @@ export function SettingsIndexPage() {
 
 export function CoreSettingsPage() {
   const { show } = useGlobalLoader();
+  const [industryOptions, setIndustryOptions] = useState<readonly CoreEnvSettingOption[]>([]);
   const [settings, setSettings] = useState<CoreEnvSettingsResponse | null>(null);
   const [values, setValues] = useState<Record<string, string>>({});
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -80,10 +81,21 @@ export function CoreSettingsPage() {
   useEffect(() => {
     const controller = new AbortController();
     const hide = show();
-    getCoreEnvSettings({ signal: controller.signal })
-      .then((nextSettings) => {
+    Promise.all([
+      getCoreEnvSettings({ signal: controller.signal }),
+      listIndustries({ signal: controller.signal }).catch(() => []),
+    ])
+      .then(([nextSettings, industries]) => {
+        const nextIndustryOptions = industries
+          .filter((industry) => industry.isActive)
+          .map((industry) => ({
+            value: industry.code,
+            label: `${industry.code} - ${industry.name}`,
+            description: `Use ${industry.code} (${industry.name}) as the active billing industry.`,
+          }));
         setSettings(nextSettings);
-        setValues(flattenEnvValues(nextSettings.groups));
+        setIndustryOptions(nextIndustryOptions);
+        setValues(normalizeCoreValues(flattenEnvValues(nextSettings.groups), nextIndustryOptions));
         setLoadError(null);
       })
       .catch((error: unknown) => {
@@ -105,7 +117,7 @@ export function CoreSettingsPage() {
     try {
       const nextSettings = await updateCoreEnvSettings(values);
       setSettings(nextSettings);
-      setValues(flattenEnvValues(nextSettings.groups));
+      setValues(normalizeCoreValues(flattenEnvValues(nextSettings.groups), industryOptions));
       toast.success(".env updated");
     } catch (error) {
       toast.error("Could not update .env", {
@@ -123,6 +135,7 @@ export function CoreSettingsPage() {
       content: (
         <CoreSettingsGroupForm
           group={group}
+          industryOptions={industryOptions}
           values={values}
           onChange={(key, value) => setValues((current) => ({ ...current, [key]: value }))}
         />
@@ -206,12 +219,250 @@ export function CustomiseSettingsPage() {
   );
 }
 
+export function SalesBillingLayoutSettingsPage() {
+  const [publishedState, setPublishedState] =
+    useState<SoftwareSettingsState>(defaultSoftwareSettingsState);
+  const [draftState, setDraftState] = useState<SoftwareSettingsState>(defaultSoftwareSettingsState);
+  const hasUnpublishedChanges = !areSoftwareSettingsEqual(publishedState, draftState);
+
+  useEffect(() => {
+    const loadedSettings = loadSoftwareSettings();
+    setPublishedState(loadedSettings);
+    setDraftState(loadedSettings);
+
+    if (hasPublishedSoftwareSettings()) {
+      return;
+    }
+
+    const controller = new AbortController();
+    void getCoreEnvSettings({ signal: controller.signal })
+      .then((settings) => {
+        const appType = flattenEnvValues(settings.groups).APP_TYPE;
+        setDraftState((current) => ({
+          ...current,
+          salesBillingLayout: salesBillingLayoutDefaultsForIndustry(appType),
+        }));
+      })
+      .catch(() => undefined);
+
+    return () => controller.abort();
+  }, []);
+
+  function publishLive() {
+    saveSoftwareSettings(draftState);
+    setPublishedState(draftState);
+      toast.success("Sales billing layout published", {
+      description: "Sales entry and print screens now use the published sales settings.",
+    });
+  }
+
+  return (
+    <CommonListPageFrame
+      action={
+        <Button
+          className="rounded-xl"
+          disabled={!hasUnpublishedChanges}
+          onClick={publishLive}
+        >
+          <Save className="size-4" />
+          Publish live
+        </Button>
+      }
+      description="Configure sales layout, document numbering, customisation, and feature switches."
+      technicalName="page.settings.billing-layout"
+      title="Sales Settings"
+    >
+      <AnimatedTabs
+        tabs={[
+          {
+            value: "layout",
+            label: "Layout",
+            content: (
+              <Card className="rounded-md border-border/70">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Sales Layout</CardTitle>
+                  <CardDescription>
+                    Toggle fields as a draft, then publish live to update sales entry and print screens.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-3">
+                  {draftState.salesBillingLayout.map((setting) => (
+                    <SettingSwitchRow
+                      key={setting.id}
+                      setting={setting}
+                      onToggle={(enabled) =>
+                        setDraftState((current) =>
+                          updateSalesBillingLayoutSetting(current, setting.id, enabled),
+                        )
+                      }
+                    />
+                  ))}
+                </CardContent>
+              </Card>
+            ),
+          },
+          {
+            value: "document",
+            label: "Docu settings",
+            content: (
+              <Card className="rounded-md border-border/70">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Document Settings</CardTitle>
+                  <CardDescription>
+                    Set the sales invoice prefix and starting serial used for new invoices.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-4 md:grid-cols-2">
+                  <SalesDocumentSettingField
+                    label="Invoice prefix"
+                    value={draftState.salesDocumentSettings.invoicePrefix}
+                    onChange={(value) =>
+                      setDraftState((current) =>
+                        updateSalesDocumentSetting(current, "invoicePrefix", value),
+                      )
+                    }
+                  />
+                  <SalesDocumentSettingField
+                    label="Invoice serial start"
+                    value={draftState.salesDocumentSettings.invoiceSerialStart}
+                    onChange={(value) =>
+                      setDraftState((current) =>
+                        updateSalesDocumentSetting(current, "invoiceSerialStart", value),
+                      )
+                    }
+                  />
+                </CardContent>
+              </Card>
+            ),
+          },
+          {
+            value: "customise",
+            label: "Customise",
+            content: (
+              <div className="grid gap-4">
+                {draftState.customiseGroups.map((group) => (
+                  <Card key={group.id} className="rounded-md border-border/70">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">{group.title}</CardTitle>
+                      <CardDescription>{group.description}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid gap-3">
+                      {group.settings.map((setting) => (
+                        <SettingSwitchRow
+                          key={setting.id}
+                          setting={setting}
+                          onToggle={(enabled) =>
+                            setDraftState((current) =>
+                              updateCustomiseSetting(current, setting.id, enabled),
+                            )
+                          }
+                        />
+                      ))}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ),
+          },
+          {
+            value: "features",
+            label: "Features",
+            content: (
+              <div className="grid gap-3">
+                {draftState.features.map((feature) => (
+                  <SettingSwitchRow
+                    key={feature.id}
+                    setting={feature}
+                    onToggle={(enabled) =>
+                      setDraftState((current) => updateFeatureSetting(current, feature.id, enabled))
+                    }
+                  />
+                ))}
+              </div>
+            ),
+          },
+        ]}
+      />
+    </CommonListPageFrame>
+  );
+}
+
+function areSettingsEqual(
+  left: readonly SoftwareToggleSetting[],
+  right: readonly SoftwareToggleSetting[],
+) {
+  if (left.length !== right.length) return false;
+  return left.every((setting, index) => {
+    const other = right[index];
+    return other?.id === setting.id && other.enabled === setting.enabled;
+  });
+}
+
+function areSoftwareSettingsEqual(left: SoftwareSettingsState, right: SoftwareSettingsState) {
+  return (
+    areSettingsEqual(left.salesBillingLayout, right.salesBillingLayout) &&
+    areDocumentSettingsEqual(left.salesDocumentSettings, right.salesDocumentSettings) &&
+    areSettingsEqual(left.features, right.features) &&
+    left.customiseGroups.length === right.customiseGroups.length &&
+    left.customiseGroups.every((group, index) =>
+      group.id === right.customiseGroups[index]?.id &&
+      areSettingsEqual(group.settings, right.customiseGroups[index]?.settings ?? []),
+    )
+  );
+}
+
+function areDocumentSettingsEqual(left: SalesDocumentSettings, right: SalesDocumentSettings) {
+  return (
+    left.invoicePrefix === right.invoicePrefix &&
+    left.invoiceSerialStart === right.invoiceSerialStart
+  );
+}
+
+function salesBillingLayoutDefaultsForIndustry(appType: string | undefined) {
+  const industryKind = normalizeIndustryKind(appType);
+  const garment = industryKind === "garment";
+  const offset = industryKind === "offset" || !garment;
+
+  return defaultSoftwareSettingsState.salesBillingLayout.map((setting) => {
+    if (setting.id === "sales-use-po") return { ...setting, enabled: offset };
+    if (setting.id === "sales-use-dc") return { ...setting, enabled: offset };
+    if (setting.id === "sales-use-colour") return { ...setting, enabled: garment };
+    if (setting.id === "sales-use-size") return { ...setting, enabled: garment };
+    if (setting.id === "sales-use-einvoice") return { ...setting, enabled: garment };
+    if (setting.id === "sales-use-eway") return { ...setting, enabled: true };
+    return setting;
+  });
+}
+
+function SalesDocumentSettingField({
+  label,
+  onChange,
+  value,
+}: {
+  readonly label: string;
+  readonly onChange: (value: string) => void;
+  readonly value: string;
+}) {
+  return (
+    <label className="grid gap-2 rounded-md border border-border/70 bg-background px-3 py-3">
+      <span className="text-sm font-medium text-foreground">{label}</span>
+      <input
+        className="h-10 rounded-md border border-input bg-background px-3 text-sm outline-none transition-colors focus:border-foreground/40"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      />
+    </label>
+  );
+}
+
 function CoreSettingsGroupForm({
   group,
+  industryOptions,
   values,
   onChange,
 }: {
   readonly group: CoreEnvGroup;
+  readonly industryOptions: readonly CoreEnvSettingOption[];
   readonly values: Record<string, string>;
   readonly onChange: (key: string, value: string) => void;
 }) {
@@ -225,6 +476,7 @@ function CoreSettingsGroupForm({
         {group.settings.map((setting) => (
           <CoreEnvField
             key={setting.key}
+            industryOptions={industryOptions}
             setting={setting}
             value={values[setting.key] ?? ""}
             onChange={(value) => onChange(setting.key, value)}
@@ -236,15 +488,20 @@ function CoreSettingsGroupForm({
 }
 
 function CoreEnvField({
+  industryOptions,
   setting,
   value,
   onChange,
 }: {
+  readonly industryOptions: readonly CoreEnvSettingOption[];
   readonly setting: CoreEnvSetting;
   readonly value: string;
   readonly onChange: (value: string) => void;
 }) {
   const isBoolean = value === "true" || value === "false";
+  const options = setting.key === "APP_TYPE" && industryOptions.length > 0
+    ? industryOptions
+    : setting.options;
 
   return (
     <label className="grid gap-2 rounded-md border border-border/70 bg-background px-3 py-3">
@@ -254,13 +511,13 @@ function CoreEnvField({
           {setting.key}
         </Badge>
       </span>
-      {setting.options?.length ? (
+      {options?.length ? (
         <select
           className="h-10 rounded-md border border-input bg-background px-3 text-sm capitalize outline-none transition-colors focus:border-foreground/40"
           value={value}
           onChange={(event) => onChange(event.target.value)}
         >
-          {setting.options.map((option) => (
+          {options.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>
@@ -283,13 +540,13 @@ function CoreEnvField({
           onChange={(event) => onChange(event.target.value)}
         />
       )}
-      {setting.options?.length ? (
+      {options?.length ? (
         <span className="text-xs leading-5 text-muted-foreground">
-          {setting.options.find((option) => option.value === value)?.description ??
+          {options.find((option) => option.value === value)?.description ??
             setting.description}
         </span>
       ) : null}
-      {!setting.options?.length ? (
+      {!options?.length ? (
         <span className="text-xs leading-5 text-muted-foreground">{setting.description}</span>
       ) : null}
     </label>
@@ -510,6 +767,52 @@ function flattenEnvValues(groups: readonly CoreEnvGroup[]) {
   return Object.fromEntries(
     groups.flatMap((group) => group.settings.map((setting) => [setting.key, setting.value])),
   );
+}
+
+function normalizeCoreValues(
+  values: Record<string, string>,
+  industryOptions: readonly CoreEnvSettingOption[],
+) {
+  return {
+    ...values,
+    APP_TYPE: normalizeAppTypeToIndustry(values.APP_TYPE, industryOptions),
+  };
+}
+
+function normalizeAppTypeToIndustry(
+  value: string | undefined,
+  industryOptions: readonly CoreEnvSettingOption[],
+) {
+  if (!value) return industryOptions[0]?.value ?? "";
+  const exact = industryOptions.find((option) => option.value.toLowerCase() === value.toLowerCase());
+  if (exact) return exact.value;
+
+  const normalizedValue = normalizeIndustryText(value);
+  const labelMatched = industryOptions.find((option) =>
+    normalizeIndustryText(option.label).includes(normalizedValue),
+  );
+  if (labelMatched) return labelMatched.value;
+
+  const industryKind = normalizeIndustryKind(value);
+  const matched = industryOptions.find((option) => normalizeIndustryKind(option.value) === industryKind);
+  return matched?.value ?? value;
+}
+
+function normalizeIndustryText(value: string | undefined) {
+  return value?.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim() ?? "";
+}
+
+function normalizeIndustryKind(value: string | undefined) {
+  const normalized = normalizeIndustryText(value);
+  if (normalized === "100" || normalized === "200") return "garment";
+  if (normalized === "300") return "offset";
+  if (normalized === "400") return "upvc";
+  if (normalized === "500" || normalized === "600") return "shop";
+  if (normalized.includes("garment") || normalized.includes("textile")) return "garment";
+  if (normalized.includes("offset") || normalized.includes("printing")) return "offset";
+  if (normalized.includes("upvc") || normalized.includes("u pvc")) return "upvc";
+  if (normalized.includes("shop") || normalized.includes("commerce")) return "shop";
+  return "other";
 }
 
 function isAbortError(error: unknown) {

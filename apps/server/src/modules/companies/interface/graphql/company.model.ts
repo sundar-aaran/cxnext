@@ -15,7 +15,13 @@ export class CompanyModel {
   public industryId!: string;
 
   @Field()
+  public industryCode!: string;
+
+  @Field()
   public industryName!: string;
+
+  @Field()
+  public code!: string;
 
   @Field()
   public name!: string;

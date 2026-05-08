@@ -1,6 +1,9 @@
 import { Injectable, type OnModuleDestroy } from "@nestjs/common";
 import { createDatabaseConnection, loadDatabaseEnv, type DatabaseConnection } from "@cxnext/db";
-import type { CompanyReferenceNameLookup } from "../../application/services/company-reference-lookup";
+import type {
+  CompanyReferenceNameLookup,
+  CompanyReferenceNameRecord,
+} from "../../application/services/company-reference-lookup";
 
 @Injectable()
 export class KyselyIndustryNameLookup implements CompanyReferenceNameLookup, OnModuleDestroy {
@@ -14,7 +17,9 @@ export class KyselyIndustryNameLookup implements CompanyReferenceNameLookup, OnM
     await this.connection.destroy();
   }
 
-  public async findNamesByIds(ids: readonly number[]): Promise<ReadonlyMap<number, string>> {
+  public async findNamesByIds(
+    ids: readonly number[],
+  ): Promise<ReadonlyMap<number, CompanyReferenceNameRecord>> {
     const uniqueIds = [...new Set(ids)].filter((id) => Number.isInteger(id));
 
     if (uniqueIds.length === 0) {
@@ -23,10 +28,10 @@ export class KyselyIndustryNameLookup implements CompanyReferenceNameLookup, OnM
 
     const rows = await this.connection.db
       .selectFrom("industries")
-      .select(["id", "name"])
+      .select(["id", "code", "name"])
       .where("id", "in", uniqueIds)
       .execute();
 
-    return new Map(rows.map((row) => [Number(row.id), row.name]));
+    return new Map(rows.map((row) => [Number(row.id), { code: row.code, name: row.name }]));
   }
 }

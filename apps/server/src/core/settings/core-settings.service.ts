@@ -334,6 +334,8 @@ function quoteEnvValue(value: string) {
 }
 
 function toLabel(key: string) {
+  if (key === "APP_TYPE") return "Industry";
+
   return key
     .split("_")
     .map((part) => part.charAt(0) + part.slice(1).toLowerCase())
@@ -366,7 +368,7 @@ function isExcludedEnvKey(key: string) {
 
 function describeKey(key: string) {
   const descriptions: Record<string, string> = {
-    APP_TYPE: `Application type used to shape runtime surfaces. Default is ${SoftwareType.Shop}.`,
+    APP_TYPE: `Industry code used to shape billing and runtime surfaces. Default is ${SoftwareType.GarmentsEcommerce}.`,
     APP_CLIENT: `Client option code. ${SoftwareClient.FullOption} is Developer Edition.`,
     DB_PASSWORD: "Database password for the selected DB user.",
     JWT_SECRET: "Signing secret for authentication tokens.",

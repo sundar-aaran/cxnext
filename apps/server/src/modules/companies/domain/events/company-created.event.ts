@@ -2,6 +2,7 @@ import { DomainEvent } from "@cxnext/core";
 
 export type CompanyChangedPayload = Record<string, unknown> & {
   readonly id: string;
+  readonly code: string;
   readonly name: string;
   readonly tenantId: string;
   readonly industryId: string;

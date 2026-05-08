@@ -7,6 +7,7 @@ import { createProductsMigration } from "./006-create-products";
 import { createEntriesMigration } from "./007-create-entries";
 import { extendSalesIndustryFieldsMigration } from "./008-extend-sales-industry-fields";
 import { createAuthRbacMigration } from "./009-create-auth-rbac";
+import { addSalesEInvoiceFieldsMigration } from "./010-add-sales-einvoice-fields";
 import {
   contactsCommonMigrations,
   locationCommonMigrations,
@@ -29,6 +30,7 @@ export const databaseMigrations = [
   createProductsMigration,
   createEntriesMigration,
   extendSalesIndustryFieldsMigration,
+  addSalesEInvoiceFieldsMigration,
   createAuthRbacMigration,
 ] as const;
 
@@ -40,6 +42,7 @@ export { createContactsMigration };
 export { createProductsMigration };
 export { createEntriesMigration };
 export { extendSalesIndustryFieldsMigration };
+export { addSalesEInvoiceFieldsMigration };
 export { createAuthRbacMigration };
 export {
   contactsCommonMigrations,

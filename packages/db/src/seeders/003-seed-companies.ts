@@ -8,9 +8,10 @@ const timestamp = "2026-04-28 09:00:00";
 
 const companySeeds = [
   {
+    code: "CODEXSUN",
     name: "Codexsun Commerce",
     tenantName: "Codexsun Commerce",
-    industryName: "Computer - Ecommerce",
+    industryCode: "600",
     legal_name: "Codexsun Commerce Private Limited",
     tagline: "Suite-first commerce and operations software.",
     short_about: "Connected business software for billing, commerce, and operations.",
@@ -73,9 +74,10 @@ const companySeeds = [
     },
   },
   {
+    code: "LOOMLINE",
     name: "Loomline Retail",
     tenantName: "Codexsun Commerce",
-    industryName: "Garments - Ecommerce",
+    industryCode: "200",
     legal_name: "Loomline Retail LLP",
     tagline: "Pilot storefront and retail operations tenant.",
     short_about: "Pilot retail company used for storefront validation.",
@@ -163,14 +165,14 @@ export const seedCompaniesSeeder = defineDatabaseSeeder({
       const industry = await queryDatabase
         .selectFrom("industries")
         .select("id")
-        .where("name", "=", company.industryName)
+        .where("code", "=", company.industryCode)
         .executeTakeFirst()
-        .then((record) => requireSeedRecord(record, `industry ${company.industryName}`));
+        .then((record) => requireSeedRecord(record, `industry ${company.industryCode}`));
 
       const existingCompany = await queryDatabase
         .selectFrom("companies")
         .select("id")
-        .where("name", "=", company.name)
+        .where("code", "=", company.code)
         .executeTakeFirst();
 
       const companyId = existingCompany
@@ -319,6 +321,7 @@ async function insertSeedCompany(
     .values({
       tenant_id: tenantId,
       industry_id: industryId,
+      code: company.code,
       name: company.name,
       legal_name: company.legal_name,
       tagline: company.tagline,

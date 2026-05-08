@@ -30,6 +30,17 @@ export interface SalesLookupOption {
   readonly id: string;
   readonly label: string;
   readonly secondaryLabel: string | null;
+  readonly billingAddress?: string | null;
+  readonly shippingAddress?: string | null;
+  readonly hsnCodeId?: string | null;
+  readonly mrp?: number;
+  readonly productSku?: string | null;
+  readonly rate?: number;
+  readonly size?: string | null;
+  readonly colour?: string | null;
+  readonly taxId?: string | null;
+  readonly taxRate?: number;
+  readonly unitId?: string | null;
 }
 
 export interface SalesRecord {
@@ -45,6 +56,10 @@ export interface SalesRecord {
   readonly dueDate: string | null;
   readonly ewayBillNo: string | null;
   readonly ewayBillDate: string | null;
+  readonly eInvoiceIrn: string | null;
+  readonly eInvoiceAckNo: string | null;
+  readonly eInvoiceAckDate: string | null;
+  readonly eInvoiceSignedQr: string | null;
   readonly roundOff: number;
   readonly grandTotal: number;
   readonly balanceAmount: number;
@@ -69,6 +84,10 @@ export interface SalesInput {
   readonly dueDate: string | null;
   readonly ewayBillNo: string | null;
   readonly ewayBillDate: string | null;
+  readonly eInvoiceIrn: string | null;
+  readonly eInvoiceAckNo: string | null;
+  readonly eInvoiceAckDate: string | null;
+  readonly eInvoiceSignedQr: string | null;
   readonly roundOff: number;
   readonly status: string;
   readonly paymentStatus: string;
@@ -92,8 +111,11 @@ export type SalesStatusFilter = "all" | "draft" | "posted" | "cancelled";
 export type SalesColumnOption = MasterListColumnOption;
 export type SalesIndustryKind = "offset" | "garment" | "upvc";
 
-export function getSalesIndustryKind(industryName: string | null | undefined): SalesIndustryKind {
-  const normalized = industryName?.toLowerCase() ?? "";
+export function getSalesIndustryKind(industryValue: string | null | undefined): SalesIndustryKind {
+  const normalized = industryValue?.toLowerCase().replace(/[^a-z0-9]+/g, " ") ?? "";
+  if (normalized === "400") return "upvc";
+  if (normalized === "100" || normalized === "200") return "garment";
+  if (normalized === "300") return "offset";
   if (normalized.includes("upvc") || normalized.includes("u pvc")) return "upvc";
   if (normalized.includes("garment") || normalized.includes("textile")) return "garment";
   return "offset";
@@ -131,6 +153,12 @@ export const salesStatusFilters: readonly MasterListFilterOption[] = [
   { id: "cancelled", label: "cancelled" },
 ];
 
+export const salesStatusOptions = [
+  { value: "draft", label: "Draft" },
+  { value: "posted", label: "Posted" },
+  { value: "cancelled", label: "Cancelled" },
+] as const;
+
 export function defaultSalesInput(): SalesInput {
   return {
     documentNo: "",
@@ -144,6 +172,10 @@ export function defaultSalesInput(): SalesInput {
     dueDate: null,
     ewayBillNo: null,
     ewayBillDate: null,
+    eInvoiceIrn: null,
+    eInvoiceAckNo: null,
+    eInvoiceAckDate: null,
+    eInvoiceSignedQr: null,
     roundOff: 0,
     status: "draft",
     paymentStatus: "unpaid",

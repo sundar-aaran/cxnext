@@ -9,6 +9,7 @@ import type { IndustryRecord } from "../../../apps/server/src/modules/industries
 
 const industryRecord: IndustryRecord = {
   id: "industry-1",
+  code: "RETAIL",
   name: "Retail",
   isActive: true,
   createdAt: new Date("2026-04-30T00:00:00.000Z"),
@@ -40,6 +41,7 @@ describe("industry write use cases", () => {
     const publishedEvents: DomainEvent[] = [];
 
     await new CreateIndustryUseCase(repository(), publisher(publishedEvents)).execute({
+      code: "RETAIL",
       name: "Retail",
       isActive: true,
     });
@@ -52,6 +54,7 @@ describe("industry write use cases", () => {
     const publishedEvents: DomainEvent[] = [];
 
     await new UpdateIndustryUseCase(repository(), publisher(publishedEvents)).execute("industry-1", {
+      code: "RETAIL",
       name: "Retail",
       isActive: true,
     });
@@ -60,6 +63,7 @@ describe("industry write use cases", () => {
       repository({ update: async () => null }),
       publisher(publishedEvents),
     ).execute("missing", {
+      code: "MISSING",
       name: "Missing",
       isActive: false,
     });

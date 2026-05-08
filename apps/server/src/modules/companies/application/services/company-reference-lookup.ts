@@ -1,5 +1,10 @@
+export interface CompanyReferenceNameRecord {
+  readonly name: string;
+  readonly code?: string | null;
+}
+
 export interface CompanyReferenceNameLookup {
-  findNamesByIds(ids: readonly number[]): Promise<ReadonlyMap<number, string>>;
+  findNamesByIds(ids: readonly number[]): Promise<ReadonlyMap<number, CompanyReferenceNameRecord>>;
 }
 
 export const COMPANY_TENANT_NAME_LOOKUP = Symbol("COMPANY_TENANT_NAME_LOOKUP");

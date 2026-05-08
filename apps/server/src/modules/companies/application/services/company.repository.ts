@@ -44,6 +44,7 @@ export interface CompanySocialLinkInput {
 export interface CompanyUpsertParams {
   readonly tenantId: number;
   readonly industryId: number;
+  readonly code: string;
   readonly name: string;
   readonly legalName?: string | null;
   readonly tagline?: string | null;

@@ -48,7 +48,7 @@ export function filterIndustries(params: {
   return params.industries.filter((industry) => {
     const matchesSearch =
       normalizedSearch.length === 0 ||
-      [industry.name, industry.isActive ? "active" : "inactive", industry.id]
+      [industry.code, industry.name, industry.isActive ? "active" : "inactive", industry.id]
         .join(" ")
         .toLowerCase()
         .includes(normalizedSearch);

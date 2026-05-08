@@ -7,6 +7,7 @@ import type {
 import {
   COMPANY_INDUSTRY_NAME_LOOKUP,
   COMPANY_TENANT_NAME_LOOKUP,
+  type CompanyReferenceNameRecord,
   type CompanyReferenceNameLookup,
 } from "../../application/services/company-reference-lookup";
 import type {
@@ -25,6 +26,7 @@ interface CompanyBaseRow {
   readonly id: number;
   readonly tenant_id: number;
   readonly industry_id: number;
+  readonly code: string;
   readonly name: string;
   readonly legal_name: string | null;
   readonly tagline: string | null;
@@ -162,6 +164,7 @@ export class KyselyCompanyRepository implements CompanyRepository, OnModuleDestr
         "companies.id",
         "companies.tenant_id",
         "companies.industry_id",
+        "companies.code",
         "companies.name",
         "companies.legal_name",
         "companies.tagline",
@@ -202,8 +205,8 @@ export class KyselyCompanyRepository implements CompanyRepository, OnModuleDestr
   private async toCompanyRecord(
     row: CompanyBaseRow,
     displayNames: {
-      readonly tenantNames: ReadonlyMap<number, string>;
-      readonly industryNames: ReadonlyMap<number, string>;
+      readonly tenantNames: ReadonlyMap<number, CompanyReferenceNameRecord>;
+      readonly industryNames: ReadonlyMap<number, CompanyReferenceNameRecord>;
     },
   ): Promise<CompanyRecord> {
     const companyId = Number(row.id);
@@ -216,12 +219,17 @@ export class KyselyCompanyRepository implements CompanyRepository, OnModuleDestr
       this.listBankAccounts(companyId),
     ]);
 
+    const tenantDisplay = displayNames.tenantNames.get(Number(row.tenant_id));
+    const industryDisplay = displayNames.industryNames.get(Number(row.industry_id));
+
     return {
       id: String(row.id),
       tenantId: String(row.tenant_id),
-      tenantName: displayNames.tenantNames.get(Number(row.tenant_id)) ?? "",
+      tenantName: tenantDisplay?.name ?? "",
       industryId: String(row.industry_id),
-      industryName: displayNames.industryNames.get(Number(row.industry_id)) ?? "",
+      industryCode: industryDisplay?.code ?? "",
+      industryName: industryDisplay?.name ?? "",
+      code: row.code,
       name: row.name,
       legalName: row.legal_name,
       tagline: row.tagline,
@@ -491,6 +499,7 @@ function toCompanyValues(params: CompanyUpsertParams, timestamp: Date) {
   return {
     tenant_id: params.tenantId,
     industry_id: params.industryId,
+    code: normalizeCompanyCode(params.code || params.name),
     name: params.name.trim(),
     legal_name: toNullableString(params.legalName),
     tagline: toNullableString(params.tagline),
@@ -538,6 +547,10 @@ async function insertIfAny<T>(items: readonly T[], query: { execute(): Promise<u
 function toNullableString(value: string | null | undefined) {
   const trimmedValue = value?.trim() ?? "";
   return trimmedValue.length > 0 ? trimmedValue : null;
+}
+
+function normalizeCompanyCode(value: string) {
+  return value.trim().toUpperCase().replace(/[^A-Z0-9]+/g, "_").replace(/^_+|_+$/g, "");
 }
 
 function toDate(value: DateValue): Date {

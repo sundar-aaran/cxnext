@@ -17,8 +17,10 @@ interface DefaultCompanyContextRow {
   readonly tenant_name: string;
   readonly tenant_slug: string;
   readonly industry_id: number;
+  readonly industry_code: string;
   readonly industry_name: string;
   readonly company_id: number;
+  readonly company_code: string;
   readonly company_name: string;
   readonly company_legal_name: string | null;
   readonly company_gstin_uin: string | null;
@@ -107,8 +109,10 @@ export class KyselyApplicationContextRepository
         "tenants.name as tenant_name",
         "tenants.slug as tenant_slug",
         "industries.id as industry_id",
+        "industries.code as industry_code",
         "industries.name as industry_name",
         "companies.id as company_id",
+        "companies.code as company_code",
         "companies.name as company_name",
         "companies.legal_name as company_legal_name",
         "companies.gstin_uin as company_gstin_uin",
@@ -164,10 +168,12 @@ function toApplicationContextRecord(row: DefaultCompanyContextRow): ApplicationC
     },
     industry: {
       id: String(row.industry_id),
+      code: row.industry_code,
       name: row.industry_name,
     },
     company: {
       id: String(row.company_id),
+      code: row.company_code,
       name: row.company_name,
       legalName: row.company_legal_name,
       gstinUin: row.company_gstin_uin,

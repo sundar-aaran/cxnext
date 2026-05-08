@@ -4,14 +4,14 @@ import {
   type SoftwareToggleSetting,
 } from "../domain/software-settings";
 
-const storageKey = "cxnext-software-settings";
+export const softwareSettingsStorageKey = "cxnext-software-settings";
 
 export function loadSoftwareSettings(): SoftwareSettingsState {
   if (typeof window === "undefined") {
     return defaultSoftwareSettingsState;
   }
 
-  const storedValue = window.localStorage.getItem(storageKey);
+  const storedValue = window.localStorage.getItem(softwareSettingsStorageKey);
   if (!storedValue) {
     return defaultSoftwareSettingsState;
   }
@@ -27,7 +27,11 @@ export function loadSoftwareSettings(): SoftwareSettingsState {
 }
 
 export function saveSoftwareSettings(state: SoftwareSettingsState) {
-  window.localStorage.setItem(storageKey, JSON.stringify(state));
+  window.localStorage.setItem(softwareSettingsStorageKey, JSON.stringify(state));
+}
+
+export function hasPublishedSoftwareSettings() {
+  return typeof window !== "undefined" && Boolean(window.localStorage.getItem(softwareSettingsStorageKey));
 }
 
 export function updateCustomiseSetting(
@@ -41,6 +45,31 @@ export function updateCustomiseSetting(
       ...group,
       settings: updateToggleList(group.settings, settingId, enabled),
     })),
+  };
+}
+
+export function updateSalesBillingLayoutSetting(
+  state: SoftwareSettingsState,
+  settingId: string,
+  enabled: boolean,
+): SoftwareSettingsState {
+  return {
+    ...state,
+    salesBillingLayout: updateToggleList(state.salesBillingLayout, settingId, enabled),
+  };
+}
+
+export function updateSalesDocumentSetting(
+  state: SoftwareSettingsState,
+  key: keyof SoftwareSettingsState["salesDocumentSettings"],
+  value: string,
+): SoftwareSettingsState {
+  return {
+    ...state,
+    salesDocumentSettings: {
+      ...state.salesDocumentSettings,
+      [key]: value,
+    },
   };
 }
 
@@ -75,8 +104,19 @@ function mergeSoftwareSettings(
   const storedFeatures = new Map(
     (storedState.features ?? []).map((setting) => [setting.id, setting.enabled]),
   );
+  const storedSalesBillingLayout = new Map(
+    (storedState.salesBillingLayout ?? []).map((setting) => [setting.id, setting.enabled]),
+  );
 
   return {
+    salesDocumentSettings: {
+      ...defaults.salesDocumentSettings,
+      ...(storedState.salesDocumentSettings ?? {}),
+    },
+    salesBillingLayout: defaults.salesBillingLayout.map((setting) => ({
+      ...setting,
+      enabled: storedSalesBillingLayout.get(setting.id) ?? setting.enabled,
+    })),
     customiseGroups: defaults.customiseGroups.map((group) => ({
       ...group,
       settings: group.settings.map((setting) => ({

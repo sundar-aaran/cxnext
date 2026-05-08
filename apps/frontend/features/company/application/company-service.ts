@@ -49,8 +49,10 @@ export function filterCompanies(params: {
     const matchesSearch =
       normalizedSearch.length === 0 ||
       [
+        company.code,
         company.name,
         company.tenantName,
+        company.industryCode,
         company.industryName,
         company.isActive ? "active" : "inactive",
         company.id,

@@ -18,9 +18,64 @@ export interface SoftwareCustomiseGroup {
 export interface SoftwareSettingsState {
   readonly customiseGroups: readonly SoftwareCustomiseGroup[];
   readonly features: readonly SoftwareToggleSetting[];
+  readonly salesBillingLayout: readonly SoftwareToggleSetting[];
+  readonly salesDocumentSettings: SalesDocumentSettings;
+}
+
+export interface SalesDocumentSettings {
+  readonly invoicePrefix: string;
+  readonly invoiceSerialStart: string;
 }
 
 export const defaultSoftwareSettingsState: SoftwareSettingsState = {
+  salesDocumentSettings: {
+    invoicePrefix: "SAL",
+    invoiceSerialStart: "0001",
+  },
+  salesBillingLayout: [
+    {
+      id: "sales-use-po",
+      label: "Use PO in sales",
+      description: "Shows PO number on sales item entry and invoice item rows.",
+      scope: "industry",
+      enabled: true,
+    },
+    {
+      id: "sales-use-dc",
+      label: "Use DC in sales",
+      description: "Shows DC number on sales item entry and invoice item rows.",
+      scope: "industry",
+      enabled: true,
+    },
+    {
+      id: "sales-use-colour",
+      label: "Use Colour in sales",
+      description: "Shows colour on sales item entry and invoice item rows.",
+      scope: "industry",
+      enabled: false,
+    },
+    {
+      id: "sales-use-size",
+      label: "Use Size in sales",
+      description: "Shows size on sales item entry and invoice item rows.",
+      scope: "industry",
+      enabled: false,
+    },
+    {
+      id: "sales-use-einvoice",
+      label: "Use E-invoice in sales",
+      description: "Shows the E-invoice details tab on sales upsert.",
+      scope: "industry",
+      enabled: true,
+    },
+    {
+      id: "sales-use-eway",
+      label: "Use E-way in sales",
+      description: "Shows the E-way details tab on sales upsert.",
+      scope: "industry",
+      enabled: true,
+    },
+  ],
   customiseGroups: [
     {
       id: "billing-layout",

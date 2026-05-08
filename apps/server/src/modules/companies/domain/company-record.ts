@@ -61,7 +61,9 @@ export interface CompanyRecord {
   readonly tenantId: string;
   readonly tenantName: string;
   readonly industryId: string;
+  readonly industryCode: string;
   readonly industryName: string;
+  readonly code: string;
   readonly name: string;
   readonly legalName: string | null;
   readonly tagline: string | null;

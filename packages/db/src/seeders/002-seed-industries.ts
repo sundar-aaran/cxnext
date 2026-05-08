@@ -5,6 +5,7 @@ import { defineDatabaseSeeder } from "../process/types";
 type DynamicDatabase = Record<string, Record<string, unknown>>;
 
 interface IndustrySeed {
+  readonly code: string;
   readonly name: string;
   readonly is_active: boolean;
   readonly created_at: string;
@@ -13,14 +14,15 @@ interface IndustrySeed {
 }
 
 const industrySeeds: readonly IndustrySeed[] = [
-  "Garments",
-  "Garments - Ecommerce",
-  "Offset Printing",
-  "Upvc",
-  "Computer",
-  "Computer - Ecommerce",
-  "Auditor office",
-].map((name, index) => ({
+  ["100", "Garments"],
+  ["200", "Garments - Ecommerce"],
+  ["300", "Offset Printing"],
+  ["400", "Upvc"],
+  ["500", "Computer"],
+  ["600", "Computer - Ecommerce"],
+  ["700", "Auditor office"],
+].map(([code, name], index) => ({
+  code,
   name,
   is_active: true,
   created_at: `2026-04-28 ${String(9 + index).padStart(2, "0")}:00:00`,
@@ -44,8 +46,8 @@ export const seedIndustriesSeeder = defineDatabaseSeeder({
     for (const industry of industrySeeds) {
       const existingIndustry = await queryDatabase
         .selectFrom("industries")
-        .select("name")
-        .where("name", "=", industry.name)
+        .select("code")
+        .where("code", "=", industry.code)
         .executeTakeFirst();
 
       if (existingIndustry) {

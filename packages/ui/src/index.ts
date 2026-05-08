@@ -9,6 +9,7 @@ export * from "./components/label";
 export * from "./components/row-action-menu";
 export * from "./components/save-print-buttons";
 export * from "./components/separator";
+export * from "./components/select";
 export * from "./components/sheet";
 export * from "./components/switch";
 export * from "./components/tooltip";

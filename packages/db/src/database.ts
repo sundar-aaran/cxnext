@@ -21,6 +21,7 @@ export interface TenantsTable {
 
 export interface IndustriesTable {
   readonly id: Generated<number>;
+  readonly code: string;
   readonly name: string;
   readonly is_active: Generated<boolean>;
   readonly created_at: TimestampColumn;
@@ -32,6 +33,7 @@ export interface CompaniesTable {
   readonly id: Generated<number>;
   readonly tenant_id: number;
   readonly industry_id: number;
+  readonly code: string;
   readonly name: string;
   readonly legal_name: string | null;
   readonly tagline: string | null;
@@ -365,6 +367,10 @@ export interface SalesTable extends BillingEntryTable {
   readonly price_list_id: string | null;
   readonly eway_bill_no: string | null;
   readonly eway_bill_date: NullableTimestampColumn;
+  readonly e_invoice_irn: string | null;
+  readonly e_invoice_ack_no: string | null;
+  readonly e_invoice_ack_date: NullableTimestampColumn;
+  readonly e_invoice_signed_qr: string | null;
 }
 
 export interface PurchasesTable extends BillingEntryTable {

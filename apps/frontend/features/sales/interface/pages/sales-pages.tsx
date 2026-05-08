@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, ChevronLeft, ChevronRight, Pencil, Plus, Printer } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Mail, Pencil, Plus, Printer } from "lucide-react";
 import {
   Button,
   MasterListEmptyState,
@@ -26,18 +26,20 @@ import {
   prepareSalesInput,
   upsertSales,
 } from "../../application/sales-service";
+import { resolveSalesBillingLayout } from "../../application/sales-billing-layout-service";
 import { listCompanies } from "../../../company/application/company-service";
+import type { CompanyRecord } from "../../../company/domain/company";
+import { getCoreEnvSettings } from "../../../settings/infrastructure/core-settings-api";
+import { EntryCollaborationPanel } from "../../../entries/interface/components/entry-collaboration-panel";
 import {
   defaultSalesInput,
   defaultSalesColumnVisibility,
-  getSalesIndustryKind,
   salesStatusFilters,
   type SalesColumnId,
   type SalesRecord,
   type SalesStatusFilter,
 } from "../../domain/sales";
 import { SalesInvoiceDocument } from "./sales-print-page";
-import { getSalesPrintLinePlan } from "./sales-print-line-plan";
 
 export { SalesUpsertPage } from "./sales-upsert-page";
 
@@ -111,6 +113,7 @@ export function SalesListPage() {
           ...record,
           documentDate: record.documentDate.slice(0, 10),
           dueDate: record.dueDate ? record.dueDate.slice(0, 10) : null,
+          eInvoiceAckDate: record.eInvoiceAckDate ? record.eInvoiceAckDate.slice(0, 10) : null,
           ewayBillDate: record.ewayBillDate ? record.ewayBillDate.slice(0, 10) : null,
           isActive: true,
         }),
@@ -260,7 +263,9 @@ export function SalesShowPage({
 }) {
   const { show } = useGlobalLoader();
   const [record, setRecord] = useState<SalesRecord | null>(null);
+  const [industryCode, setIndustryCode] = useState<string | null>(null);
   const [industryName, setIndustryName] = useState<string | null>(null);
+  const [printCompany, setPrintCompany] = useState<CompanyRecord | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -282,14 +287,21 @@ export function SalesShowPage({
 
   useEffect(() => {
     const controller = new AbortController();
-    listCompanies({ signal: controller.signal })
-      .then((companies) => {
+    Promise.all([
+      listCompanies({ signal: controller.signal }),
+      getCoreEnvSettings({ signal: controller.signal }).catch(() => null),
+    ])
+      .then(([companies, settings]) => {
         if (controller.signal.aborted) return;
         const company = companies.find((item) => item.isPrimary) ?? companies[0] ?? null;
+        setPrintCompany(company);
+        setIndustryCode(getAppTypeFromSettings(settings) ?? company?.industryCode ?? null);
         setIndustryName(company?.industryName ?? null);
       })
       .catch((error) => {
         if (isAbortError(error)) return;
+        setPrintCompany(null);
+        setIndustryCode(null);
         setIndustryName(null);
       });
     return () => controller.abort();
@@ -316,13 +328,8 @@ export function SalesShowPage({
   }
 
   const previousSalesId = salesId > 1 ? salesId - 1 : null;
-  const salesPrintLinePlan = getSalesPrintLinePlan(
-    record.items,
-    getSalesIndustryKind(industryName),
-  );
-  const itemLineRows = salesPrintLinePlan.rows.filter((row) => row.kind === "item");
-  const usedItemLines = itemLineRows.reduce((total, row) => total + row.lineCount, 0);
-  const blankLineCount = salesPrintLinePlan.rows.filter((row) => row.kind === "blank").length;
+  const industryValue = industryCode ?? industryName;
+  const salesLayout = resolveSalesBillingLayout(industryValue);
 
   return (
     <main className="theme-shell mx-auto min-h-screen w-[94%] pb-8 pt-8 text-black sm:w-[92%] lg:w-[90%] print:fixed print:inset-0 print:z-[9999] print:min-h-0 print:w-full print:overflow-visible print:bg-white print:p-0">
@@ -334,6 +341,18 @@ export function SalesShowPage({
           <p className="mt-2 text-sm text-muted-foreground">{record.documentNo}</p>
         </div>
         <div className="flex flex-wrap justify-end gap-2">
+          <Button
+            variant="outline"
+            className="rounded-xl"
+            onClick={() =>
+              toast.info("Email send is ready for mail provider integration.", {
+                description: `${record.documentNo} can be sent once SMTP/API credentials are configured.`,
+              })
+            }
+          >
+            <Mail className="size-4" />
+            Send to Email
+          </Button>
           <Button className="rounded-xl" onClick={() => window.print()}>
             <Printer className="size-4" />
             Print
@@ -371,36 +390,23 @@ export function SalesShowPage({
           </Button>
         </div>
       </div>
-      <div className="mx-auto mb-3 w-fit max-w-full rounded-md border border-border/70 bg-card/95 p-3 text-sm text-foreground shadow-sm print:hidden">
-        <div className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1">
-          <span className="font-medium">Invoice print lines</span>
-          <span>Items: {usedItemLines}</span>
-          <span>Blank: {blankLineCount}</span>
-          <span>Budget: {salesPrintLinePlan.lineBudget}</span>
-          <span>
-            Template:{" "}
-            {salesPrintLinePlan.requiresTwoPageTemplate ? "two-page required" : "single-page"}
-          </span>
-        </div>
-        <div className="grid gap-1 text-xs text-muted-foreground">
-          {itemLineRows.map((row) => (
-            <div key={row.index} className="grid grid-cols-[42px_1fr_auto] gap-3">
-              <span>#{row.index + 1}</span>
-              <span className="truncate">
-                {row.item.productName}
-                {row.item.poNo ? ` | PO ${row.item.poNo.length} chars` : ""}
-                {row.item.dcNo ? ` | DC ${row.item.dcNo.length} chars` : ""}
-              </span>
-              <span className="font-medium text-foreground">{row.lineCount} line(s)</span>
-            </div>
-          ))}
-        </div>
-      </div>
       <section className="mx-auto w-fit max-w-full overflow-hidden rounded-md border border-border/70 bg-card shadow-sm print:contents">
         <div className="overflow-x-auto p-3 print:contents sm:p-4">
-          <SalesInvoiceDocument industryName={industryName} record={record} />
+          <SalesInvoiceDocument
+            company={printCompany}
+            industryName={industryValue}
+            record={record}
+            salesLayout={salesLayout}
+          />
         </div>
       </section>
+      <div className="mx-auto mt-4 w-full print:hidden">
+        <EntryCollaborationPanel
+          entryId={salesId}
+          entryKind="sales"
+          entryLabel={record.documentNo}
+        />
+      </div>
     </main>
   );
 }
@@ -419,6 +425,15 @@ function ListHeader({
       {children}
     </th>
   );
+}
+
+function getAppTypeFromSettings(
+  settings: Awaited<ReturnType<typeof getCoreEnvSettings>> | null,
+) {
+  return settings?.groups
+    .flatMap((group) => group.settings)
+    .find((setting) => setting.key === "APP_TYPE")
+    ?.value.trim() || null;
 }
 
 function getErrorMessage(error: unknown) {

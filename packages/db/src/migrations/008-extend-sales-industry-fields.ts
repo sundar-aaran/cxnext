@@ -19,7 +19,11 @@ export const extendSalesIndustryFieldsMigration = defineDatabaseMigration({
     await sql`
       ALTER TABLE sales
         ADD COLUMN IF NOT EXISTS eway_bill_no varchar(120),
-        ADD COLUMN IF NOT EXISTS eway_bill_date datetime
+        ADD COLUMN IF NOT EXISTS eway_bill_date datetime,
+        ADD COLUMN IF NOT EXISTS e_invoice_irn varchar(120),
+        ADD COLUMN IF NOT EXISTS e_invoice_ack_no varchar(120),
+        ADD COLUMN IF NOT EXISTS e_invoice_ack_date datetime,
+        ADD COLUMN IF NOT EXISTS e_invoice_signed_qr text
     `.execute(db);
 
     await sql`

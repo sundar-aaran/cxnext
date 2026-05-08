@@ -23,6 +23,7 @@ export const createCompaniesMigration = defineDatabaseMigration({
       .addColumn("id", "bigint", (column) => column.primaryKey().autoIncrement())
       .addColumn("tenant_id", "bigint", (column) => column.notNull())
       .addColumn("industry_id", "bigint", (column) => column.notNull())
+      .addColumn("code", "varchar(64)", (column) => column.notNull())
       .addColumn("name", "varchar(160)", (column) => column.notNull())
       .addColumn("legal_name", "varchar(220)")
       .addColumn("tagline", "varchar(220)")
@@ -52,6 +53,14 @@ export const createCompaniesMigration = defineDatabaseMigration({
         column.notNull().defaultTo(sql`CURRENT_TIMESTAMP`),
       )
       .addColumn("deleted_at", "datetime")
+      .execute();
+
+    await queryDatabase.schema
+      .createIndex("uq_companies_code")
+      .ifNotExists()
+      .on("companies")
+      .column("code")
+      .unique()
       .execute();
 
     await queryDatabase.schema

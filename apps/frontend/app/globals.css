@@ -443,3 +443,10 @@ html::-webkit-scrollbar-thumb {
 .theme-raised-surface {
   background: var(--surface-raised);
 }
+
+@media print {
+  [data-sonner-toaster],
+  [data-sonner-toast] {
+    display: none !important;
+  }
+}

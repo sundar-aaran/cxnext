@@ -2,13 +2,45 @@
 
 ## Version State
 
-- Current package version: `1.0.69`
-- Current release tag: `v-1.0.69`
+- Current package version: `1.0.70`
+- Current release tag: `v-1.0.70`
 - Versioned changelog label format: `v 1.0.<reference>`
 - Version section format: `## v-1.0.<reference>`
 - Entry format: `### [v 1.0.<reference>] YYYY-MM-DD - Title`
 
-## v-1.0.69
+## v-1.0.70
+
+### [v 1.0.70] 2026-05-08 - Finalise Sales Invoice Print Data
+
+- Connected the Sales print document to the loaded primary company data while preserving the saved Sales record as the invoice source.
+- Removed hardcoded company, party, tax, e-invoice, e-way, QR, address, and bank placeholders from the active print template; unavailable data now renders blank.
+- Removed the visible print line diagnostic panel from the final Sales print page.
+- Revalidated the frontend workspace with focused typecheck.
+
+### [v 1.0.70] 2026-05-08 - Auto-Fill Next Sales Invoice Number
+
+- Updated new Sales invoice creation to scan existing Sales invoice numbers and fill the next matching number from the configured invoice prefix and serial start.
+- Preserved saved invoice numbers while editing and avoided overwriting a number typed manually before the async lookup completes.
+- Revalidated the frontend workspace with focused typecheck.
+
+### [v 1.0.70] 2026-05-08 - Align Sales Invoice Identifier Fields
+
+- Left-aligned the Sales Details Invoice no and Order no input text so identifiers begin at the field start.
+- Preserved existing Date, totals, and other numeric field alignment.
+- Revalidated the frontend workspace with focused typecheck.
+
+### [v 1.0.70] 2026-05-08 - Refresh Assist Execution Log
+
+- Read the assist guide, agent contract, and task-relevant execution, release, branch, generation, and coding rules.
+- Refreshed the active execution task and planning logs for reference `#70`.
+- Recorded the batch as documentation-only and left unrelated working-tree changes untouched.
+
+### [v 1.0.70] 2026-05-07 - Standardize Master Autocomplete Lookup
+
+- Added shared `MasterAutocompleteLookup` as the reference control for upcoming common/master autocomplete fields.
+- Captured the expected lookup behavior in the component and execution notes: type search, arrow navigation, Enter selection/create, Escape cancel, selected check mark, default id `1` shown as `-`, and optional quick create for common modules.
+- Wired Sales quick product HSN Code, Unit, and GST Percent fields to the shared reference component.
+- Revalidated the frontend workspace with focused typecheck.
 
 ### [v 1.0.69] 2026-05-06 - Consolidate Core Settings And Runtime Env
 

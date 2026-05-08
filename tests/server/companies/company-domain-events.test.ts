@@ -12,7 +12,9 @@ const companyRecord: CompanyRecord = {
   tenantId: "tenant-1",
   tenantName: "Acme Tenant",
   industryId: "industry-1",
+  industryCode: "RETAIL",
   industryName: "Retail",
+  code: "ACME",
   name: "Acme Company",
   legalName: null,
   tagline: null,
@@ -71,6 +73,7 @@ describe("company write use cases", () => {
     await new CreateCompanyUseCase(repository(), publisher(publishedEvents)).execute({
       tenantId: 1,
       industryId: 1,
+      code: "ACME",
       name: "Acme Company",
       isPrimary: true,
       isActive: true,
@@ -86,6 +89,7 @@ describe("company write use cases", () => {
     await new UpdateCompanyUseCase(repository(), publisher(publishedEvents)).execute("company-1", {
       tenantId: 1,
       industryId: 1,
+      code: "ACME",
       name: "Acme Company",
       isPrimary: true,
       isActive: true,
@@ -97,6 +101,7 @@ describe("company write use cases", () => {
     ).execute("missing", {
       tenantId: 1,
       industryId: 1,
+      code: "MISSING",
       name: "Missing Company",
       isPrimary: false,
       isActive: false,

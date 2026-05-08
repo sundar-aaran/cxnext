@@ -64,7 +64,13 @@ export function prepareSalesInput(input: SalesInput): SalesInput {
     ...input,
     partyName: input.partyName.trim(),
     documentNo: input.documentNo.trim(),
+    eInvoiceAckNo: input.eInvoiceAckNo?.trim() || null,
+    eInvoiceIrn: input.eInvoiceIrn?.trim() || null,
+    eInvoiceSignedQr: input.eInvoiceSignedQr?.trim() || null,
+    ewayBillNo: input.ewayBillNo?.trim() || null,
+    notes: input.notes?.trim() || null,
     roundOff: Number(input.roundOff || 0),
+    terms: input.terms?.trim() || null,
     items: input.items
       .map((item, index) => ({
         ...item,

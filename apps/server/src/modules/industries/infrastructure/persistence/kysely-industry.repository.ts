@@ -8,6 +8,7 @@ import type { IndustryRecord } from "../../domain/industry-record";
 
 interface IndustryRow {
   readonly id: number;
+  readonly code: string;
   readonly name: string;
   readonly is_active: boolean | number;
   readonly created_at: Date | string;
@@ -60,6 +61,7 @@ export class KyselyIndustryRepository implements IndustryRepository, OnModuleDes
     const result = await this.connection.db
       .insertInto("industries")
       .values({
+        code: normalizeIndustryCode(params.code || params.name),
         name: params.name.trim(),
         is_active: params.isActive,
         created_at: now,
@@ -89,6 +91,7 @@ export class KyselyIndustryRepository implements IndustryRepository, OnModuleDes
     await this.connection.db
       .updateTable("industries")
       .set({
+        code: normalizeIndustryCode(params.code || params.name),
         name: params.name.trim(),
         is_active: params.isActive,
         updated_at: new Date(),
@@ -124,12 +127,17 @@ export class KyselyIndustryRepository implements IndustryRepository, OnModuleDes
 function toIndustryRecord(row: IndustryRow): IndustryRecord {
   return {
     id: String(row.id),
+    code: row.code,
     name: row.name,
     isActive: Boolean(row.is_active),
     createdAt: toDate(row.created_at),
     updatedAt: toDate(row.updated_at),
     deletedAt: row.deleted_at ? toDate(row.deleted_at) : null,
   };
+}
+
+function normalizeIndustryCode(value: string): string {
+  return value.trim().toUpperCase().replace(/[^A-Z0-9]+/g, "_").replace(/^_+|_+$/g, "");
 }
 
 function toDate(value: Date | string): Date {

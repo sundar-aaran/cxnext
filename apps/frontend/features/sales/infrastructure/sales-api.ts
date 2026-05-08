@@ -19,7 +19,7 @@ export async function getSales(id: number, options?: { readonly signal?: AbortSi
     signal: options?.signal,
   });
   if (response.status === 404) return null;
-  if (!response.ok) throw new Error(`Sales detail failed with status ${response.status}.`);
+  if (!response.ok) throw new Error(await readSalesApiError(response, "Sales detail"));
   return toRecord((await response.json()) as Omit<SalesRecord, "id"> & { id: string });
 }
 
@@ -30,7 +30,7 @@ export async function upsertSales(input: SalesInput, id?: number) {
     headers: { Accept: "application/json", "Content-Type": "application/json" },
     method: id ? "PATCH" : "POST",
   });
-  if (!response.ok) throw new Error(`Sales save failed with status ${response.status}.`);
+  if (!response.ok) throw new Error(await readSalesApiError(response, "Sales save"));
   return toRecord((await response.json()) as Omit<SalesRecord, "id"> & { id: string });
 }
 
@@ -40,7 +40,7 @@ export async function deleteSales(id: number) {
     headers: { Accept: "application/json" },
     method: "DELETE",
   });
-  if (!response.ok) throw new Error(`Sales delete failed with status ${response.status}.`);
+  if (!response.ok) throw new Error(await readSalesApiError(response, "Sales delete"));
 }
 
 function apiBaseUrl() {
@@ -49,4 +49,31 @@ function apiBaseUrl() {
 
 function toRecord(record: Omit<SalesRecord, "id"> & { id: string }): SalesRecord {
   return { ...record, id: Number(record.id) };
+}
+
+async function readSalesApiError(response: Response, action: string) {
+  const fallback = `${action} failed with status ${response.status}.`;
+  const textFallbackResponse = response.clone();
+
+  try {
+    const body = (await response.json()) as {
+      readonly message?: unknown;
+      readonly error?: unknown;
+      readonly detail?: unknown;
+    };
+    const message = Array.isArray(body.message) ? body.message.join(", ") : body.message;
+    const detail = body.detail ?? body.error;
+    const parts = [message, detail]
+      .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+      .map((value) => value.trim());
+
+    return parts.length ? `${fallback} ${parts.join(" ")}` : fallback;
+  } catch {
+    try {
+      const text = await textFallbackResponse.text();
+      return text.trim() ? `${fallback} ${text.trim()}` : fallback;
+    } catch {
+      return fallback;
+    }
+  }
 }

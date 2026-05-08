@@ -4,6 +4,7 @@ import { authFetch } from "../../auth/infrastructure/auth-api";
 
 interface IndustryApiRecord {
   readonly id: string;
+  readonly code: string;
   readonly name: string;
   readonly isActive: boolean;
   readonly createdAt: string;
@@ -90,6 +91,7 @@ function getApiBaseUrl() {
 function toIndustryRecord(record: IndustryApiRecord): IndustryRecord {
   return {
     id: Number(record.id),
+    code: record.code,
     name: record.name,
     isActive: record.isActive,
     createdAt: record.createdAt,

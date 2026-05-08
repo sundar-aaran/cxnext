@@ -72,7 +72,13 @@ export async function authFetch(input: RequestInfo | URL, init: RequestInit = {}
   headers.set("Accept", headers.get("Accept") ?? "application/json");
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
-  return fetch(input, { ...init, cache: "no-store", headers });
+  const response = await fetch(input, { ...init, cache: "no-store", headers });
+
+  if (response.status === 401) {
+    handleUnauthorizedResponse();
+  }
+
+  return response;
 }
 
 function apiBaseUrl() {
@@ -99,4 +105,19 @@ async function readApiErrorMessage(response: Response, fallback: string) {
   }
 
   return fallback;
+}
+
+function handleUnauthorizedResponse() {
+  clearStoredAuthSession();
+
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const currentPath = `${window.location.pathname}${window.location.search}`;
+  if (window.location.pathname === "/login") {
+    return;
+  }
+
+  window.location.assign(`/login?next=${encodeURIComponent(currentPath)}`);
 }

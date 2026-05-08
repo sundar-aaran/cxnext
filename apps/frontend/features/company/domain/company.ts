@@ -5,7 +5,9 @@ export interface CompanyRecord {
   readonly tenantId: number;
   readonly tenantName: string;
   readonly industryId: number;
+  readonly industryCode: string;
   readonly industryName: string;
+  readonly code: string;
   readonly name: string;
   readonly legalName: string | null;
   readonly tagline: string | null;
@@ -101,6 +103,7 @@ export type CompanyUpsertInput = Pick<
   CompanyRecord,
   | "tenantId"
   | "industryId"
+  | "code"
   | "name"
   | "legalName"
   | "tagline"
@@ -132,7 +135,7 @@ export type CompanyUpsertInput = Pick<
 };
 
 export type CompanyStatusFilter = "all" | "active" | "inactive";
-export type CompanyColumnId = "name" | "tenant" | "industry" | "status" | "updated";
+export type CompanyColumnId = "code" | "name" | "tenant" | "industry" | "status" | "updated";
 
 export const companyStatusFilters: readonly MasterListFilterOption[] = [
   { id: "all", label: "All companies" },
@@ -141,6 +144,7 @@ export const companyStatusFilters: readonly MasterListFilterOption[] = [
 ];
 
 export const companyColumnCatalog = [
+  { id: "code", label: "Code" },
   { id: "name", label: "Company" },
   { id: "tenant", label: "Tenant" },
   { id: "industry", label: "Industry" },
@@ -152,6 +156,7 @@ export const companyColumnCatalog = [
 }[];
 
 export const defaultCompanyColumnVisibility: Record<CompanyColumnId, boolean> = {
+  code: true,
   name: true,
   tenant: true,
   industry: true,

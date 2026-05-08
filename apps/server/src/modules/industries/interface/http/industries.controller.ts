@@ -19,6 +19,7 @@ import { UpdateIndustryUseCase } from "../../application/use-cases/update-indust
 import { toIndustryResponse } from "./industry-response";
 
 interface IndustryUpsertRequest {
+  readonly code?: unknown;
   readonly name?: unknown;
   readonly isActive?: unknown;
 }
@@ -97,6 +98,7 @@ export class IndustriesController {
 
 function parseIndustryRequest(body: IndustryUpsertRequest) {
   return {
+    code: typeof body.code === "string" ? body.code : "",
     name: typeof body.name === "string" ? body.name : "",
     isActive: Boolean(body.isActive),
   };

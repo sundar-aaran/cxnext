@@ -15,6 +15,10 @@ export class CompanyEntity {
     return this.record.name;
   }
 
+  public get code(): string {
+    return this.record.code;
+  }
+
   public get tenantId(): string {
     return this.record.tenantId;
   }
