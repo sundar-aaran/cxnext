@@ -39,7 +39,7 @@ import {
   type SalesRecord,
   type SalesStatusFilter,
 } from "../../domain/sales";
-import { SalesInvoiceDocument } from "./sales-print-page";
+import { SalesInvoiceDocument, type SalesPrintCopy } from "./sales-print-page";
 
 export { SalesUpsertPage } from "./sales-upsert-page";
 
@@ -266,6 +266,7 @@ export function SalesShowPage({
   const [industryCode, setIndustryCode] = useState<string | null>(null);
   const [industryName, setIndustryName] = useState<string | null>(null);
   const [printCompany, setPrintCompany] = useState<CompanyRecord | null>(null);
+  const [printCopy, setPrintCopy] = useState<SalesPrintCopy>("original");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -341,6 +342,22 @@ export function SalesShowPage({
           <p className="mt-2 text-sm text-muted-foreground">{record.documentNo}</p>
         </div>
         <div className="flex flex-wrap justify-end gap-2">
+          <div className="flex h-10 overflow-hidden rounded-xl border border-border bg-card text-sm shadow-sm">
+            {salesPrintCopyOptions.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                className={
+                  printCopy === option.value
+                    ? "bg-primary px-3 font-medium text-primary-foreground"
+                    : "px-3 font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+                }
+                onClick={() => setPrintCopy(option.value)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
           <Button
             variant="outline"
             className="rounded-xl"
@@ -394,6 +411,7 @@ export function SalesShowPage({
         <div className="overflow-x-auto p-3 print:contents sm:p-4">
           <SalesInvoiceDocument
             company={printCompany}
+            copy={printCopy}
             industryName={industryValue}
             record={record}
             salesLayout={salesLayout}
@@ -410,6 +428,15 @@ export function SalesShowPage({
     </main>
   );
 }
+
+const salesPrintCopyOptions: readonly {
+  readonly label: string;
+  readonly value: SalesPrintCopy;
+}[] = [
+  { label: "Original", value: "original" },
+  { label: "Duplicate", value: "duplicate" },
+  { label: "Triplicate", value: "triplicate" },
+];
 
 function ListHeader({
   align = "left",

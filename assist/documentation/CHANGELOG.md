@@ -10,6 +10,31 @@
 
 ## v-1.0.70
 
+### [v 1.0.70] 2026-05-08 - Hide Empty Sales Barcode Divider
+
+- Removed the Sales print header divider beside the company details when e-invoice barcode data is unavailable.
+- Preserved the divider when both IRN and signed QR data are present.
+- Revalidated the frontend workspace with focused typecheck.
+
+### [v 1.0.70] 2026-05-08 - Add Sales Print Copy Option
+
+- Added Original, Duplicate, and Triplicate copy options to the Sales print page toolbar.
+- Updated the Sales invoice print header to render the selected copy label, defaulting to Original Copy.
+- Revalidated the frontend workspace with focused typecheck.
+
+### [v 1.0.70] 2026-05-08 - Move Sales Print Totals Right
+
+- Moved the Sales invoice print totals summary block to the right edge of the item table using dynamic print-column spans.
+- Restored summary label text alignment inside the totals block while keeping values right-aligned.
+- Printed invoice-specific Terms content when provided and fell back to default terms when the invoice terms are empty.
+- Revalidated the frontend workspace with focused typecheck.
+
+### [v 1.0.70] 2026-05-08 - Tighten Sales Print Blank Rows
+
+- Reduced the Sales invoice item print budget by two rows so generated blank item lines are shorter.
+- Removed the e-invoice QR/barcode bordered block when IRN data is not available.
+- Revalidated the frontend workspace with focused typecheck.
+
 ### [v 1.0.70] 2026-05-08 - Finalise Sales Invoice Print Data
 
 - Connected the Sales print document to the loaded primary company data while preserving the saved Sales record as the invoice source.

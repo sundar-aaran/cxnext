@@ -23,13 +23,17 @@ const lineItemCell = `${baseCell} h-[18px] text-center text-[9px] leading-[1.08]
 const totalItemCell = `${lineItemCell} border-y border-gray-400`;
 const times = "font-['Times_New_Roman']";
 
+export type SalesPrintCopy = "duplicate" | "original" | "triplicate";
+
 export function SalesInvoiceDocument({
   company,
+  copy = "original",
   industryName,
   record,
   salesLayout: providedSalesLayout,
 }: {
   readonly company?: CompanyRecord | null;
+  readonly copy?: SalesPrintCopy;
   readonly industryName?: string | null;
   readonly record: SalesRecord;
   readonly salesLayout?: SalesBillingLayout;
@@ -48,13 +52,25 @@ export function SalesInvoiceDocument({
   const companyAddressLines = company ? companyAddress(company) : [];
   const companyContactLine = company ? companyContact(company) : "";
   const companyBank = company ? primaryBankAccount(company) : null;
+  const summaryValueColSpan = 2;
+  const summaryLabelColSpan = 2;
+  const summaryLeftColSpan = Math.max(
+    1,
+    itemColumns.length - summaryLabelColSpan - summaryValueColSpan,
+  );
+  const signatureLeftColSpan = Math.max(1, Math.floor(itemColumns.length / 2));
+  const signatureRightColSpan = Math.max(1, itemColumns.length - signatureLeftColSpan);
+  const termsLines = salesPrintTerms(record.terms);
+  const hasEInvoiceBarcode = Boolean(
+    printableText(record.eInvoiceIrn) && printableText(record.eInvoiceSignedQr),
+  );
 
   return (
     <MainPrintTemplate>
       <div className="grid grid-cols-[1fr_auto_1fr] p-px text-[9px]">
         <span />
         <span className="text-[12px] font-bold">TAX INVOICE</span>
-        <span className="text-right">Original Copy</span>
+        <span className="text-right">{salesPrintCopyLabel(copy)}</span>
       </div>
       <table className={`${tableClass} border-b-0`}>
         <tbody>
@@ -62,7 +78,9 @@ export function SalesInvoiceDocument({
             <td className={`${baseCell} h-[160px] w-[145px] border-r-0 text-center align-middle`}>
               <CompanyLogo company={company ?? null} companyName={companyName} />
             </td>
-            <td className={`${baseCell} text-center leading-[1.6]`}>
+            <td
+              className={`${baseCell} ${hasEInvoiceBarcode ? "" : "border-r-0"} text-center leading-[1.6]`}
+            >
               <div className={`${times} text-[34px] font-bold leading-tight`}>{companyName}</div>
               {companyAddressLines.map((line) => (
                 <div key={line} className={times}>
@@ -74,7 +92,7 @@ export function SalesInvoiceDocument({
             </td>
             <td className={`${baseCell} w-[160px] border-r-0 align-middle`}>
               <div className="mx-auto flex size-[150px] items-center justify-center p-[2px]">
-                <EInvoiceQrData value={record.eInvoiceSignedQr} />
+                <EInvoiceQrData irn={record.eInvoiceIrn} value={record.eInvoiceSignedQr} />
               </div>
             </td>
           </tr>
@@ -161,69 +179,93 @@ export function SalesInvoiceDocument({
             <td className={`${totalItemCell} border-r-0 text-right`}>{money(totals.grandTotal)}</td>
           </tr>
           <tr>
-            <td rowSpan={2} colSpan={5} className={`${baseCell} p-[3px] text-[8px] leading-tight`}>
+            <td
+              rowSpan={2}
+              colSpan={summaryLeftColSpan}
+              className={`${baseCell} p-[3px] text-[8px] leading-tight`}
+            >
               {company?.gstinUin
                 ? "We hereby certify that our registration under the GST Act 2017 is in force on the date on which sale of goods specified in this invoice is made by us and the sale is effected in the regular course of business."
                 : ""}
             </td>
-            <SummaryLabel>Taxable Value</SummaryLabel>
-            <SummaryValue>{money(totals.taxableAmount)}</SummaryValue>
+            <SummaryLabel colSpan={summaryLabelColSpan}>Taxable Value</SummaryLabel>
+            <SummaryValue colSpan={summaryValueColSpan}>{money(totals.taxableAmount)}</SummaryValue>
           </tr>
           <tr>
-            <SummaryLabel>{isCgstSgst ? "Total CGST" : ""}</SummaryLabel>
-            <SummaryValue>{isCgstSgst ? money(totals.gstTotal / 2) : ""}</SummaryValue>
+            <SummaryLabel colSpan={summaryLabelColSpan}>
+              {isCgstSgst ? "Total CGST" : ""}
+            </SummaryLabel>
+            <SummaryValue colSpan={summaryValueColSpan}>
+              {isCgstSgst ? money(totals.gstTotal / 2) : ""}
+            </SummaryValue>
           </tr>
           <tr>
-            <td colSpan={5} className={`${baseCell} p-[3px] text-[8px] font-bold leading-tight`}>
-              <div>* Goods once sold cannot be returned back or exchanged</div>
-              <div>* Seller cannot be responsible for any damage/mistakes.</div>
+            <td
+              colSpan={summaryLeftColSpan}
+              className={`${baseCell} p-[3px] text-[8px] font-bold leading-tight`}
+            >
+              {termsLines.map((line) => (
+                <div key={line}>{line}</div>
+              ))}
             </td>
-            <SummaryLabel>{isCgstSgst ? "Total SGST" : `IGST @ ${gstPercent}%`}</SummaryLabel>
-            <SummaryValue>{money(isCgstSgst ? totals.gstTotal / 2 : totals.gstTotal)}</SummaryValue>
+            <SummaryLabel colSpan={summaryLabelColSpan}>
+              {isCgstSgst ? "Total SGST" : `IGST @ ${gstPercent}%`}
+            </SummaryLabel>
+            <SummaryValue colSpan={summaryValueColSpan}>
+              {money(isCgstSgst ? totals.gstTotal / 2 : totals.gstTotal)}
+            </SummaryValue>
           </tr>
           <tr>
-            <td colSpan={5} className={baseCell} />
-            <SummaryLabel>Total GST</SummaryLabel>
-            <SummaryValue>{money(totals.gstTotal)}</SummaryValue>
+            <td colSpan={summaryLeftColSpan} className={baseCell} />
+            <SummaryLabel colSpan={summaryLabelColSpan}>Total GST</SummaryLabel>
+            <SummaryValue colSpan={summaryValueColSpan}>{money(totals.gstTotal)}</SummaryValue>
           </tr>
           <tr>
             <td
               rowSpan={2}
-              colSpan={5}
+              colSpan={summaryLeftColSpan}
               className={`${baseCell} p-[3px] text-[9px] font-bold leading-tight`}
             >
               <BankDetailsBlock bank={companyBank} />
             </td>
-            <SummaryLabel>&nbsp;</SummaryLabel>
-            <SummaryValue>&nbsp;</SummaryValue>
+            <SummaryLabel colSpan={summaryLabelColSpan}>&nbsp;</SummaryLabel>
+            <SummaryValue colSpan={summaryValueColSpan}>&nbsp;</SummaryValue>
           </tr>
           <tr>
-            <SummaryLabel>Round Off</SummaryLabel>
-            <SummaryValue>{money(Number(record.roundOff ?? 0))}</SummaryValue>
+            <SummaryLabel colSpan={summaryLabelColSpan}>Round Off</SummaryLabel>
+            <SummaryValue colSpan={summaryValueColSpan}>
+              {money(Number(record.roundOff ?? 0))}
+            </SummaryValue>
           </tr>
           <tr>
-            <td colSpan={5} className={`${baseCell} border-y border-gray-400 p-[3px] align-middle`}>
+            <td
+              colSpan={summaryLeftColSpan}
+              className={`${baseCell} border-y border-gray-400 p-[3px] align-middle`}
+            >
               <div className="text-[8px]">Amount (in words)</div>
               <b className={times}>{amountInWords(totals.grandTotal)} Only</b>
             </td>
-            <SummaryLabel>
+            <SummaryLabel colSpan={summaryLabelColSpan}>
               <b>GRAND TOTAL</b>
             </SummaryLabel>
-            <SummaryValue>
+            <SummaryValue colSpan={summaryValueColSpan}>
               <b>{money(totals.grandTotal)}</b>
             </SummaryValue>
           </tr>
           <tr>
-            <td colSpan={6} className={`${baseCell} h-[34px] p-[3px]`}>
+            <td colSpan={signatureLeftColSpan} className={`${baseCell} h-[34px] p-[3px]`}>
               Receiver Sign
             </td>
-            <td colSpan={5} className={`${baseCell} h-[34px] border-r-0 p-[3px] text-left`}>
+            <td
+              colSpan={signatureRightColSpan}
+              className={`${baseCell} h-[34px] border-r-0 p-[3px] text-left`}
+            >
               For <b className={times}>{companyName}</b>
             </td>
           </tr>
           <tr>
-            <td colSpan={6} className={baseCell} />
-            <td colSpan={5} className={`${baseCell} border-r-0 text-left`}>
+            <td colSpan={signatureLeftColSpan} className={baseCell} />
+            <td colSpan={signatureRightColSpan} className={`${baseCell} border-r-0 text-left`}>
               Authorised Signatory
             </td>
           </tr>
@@ -309,22 +351,34 @@ function renderPrintCell(
   return valueByColumn[columnId];
 }
 
-function SummaryLabel({ children }: { readonly children: ReactNode }) {
+function SummaryLabel({
+  children,
+  colSpan,
+}: {
+  readonly children: ReactNode;
+  readonly colSpan: number;
+}) {
   return (
     <td
       className={`${baseCell} border-b border-l border-gray-400 p-[3px] text-left text-[10px] align-middle`}
-      colSpan={4}
+      colSpan={colSpan}
     >
       {children}
     </td>
   );
 }
 
-function SummaryValue({ children }: { readonly children: ReactNode }) {
+function SummaryValue({
+  children,
+  colSpan,
+}: {
+  readonly children: ReactNode;
+  readonly colSpan: number;
+}) {
   return (
     <td
       className={`${baseCell} border-b border-r-0 border-gray-400 p-[3px] text-right text-[9px] align-middle`}
-      colSpan={2}
+      colSpan={colSpan}
     >
       {children}
     </td>
@@ -511,7 +565,14 @@ function CompanyLogo({
   ) : null;
 }
 
-function EInvoiceQrData({ value }: { readonly value: string | null }) {
+function EInvoiceQrData({
+  irn,
+  value,
+}: {
+  readonly irn: string | null;
+  readonly value: string | null;
+}) {
+  if (!printableText(irn)) return null;
   const qrData = printableText(value);
   if (!qrData) return null;
 
@@ -666,6 +727,19 @@ function primaryBankAccount(company: CompanyRecord) {
   );
 }
 
+const defaultSalesPrintTerms = [
+  "* Goods once sold cannot be returned back or exchanged",
+  "* Seller cannot be responsible for any damage/mistakes.",
+] as const;
+
+function salesPrintTerms(value: string | null) {
+  const lines = value
+    ?.split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  return lines?.length ? lines : defaultSalesPrintTerms;
+}
+
 function normalizedPartyAddress(value: string | null) {
   return value
     ?.split(/\r?\n|,\s*/)
@@ -695,4 +769,13 @@ function amountInWords(value: number) {
 
 function printableText(value: string | null | undefined) {
   return value?.trim() ?? "";
+}
+
+function salesPrintCopyLabel(copy: SalesPrintCopy) {
+  const labels: Record<SalesPrintCopy, string> = {
+    duplicate: "Duplicate Copy",
+    original: "Original Copy",
+    triplicate: "Triplicate Copy",
+  };
+  return labels[copy];
 }

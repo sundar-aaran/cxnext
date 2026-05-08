@@ -4,8 +4,8 @@ import {
   type SalesBillingLayout,
 } from "../../application/sales-billing-layout-service";
 
-export const salesPrintMinimumItemLineBudget = 27;
-export const salesPrintMaximumItemLineBudget = 27;
+export const salesPrintMinimumItemLineBudget = 25;
+export const salesPrintMaximumItemLineBudget = 25;
 
 export type SalesPrintLineRow =
   | {
