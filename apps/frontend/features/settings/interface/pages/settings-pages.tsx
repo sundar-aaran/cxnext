@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { CheckCircle2, FileKey2, ReceiptText, Save } from "lucide-react";
+import { CheckCircle2, FileKey2, Landmark, ReceiptText, Save } from "lucide-react";
 import {
   AnimatedTabs,
   Badge,
@@ -24,12 +24,14 @@ import {
   loadSoftwareSettings,
   saveSoftwareSettings,
   updateCustomiseSetting,
+  updateDutiesTaxSetting,
   updateFeatureSetting,
   updateSalesBillingLayoutSetting,
   updateSalesDocumentSetting,
 } from "../../application/software-settings-service";
 import {
   defaultSoftwareSettingsState,
+  type DutiesTaxSettings,
   type SalesDocumentSettings,
   type SoftwareSettingsState,
   type SoftwareToggleSetting,
@@ -45,6 +47,7 @@ import {
   type CoreEnvSettingOption,
 } from "../../infrastructure/core-settings-api";
 import { listIndustries } from "../../../industry/application/industry-service";
+import { formatMoney } from "../../../sales/application/sales-service";
 
 export function SettingsIndexPage() {
   return (
@@ -65,6 +68,12 @@ export function SettingsIndexPage() {
           href="/desk/settings/billing-layout"
           icon={<ReceiptText className="size-5" />}
           title="Sales Settings"
+        />
+        <SettingsLinkCard
+          description="Maintain duties, taxes, and opening GST balances for reports."
+          href="/desk/settings/duties-taxes"
+          icon={<Landmark className="size-5" />}
+          title="Duties & Taxes"
         />
       </div>
     </CommonListPageFrame>
@@ -402,12 +411,22 @@ function areSoftwareSettingsEqual(left: SoftwareSettingsState, right: SoftwareSe
   return (
     areSettingsEqual(left.salesBillingLayout, right.salesBillingLayout) &&
     areDocumentSettingsEqual(left.salesDocumentSettings, right.salesDocumentSettings) &&
+    areDutiesTaxSettingsEqual(left.dutiesTaxSettings, right.dutiesTaxSettings) &&
     areSettingsEqual(left.features, right.features) &&
     left.customiseGroups.length === right.customiseGroups.length &&
     left.customiseGroups.every((group, index) =>
       group.id === right.customiseGroups[index]?.id &&
       areSettingsEqual(group.settings, right.customiseGroups[index]?.settings ?? []),
     )
+  );
+}
+
+function areDutiesTaxSettingsEqual(left: DutiesTaxSettings, right: DutiesTaxSettings) {
+  return (
+    left.openingGstAsOnDate === right.openingGstAsOnDate &&
+    left.openingGstCgst === right.openingGstCgst &&
+    left.openingGstIgst === right.openingGstIgst &&
+    left.openingGstSgst === right.openingGstSgst
   );
 }
 
@@ -677,6 +696,109 @@ export function FeatureSettingsPage() {
         ))}
       </div>
     </CommonListPageFrame>
+  );
+}
+
+export function DutiesTaxesSettingsPage() {
+  const [state, setState] = useSettingsState();
+  const openingGstTotal = totalOpeningGst(state.dutiesTaxSettings);
+
+  return (
+    <CommonListPageFrame
+      action={
+        <Button className="rounded-xl" onClick={() => saveSoftwareSettings(state)}>
+          <Save className="size-4" />
+          Save
+        </Button>
+      }
+      description="Set opening GST balances used by GST Statement reports."
+      technicalName="page.settings.duties-taxes"
+      title="Duties & Taxes"
+    >
+      <Card className="rounded-md border-border/70">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Opening GST</CardTitle>
+          <CardDescription>
+            Enter opening IGST, CGST, and SGST balances with the date this balance applies from.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4">
+          <div className="grid gap-3 lg:grid-cols-[1.2fr_repeat(4,1fr)]">
+            <DutiesTaxField
+              label="As on date"
+              type="date"
+              value={state.dutiesTaxSettings.openingGstAsOnDate}
+              onChange={(value) =>
+                setState((current) => updateDutiesTaxSetting(current, "openingGstAsOnDate", value))
+              }
+            />
+            <DutiesTaxField
+              label="IGST"
+              value={state.dutiesTaxSettings.openingGstIgst}
+              onChange={(value) =>
+                setState((current) => updateDutiesTaxSetting(current, "openingGstIgst", value))
+              }
+            />
+            <DutiesTaxField
+              label="CGST"
+              value={state.dutiesTaxSettings.openingGstCgst}
+              onChange={(value) =>
+                setState((current) => updateDutiesTaxSetting(current, "openingGstCgst", value))
+              }
+            />
+            <DutiesTaxField
+              label="SGST"
+              value={state.dutiesTaxSettings.openingGstSgst}
+              onChange={(value) =>
+                setState((current) => updateDutiesTaxSetting(current, "openingGstSgst", value))
+              }
+            />
+            <label className="grid gap-2 rounded-md border border-border/70 bg-muted/25 px-3 py-3">
+              <span className="text-sm font-medium text-foreground">Total</span>
+              <input
+                readOnly
+                className="h-10 rounded-md border border-input bg-background px-3 text-right text-sm font-semibold outline-none"
+                value={formatMoney(openingGstTotal)}
+              />
+            </label>
+          </div>
+        </CardContent>
+      </Card>
+    </CommonListPageFrame>
+  );
+}
+
+function DutiesTaxField({
+  label,
+  onChange,
+  type = "number",
+  value,
+}: {
+  readonly label: string;
+  readonly onChange: (value: string) => void;
+  readonly type?: "date" | "number";
+  readonly value: string;
+}) {
+  return (
+    <label className="grid gap-2 rounded-md border border-border/70 bg-background px-3 py-3">
+      <span className="text-sm font-medium text-foreground">{label}</span>
+      <input
+        className="h-10 rounded-md border border-input bg-background px-3 text-sm outline-none transition-colors focus:border-foreground/40"
+        min={type === "number" ? "0" : undefined}
+        step={type === "number" ? "0.01" : undefined}
+        type={type}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      />
+    </label>
+  );
+}
+
+function totalOpeningGst(settings: DutiesTaxSettings) {
+  return (
+    Number(settings.openingGstIgst || 0) +
+    Number(settings.openingGstCgst || 0) +
+    Number(settings.openingGstSgst || 0)
   );
 }
 

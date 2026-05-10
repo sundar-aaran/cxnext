@@ -3,14 +3,22 @@ import { PurchaseShowPage } from "../../../../../features/purchase/interface/pag
 
 export default async function PurchaseShowRoute({
   params,
+  searchParams,
 }: {
   readonly params: Promise<{ purchaseId: string }>;
+  readonly searchParams: Promise<{ print?: string }>;
 }) {
   const { purchaseId } = await params;
+  const query = await searchParams;
 
   if (!/^\d+$/.test(purchaseId)) {
     notFound();
   }
 
-  return <PurchaseShowPage purchaseId={Number.parseInt(purchaseId, 10)} />;
+  return (
+    <PurchaseShowPage
+      purchaseId={Number.parseInt(purchaseId, 10)}
+      shouldPrint={query.print === "1"}
+    />
+  );
 }

@@ -16,7 +16,7 @@ export const commonMasterGroups = {
     "taxes",
   ],
   orders: ["warehouses", "transports", "destinations", "orderTypes", "stockRejectionTypes"],
-  others: ["currencies", "paymentTerms"],
+  others: ["currencies", "paymentTerms", "months"],
 } as const;
 
 export function getCommonMasterDefinitions(

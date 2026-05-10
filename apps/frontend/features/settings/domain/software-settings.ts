@@ -17,9 +17,17 @@ export interface SoftwareCustomiseGroup {
 
 export interface SoftwareSettingsState {
   readonly customiseGroups: readonly SoftwareCustomiseGroup[];
+  readonly dutiesTaxSettings: DutiesTaxSettings;
   readonly features: readonly SoftwareToggleSetting[];
   readonly salesBillingLayout: readonly SoftwareToggleSetting[];
   readonly salesDocumentSettings: SalesDocumentSettings;
+}
+
+export interface DutiesTaxSettings {
+  readonly openingGstAsOnDate: string;
+  readonly openingGstCgst: string;
+  readonly openingGstIgst: string;
+  readonly openingGstSgst: string;
 }
 
 export interface SalesDocumentSettings {
@@ -28,6 +36,12 @@ export interface SalesDocumentSettings {
 }
 
 export const defaultSoftwareSettingsState: SoftwareSettingsState = {
+  dutiesTaxSettings: {
+    openingGstAsOnDate: "",
+    openingGstCgst: "0",
+    openingGstIgst: "0",
+    openingGstSgst: "0",
+  },
   salesDocumentSettings: {
     invoicePrefix: "SAL",
     invoiceSerialStart: "0001",

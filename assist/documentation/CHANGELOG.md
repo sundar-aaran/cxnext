@@ -2,11 +2,64 @@
 
 ## Version State
 
-- Current package version: `1.0.70`
-- Current release tag: `v-1.0.70`
+- Current package version: `1.0.71`
+- Current release tag: `v-1.0.71`
 - Versioned changelog label format: `v 1.0.<reference>`
 - Version section format: `## v-1.0.<reference>`
 - Entry format: `### [v 1.0.<reference>] YYYY-MM-DD - Title`
+
+## v-1.0.71
+
+### [v 1.0.71] 2026-05-10 - Split GST Statement Summary Cards
+
+- Split the GST Statement lower summary content into two cards: GST Summary and Period Comparison.
+- Grouped GST Balance and Tax Split inside the GST Summary card while preserving existing values.
+- Kept Period Comparison as the second card with month and year comparisons side by side on wide screens.
+- Revalidated the frontend workspace with focused typecheck.
+
+### [v 1.0.71] 2026-05-10 - Refine Sales Show Collaboration Placement
+
+- Removed the comments, activity, and entry tools collaboration panel from the Sales create/edit upsert page.
+- Kept the collaboration panel available on the Sales show page below the invoice document.
+- Removed the remaining top Send to Email action from Sales upsert and show toolbars.
+
+### [v 1.0.71] 2026-05-10 - Add Sales-Style Purchase Bill Print
+
+- Reworked the Purchase show page to use the same print toolbar, copy selection, document layout, and collaboration placement as Sales.
+- Added Supplier No and Reference Date details to the Purchase bill print header.
+- Wired Purchase row print and Save & Print to the show-page print flow.
+
+### [v 1.0.71] 2026-05-10 - Align Purchase Upsert With Sales Tone
+
+- Reworked the Purchase create/edit page into the same full-width tabbed upsert shell used by Sales.
+- Added Details, Address, and Terms tabs with compact labelled inputs.
+- Replaced stacked purchase item cards with a dense invoice-style item table, Add row action, and inline totals.
+
+### [v 1.0.71] 2026-05-10 - Align Payment And Receipt Entry Screens
+
+- Refactored Payment and Receipt upsert pages into the same full-width tabbed shell and two-column Details layout used by Sales.
+- Moved Payment and Receipt save controls into the shared footer action band.
+- Replaced the Receipt show summary card with a Sales-style printable receipt voucher, toolbar navigation, and entry collaboration panel.
+
+### [v 1.0.71] 2026-05-10 - Add Reports Menu And Statement Pages
+
+- Added a Reports side-menu group with Customer Statement, Supplier Statement, and GST Statement pages.
+- Added top filter bars for date range and party search across the new reports.
+- Added print-ready report sheets with totals and a Print action for each statement page.
+
+### [v 1.0.71] 2026-05-10 - Seed Entry Data And Refine Statements
+
+- Expanded the entry seeder to create about 18 Sales, Purchase, Payment, and Receipt records each.
+- Reworked Customer Statement to combine Sales and Receipts with running balance and record age.
+- Reworked Supplier Statement to combine Purchases and Payments with running balance and record age.
+- Reworked GST Statement into separate Sales and Purchase tables with bottom card-style taxable and GST summaries.
+- Added opening GST calculation from prior filtered records and closing GST to the GST Statement totals area.
+- Added a Months common master with seeded 2026 month ranges and connected GST Statement filtering to the selected month.
+- Replaced GST Statement total tiles with balance, tax split, and month/year comparison summary cards.
+- Added Duties & Taxes settings for opening GST split with as-on date and connected GST Statement opening balances to it.
+- Restyled GST Statement summaries as full-width sections with small nested metric cards.
+- Tightened GST Statement total sections with clean cell borders and table-like value alignment.
+- Corrected GST Statement balance calculation to Opening GST plus Purchase GST minus Sales GST.
 
 ## v-1.0.70
 

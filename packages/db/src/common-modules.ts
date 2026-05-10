@@ -304,6 +304,20 @@ export const commonModuleDefinitions = [
       { key: "books_start", label: "Books Start", type: "string", nullable: true },
     ],
   },
+  {
+    key: "months",
+    label: "Months",
+    tableName: "common_months",
+    idPrefix: "month",
+    defaultSortKey: "start_date",
+    columns: [
+      { key: "code", label: "Code", type: "string", required: true, nullable: false },
+      { key: "name", label: "Name", type: "string", required: true, nullable: false },
+      { key: "start_date", label: "Start Date", type: "string", required: true, nullable: false },
+      { key: "end_date", label: "End Date", type: "string", required: true, nullable: false },
+      { key: "description", label: "Description", type: "string", nullable: true },
+    ],
+  },
   defineSimple(
     "stockRejectionTypes",
     "Stock Rejection Types",

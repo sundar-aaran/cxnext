@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, ChevronLeft, ChevronRight, Mail, Pencil, Plus, Printer } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Pencil, Plus, Printer } from "lucide-react";
 import {
   Button,
   MasterListEmptyState,
@@ -266,7 +266,7 @@ export function SalesShowPage({
   const [industryCode, setIndustryCode] = useState<string | null>(null);
   const [industryName, setIndustryName] = useState<string | null>(null);
   const [printCompany, setPrintCompany] = useState<CompanyRecord | null>(null);
-  const [printCopy, setPrintCopy] = useState<SalesPrintCopy>("original");
+  const [printCopies, setPrintCopies] = useState<readonly SalesPrintCopy[]>(["original"]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -331,6 +331,17 @@ export function SalesShowPage({
   const previousSalesId = salesId > 1 ? salesId - 1 : null;
   const industryValue = industryCode ?? industryName;
   const salesLayout = resolveSalesBillingLayout(industryValue);
+  const selectedPrintCopies = salesPrintCopyOptions
+    .map((option) => option.value)
+    .filter((copy) => printCopies.includes(copy));
+
+  function togglePrintCopy(copy: SalesPrintCopy) {
+    setPrintCopies((currentCopies) => {
+      if (!currentCopies.includes(copy)) return [...currentCopies, copy];
+      if (currentCopies.length === 1) return currentCopies;
+      return currentCopies.filter((currentCopy) => currentCopy !== copy);
+    });
+  }
 
   return (
     <main className="theme-shell mx-auto min-h-screen w-[94%] pb-8 pt-8 text-black sm:w-[92%] lg:w-[90%] print:fixed print:inset-0 print:z-[9999] print:min-h-0 print:w-full print:overflow-visible print:bg-white print:p-0">
@@ -342,34 +353,22 @@ export function SalesShowPage({
           <p className="mt-2 text-sm text-muted-foreground">{record.documentNo}</p>
         </div>
         <div className="flex flex-wrap justify-end gap-2">
-          <div className="flex h-10 overflow-hidden rounded-xl border border-border bg-card text-sm shadow-sm">
+          <div className="flex min-h-10 flex-wrap items-center gap-1 rounded-xl border border-border bg-card px-2 py-1 text-sm shadow-sm">
             {salesPrintCopyOptions.map((option) => (
-              <button
+              <label
                 key={option.value}
-                type="button"
-                className={
-                  printCopy === option.value
-                    ? "bg-primary px-3 font-medium text-primary-foreground"
-                    : "px-3 font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
-                }
-                onClick={() => setPrintCopy(option.value)}
+                className="flex h-8 cursor-pointer items-center gap-1.5 rounded-md px-2 font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
               >
+                <input
+                  type="checkbox"
+                  className="size-3.5 accent-primary"
+                  checked={printCopies.includes(option.value)}
+                  onChange={() => togglePrintCopy(option.value)}
+                />
                 {option.label}
-              </button>
+              </label>
             ))}
           </div>
-          <Button
-            variant="outline"
-            className="rounded-xl"
-            onClick={() =>
-              toast.info("Email send is ready for mail provider integration.", {
-                description: `${record.documentNo} can be sent once SMTP/API credentials are configured.`,
-              })
-            }
-          >
-            <Mail className="size-4" />
-            Send to Email
-          </Button>
           <Button className="rounded-xl" onClick={() => window.print()}>
             <Printer className="size-4" />
             Print
@@ -408,14 +407,21 @@ export function SalesShowPage({
         </div>
       </div>
       <section className="mx-auto w-fit max-w-full overflow-hidden rounded-md border border-border/70 bg-card shadow-sm print:contents">
-        <div className="overflow-x-auto p-3 print:contents sm:p-4">
-          <SalesInvoiceDocument
-            company={printCompany}
-            copy={printCopy}
-            industryName={industryValue}
-            record={record}
-            salesLayout={salesLayout}
-          />
+        <div className="grid gap-4 overflow-x-auto p-3 print:contents sm:p-4">
+          {selectedPrintCopies.map((copy, index) => (
+            <div
+              key={copy}
+              className={index === selectedPrintCopies.length - 1 ? "print:contents" : "print:break-after-page"}
+            >
+              <SalesInvoiceDocument
+                company={printCompany}
+                copy={copy}
+                industryName={industryValue}
+                record={record}
+                salesLayout={salesLayout}
+              />
+            </div>
+          ))}
         </div>
       </section>
       <div className="mx-auto mt-4 w-full print:hidden">
@@ -435,7 +441,7 @@ const salesPrintCopyOptions: readonly {
 }[] = [
   { label: "Original", value: "original" },
   { label: "Duplicate", value: "duplicate" },
-  { label: "Triplicate", value: "triplicate" },
+  { label: "Office Copy", value: "triplicate" },
 ];
 
 function ListHeader({

@@ -3,14 +3,22 @@ import { ReceiptShowPage } from "../../../../../features/receipt/interface/pages
 
 export default async function ReceiptShowRoute({
   params,
+  searchParams,
 }: {
   readonly params: Promise<{ receiptId: string }>;
+  readonly searchParams: Promise<{ print?: string }>;
 }) {
   const { receiptId } = await params;
+  const query = await searchParams;
 
   if (!/^\d+$/.test(receiptId)) {
     notFound();
   }
 
-  return <ReceiptShowPage receiptId={Number.parseInt(receiptId, 10)} />;
+  return (
+    <ReceiptShowPage
+      receiptId={Number.parseInt(receiptId, 10)}
+      shouldPrint={query.print === "1"}
+    />
+  );
 }

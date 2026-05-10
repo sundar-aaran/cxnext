@@ -63,6 +63,7 @@ export function preparePurchaseInput(input: PurchaseInput): PurchaseInput {
     items: input.items
       .map((item, index) => ({
         ...item,
+        areaSq: Number(item.areaSq || 0),
         productName: item.productName.trim(),
         quantity: Number(item.quantity || 0),
         rate: Number(item.rate || 0),

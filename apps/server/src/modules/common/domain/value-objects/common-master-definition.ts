@@ -20,6 +20,7 @@ export type CommonMasterModuleKey =
   | "stockRejectionTypes"
   | "currencies"
   | "paymentTerms"
+  | "months"
   | "accountingYear";
 
 export type CommonMasterColumnKey =
@@ -227,6 +228,13 @@ export const commonMasterDefinitions = {
     label: "Payment Terms",
     listOrder: ["name", "asc"],
     writableColumns: ["code", "name", "description", "dueDays", "isActive"],
+  },
+  months: {
+    key: "months",
+    tableName: "common_months",
+    label: "Months",
+    listOrder: ["start_date", "asc"],
+    writableColumns: ["code", "name", "startDate", "endDate", "description", "isActive"],
   },
   accountingYear: {
     key: "accountingYear",

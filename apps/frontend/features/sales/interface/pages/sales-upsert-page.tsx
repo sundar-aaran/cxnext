@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Copy, Mail } from "lucide-react";
+import { ArrowLeft, Copy } from "lucide-react";
 import { toast } from "sonner";
 import {
   Button,
@@ -31,7 +31,6 @@ import {
   type SalesRecord,
 } from "../../domain/sales";
 import { SalesVoucherTabs, salesTypeOptions } from "../components/sales-voucher-form";
-import { EntryCollaborationPanel } from "../../../entries/interface/components/entry-collaboration-panel";
 
 export function SalesUpsertPage({ salesId }: { readonly salesId?: number }) {
   const router = useRouter();
@@ -155,19 +154,6 @@ export function SalesUpsertPage({ salesId }: { readonly salesId?: number }) {
     <MasterListPageFrame
       action={
         <div className="flex flex-wrap justify-end gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            className="rounded-xl"
-            onClick={() =>
-              toast.info("Email send is ready for mail provider integration.", {
-                description: `${form.documentNo || "This sales invoice"} can be sent once SMTP/API credentials are configured.`,
-              })
-            }
-          >
-            <Mail className="size-4" />
-            Send to Email
-          </Button>
           <Button asChild type="button" variant="outline" className="rounded-xl">
             <Link href="/desk/sales">
               <ArrowLeft className="size-4" />
@@ -211,11 +197,6 @@ export function SalesUpsertPage({ salesId }: { readonly salesId?: number }) {
           </form>
         </MasterListUpsertCard>
         {diagnostic ? <SalesDiagnosticBanner diagnostic={diagnostic} /> : null}
-        <EntryCollaborationPanel
-          entryId={salesId ?? null}
-          entryKind="sales"
-          entryLabel={form.documentNo || "this sales invoice"}
-        />
       </MasterListUpsertLayout>
     </MasterListPageFrame>
   );

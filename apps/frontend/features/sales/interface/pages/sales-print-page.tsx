@@ -25,18 +25,36 @@ const times = "font-['Times_New_Roman']";
 
 export type SalesPrintCopy = "duplicate" | "original" | "triplicate";
 
+export interface SalesPrintDetailLine {
+  readonly label: string;
+  readonly strong?: boolean;
+  readonly value: ReactNode;
+}
+
 export function SalesInvoiceDocument({
   company,
   copy = "original",
+  detailLines,
+  documentTitle = "TAX INVOICE",
   industryName,
+  partyAddressLabel = "Buyer",
   record,
+  rightDetailLines,
   salesLayout: providedSalesLayout,
+  showEInvoiceDetails = true,
+  showFooterDetails = true,
 }: {
   readonly company?: CompanyRecord | null;
   readonly copy?: SalesPrintCopy;
+  readonly detailLines?: readonly SalesPrintDetailLine[];
+  readonly documentTitle?: string;
   readonly industryName?: string | null;
+  readonly partyAddressLabel?: string;
   readonly record: SalesRecord;
+  readonly rightDetailLines?: readonly SalesPrintDetailLine[];
   readonly salesLayout?: SalesBillingLayout;
+  readonly showEInvoiceDetails?: boolean;
+  readonly showFooterDetails?: boolean;
 }) {
   const totals = useMemo(
     () => calculateSalesTotals(record.items, Number(record.roundOff ?? 0)),
@@ -69,7 +87,7 @@ export function SalesInvoiceDocument({
     <MainPrintTemplate>
       <div className="grid grid-cols-[1fr_auto_1fr] p-px text-[9px]">
         <span />
-        <span className="text-[12px] font-bold">TAX INVOICE</span>
+        <span className="text-[12px] font-bold">{documentTitle}</span>
         <span className="text-right">{salesPrintCopyLabel(copy)}</span>
       </div>
       <table className={`${tableClass} border-b-0`}>
@@ -104,10 +122,22 @@ export function SalesInvoiceDocument({
             <td className={`${baseCell} border-t border-gray-400 border-r-0 p-[5px]`} colSpan={3}>
               <div className="grid grid-cols-2">
                 <div className="border-r border-gray-400 pr-[10px]">
-                  <BillDetailsBlock record={record} />
+                  <BillDetailsBlock
+                    lines={
+                      detailLines ?? [
+                        { label: "Invoice No:", value: record.documentNo, strong: true },
+                        { label: "Date:", value: formatDate(record.documentDate), strong: true },
+                        { label: "Reference:", value: record.referenceNo ?? "" },
+                      ]
+                    }
+                  />
                 </div>
                 <div className="pl-[10px]">
-                  <EInvoiceQrSection record={record} />
+                  {rightDetailLines ? (
+                    <BillDetailsBlock lines={rightDetailLines} labelWidthClassName="grid-cols-[104px_1fr]" />
+                  ) : showEInvoiceDetails ? (
+                    <EInvoiceQrSection record={record} />
+                  ) : null}
                 </div>
               </div>
             </td>
@@ -118,7 +148,7 @@ export function SalesInvoiceDocument({
             >
               <PartyAddressBlock
                 address={record.billingAddress}
-                label="Buyer (Bill to)"
+                label={`${partyAddressLabel} (Bill to)`}
                 partyName={record.partyName}
               />
             </td>
@@ -127,7 +157,7 @@ export function SalesInvoiceDocument({
             >
               <PartyAddressBlock
                 address={record.shippingAddress ?? record.billingAddress}
-                label="Buyer (Ship to)"
+                label={`${partyAddressLabel} (Ship to)`}
                 partyName={record.partyName}
               />
             </td>
@@ -184,7 +214,7 @@ export function SalesInvoiceDocument({
               colSpan={summaryLeftColSpan}
               className={`${baseCell} p-[3px] text-[8px] leading-tight`}
             >
-              {company?.gstinUin
+              {showFooterDetails && company?.gstinUin
                 ? "We hereby certify that our registration under the GST Act 2017 is in force on the date on which sale of goods specified in this invoice is made by us and the sale is effected in the regular course of business."
                 : ""}
             </td>
@@ -204,9 +234,9 @@ export function SalesInvoiceDocument({
               colSpan={summaryLeftColSpan}
               className={`${baseCell} p-[3px] text-[8px] font-bold leading-tight`}
             >
-              {termsLines.map((line) => (
-                <div key={line}>{line}</div>
-              ))}
+              {showFooterDetails
+                ? termsLines.map((line) => <div key={line}>{line}</div>)
+                : null}
             </td>
             <SummaryLabel colSpan={summaryLabelColSpan}>
               {isCgstSgst ? "Total SGST" : `IGST @ ${gstPercent}%`}
@@ -220,23 +250,35 @@ export function SalesInvoiceDocument({
             <SummaryLabel colSpan={summaryLabelColSpan}>Total GST</SummaryLabel>
             <SummaryValue colSpan={summaryValueColSpan}>{money(totals.gstTotal)}</SummaryValue>
           </tr>
-          <tr>
-            <td
-              rowSpan={2}
-              colSpan={summaryLeftColSpan}
-              className={`${baseCell} p-[3px] text-[9px] font-bold leading-tight`}
-            >
-              <BankDetailsBlock bank={companyBank} />
-            </td>
-            <SummaryLabel colSpan={summaryLabelColSpan}>&nbsp;</SummaryLabel>
-            <SummaryValue colSpan={summaryValueColSpan}>&nbsp;</SummaryValue>
-          </tr>
-          <tr>
-            <SummaryLabel colSpan={summaryLabelColSpan}>Round Off</SummaryLabel>
-            <SummaryValue colSpan={summaryValueColSpan}>
-              {money(Number(record.roundOff ?? 0))}
-            </SummaryValue>
-          </tr>
+          {showFooterDetails ? (
+            <>
+              <tr>
+                <td
+                  rowSpan={2}
+                  colSpan={summaryLeftColSpan}
+                  className={`${baseCell} p-[3px] text-[9px] font-bold leading-tight`}
+                >
+                  <BankDetailsBlock bank={companyBank} />
+                </td>
+                <SummaryLabel colSpan={summaryLabelColSpan}>&nbsp;</SummaryLabel>
+                <SummaryValue colSpan={summaryValueColSpan}>&nbsp;</SummaryValue>
+              </tr>
+              <tr>
+                <SummaryLabel colSpan={summaryLabelColSpan}>Round Off</SummaryLabel>
+                <SummaryValue colSpan={summaryValueColSpan}>
+                  {money(Number(record.roundOff ?? 0))}
+                </SummaryValue>
+              </tr>
+            </>
+          ) : (
+            <tr>
+              <td colSpan={summaryLeftColSpan} className={baseCell} />
+              <SummaryLabel colSpan={summaryLabelColSpan}>Round Off</SummaryLabel>
+              <SummaryValue colSpan={summaryValueColSpan}>
+                {money(Number(record.roundOff ?? 0))}
+              </SummaryValue>
+            </tr>
+          )}
           <tr>
             <td
               colSpan={summaryLeftColSpan}
@@ -291,7 +333,7 @@ function SalesPrintItemRow({
       {columns.map((column, columnIndex) => (
         <td
           key={column.id}
-          className={`${lineItemCell} ${column.align === "right" ? "text-right" : column.align === "left" ? "text-left" : ""}${columnIndex === columns.length - 1 ? " border-r-0" : ""}`}
+          className={`${lineItemCell} pt-[5px] ${column.align === "right" ? "text-right" : column.align === "left" ? "text-left" : ""}${columnIndex === columns.length - 1 ? " border-r-0" : ""}`}
         >
           {renderPrintCell(column.id, index, item, taxable, gst)}
         </td>
@@ -422,18 +464,20 @@ function PartyAddressBlock({
   );
 }
 
-function BillDetailsBlock({ record }: { readonly record: SalesRecord }) {
+function BillDetailsBlock({
+  labelWidthClassName = "grid-cols-[76px_1fr]",
+  lines,
+}: {
+  readonly labelWidthClassName?: string;
+  readonly lines: readonly SalesPrintDetailLine[];
+}) {
   return (
     <div className="space-y-[1px] leading-[1.35]">
-      <BillDetailsLine label="Invoice No:">
-        <BillValue strong>{record.documentNo}</BillValue>
-      </BillDetailsLine>
-      <BillDetailsLine label="Date:">
-        <BillValue strong>{formatDate(record.documentDate)}</BillValue>
-      </BillDetailsLine>
-      <BillDetailsLine label="Reference:">
-        <BillValue>{record.referenceNo ?? ""}</BillValue>
-      </BillDetailsLine>
+      {lines.map((line) => (
+        <BillDetailsLine key={line.label} label={line.label} labelWidthClassName={labelWidthClassName}>
+          <BillValue strong={line.strong}>{line.value}</BillValue>
+        </BillDetailsLine>
+      ))}
     </div>
   );
 }
@@ -441,12 +485,14 @@ function BillDetailsBlock({ record }: { readonly record: SalesRecord }) {
 function BillDetailsLine({
   children,
   label,
+  labelWidthClassName,
 }: {
   readonly children: ReactNode;
   readonly label: string;
+  readonly labelWidthClassName: string;
 }) {
   return (
-    <div className="grid grid-cols-[76px_1fr] gap-[10px]">
+    <div className={`grid ${labelWidthClassName} gap-[10px]`}>
       <span className="font-bold">{label}</span>
       <span className="min-w-0">{children}</span>
     </div>
@@ -762,10 +808,78 @@ function money(value: number) {
 }
 
 function amountInWords(value: number) {
-  const rounded = Math.round(value);
-  if (rounded === 0) return "Zero";
-  return `${rounded.toLocaleString("en-IN")} Rupees`;
+  const amount = Math.abs(Number(value || 0));
+  const rupees = Math.floor(amount);
+  const paise = Math.round((amount - rupees) * 100);
+  const rupeeText = `${numberToIndianWords(rupees)} Rupees`;
+  const paiseText = paise > 0 ? ` and ${numberToIndianWords(paise)} Paise` : "";
+  return `${value < 0 ? "Minus " : ""}${rupeeText}${paiseText}`;
 }
+
+function numberToIndianWords(value: number): string {
+  if (value === 0) return "Zero";
+
+  const parts: string[] = [];
+  const crore = Math.floor(value / 10_000_000);
+  value %= 10_000_000;
+  const lakh = Math.floor(value / 100_000);
+  value %= 100_000;
+  const thousand = Math.floor(value / 1_000);
+  value %= 1_000;
+  const hundred = Math.floor(value / 100);
+  const rest = value % 100;
+
+  if (crore) parts.push(`${numberBelowHundred(crore)} Crore`);
+  if (lakh) parts.push(`${numberBelowHundred(lakh)} Lakh`);
+  if (thousand) parts.push(`${numberBelowHundred(thousand)} Thousand`);
+  if (hundred) parts.push(`${ones[hundred]} Hundred`);
+  if (rest) parts.push(numberBelowHundred(rest));
+
+  return parts.join(" ");
+}
+
+function numberBelowHundred(value: number) {
+  if (value < 20) return ones[value];
+  const ten = Math.floor(value / 10);
+  const unit = value % 10;
+  return unit ? `${tens[ten]} ${ones[unit]}` : tens[ten];
+}
+
+const ones = [
+  "Zero",
+  "One",
+  "Two",
+  "Three",
+  "Four",
+  "Five",
+  "Six",
+  "Seven",
+  "Eight",
+  "Nine",
+  "Ten",
+  "Eleven",
+  "Twelve",
+  "Thirteen",
+  "Fourteen",
+  "Fifteen",
+  "Sixteen",
+  "Seventeen",
+  "Eighteen",
+  "Nineteen",
+] as const;
+
+const tens = [
+  "",
+  "",
+  "Twenty",
+  "Thirty",
+  "Forty",
+  "Fifty",
+  "Sixty",
+  "Seventy",
+  "Eighty",
+  "Ninety",
+] as const;
 
 function printableText(value: string | null | undefined) {
   return value?.trim() ?? "";
@@ -775,7 +889,7 @@ function salesPrintCopyLabel(copy: SalesPrintCopy) {
   const labels: Record<SalesPrintCopy, string> = {
     duplicate: "Duplicate Copy",
     original: "Original Copy",
-    triplicate: "Triplicate Copy",
+    triplicate: "Office Copy",
   };
   return labels[copy];
 }

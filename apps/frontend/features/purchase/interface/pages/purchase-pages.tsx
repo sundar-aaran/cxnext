@@ -4,23 +4,49 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
-import { Plus, Printer, X } from "lucide-react";
 import {
+  ArrowLeft,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Pencil,
+  Plus,
+  Printer,
+  Trash2,
+  X,
+} from "lucide-react";
+import {
+  AnimatedTabs,
   Button,
   Input,
+  Label,
   MasterListEmptyState,
   MasterListPageFrame,
   MasterListPaginationCard,
-  MasterListShowCard,
   MasterListTableCard,
   MasterListToolbarCard,
   MasterListUpsertCard,
   MasterListUpsertLayout,
   RowActionMenu,
   SavePrintButtons,
-  Separator,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   buildMasterListShowingLabel,
 } from "@cxnext/ui";
+import { listCompanies } from "../../../company/application/company-service";
+import type { CompanyRecord } from "../../../company/domain/company";
+import { EntryCollaborationPanel } from "../../../entries/interface/components/entry-collaboration-panel";
+import { getCoreEnvSettings } from "../../../settings/infrastructure/core-settings-api";
+import { resolveSalesBillingLayout } from "../../../sales/application/sales-billing-layout-service";
+import type { SalesRecord } from "../../../sales/domain/sales";
+import {
+  SalesInvoiceDocument,
+  type SalesPrintCopy,
+  type SalesPrintDetailLine,
+} from "../../../sales/interface/pages/sales-print-page";
 import {
   buildPurchaseColumnOptions,
   deletePurchase,
@@ -42,6 +68,11 @@ import {
   type PurchaseRecord,
   type PurchaseStatusFilter,
 } from "../../domain/purchase";
+
+const purchaseTypeOptions = [
+  { label: "CGST-SGST", value: "cgst-sgst" },
+  { label: "IGST", value: "igst" },
+] as const;
 
 export function PurchaseListPage() {
   const [records, setRecords] = useState<readonly PurchaseRecord[]>([]);
@@ -141,10 +172,10 @@ export function PurchaseListPage() {
           <table className="w-full min-w-[1040px] border-collapse text-sm">
             <thead className="bg-muted/55">
               <tr>
-                {visibleColumns.documentNo ? <ListHeader>Bill</ListHeader> : null}
-                {visibleColumns.documentDate ? <ListHeader>Date</ListHeader> : null}
+                {visibleColumns.documentNo ? <ListHeader>Entry no</ListHeader> : null}
+                {visibleColumns.documentDate ? <ListHeader>Entry date</ListHeader> : null}
                 {visibleColumns.party ? <ListHeader>Supplier</ListHeader> : null}
-                {visibleColumns.supplierInvoice ? <ListHeader>Supplier invoice</ListHeader> : null}
+                {visibleColumns.supplierInvoice ? <ListHeader>Supplier bill no</ListHeader> : null}
                 {visibleColumns.status ? <ListHeader>Status</ListHeader> : null}
                 {visibleColumns.paymentStatus ? <ListHeader>Payment</ListHeader> : null}
                 {visibleColumns.total ? <ListHeader align="right">Total</ListHeader> : null}
@@ -198,6 +229,7 @@ export function PurchaseListPage() {
                     <RowActionMenu
                       editHref={`/desk/purchase/${record.id}/edit`}
                       isActive={record.isActive}
+                      printHref={`/desk/purchase/${record.id}?print=1`}
                       viewHref={`/desk/purchase/${record.id}`}
                       onDelete={() => void remove(record)}
                       onRestore={() => void restore(record)}
@@ -235,30 +267,188 @@ export function PurchaseListPage() {
   );
 }
 
-export function PurchaseShowPage({ purchaseId }: { readonly purchaseId: number }) {
+export function PurchaseShowPage({
+  purchaseId,
+  shouldPrint = false,
+}: {
+  readonly purchaseId: number;
+  readonly shouldPrint?: boolean;
+}) {
   const [record, setRecord] = useState<PurchaseRecord | null>(null);
+  const [industryCode, setIndustryCode] = useState<string | null>(null);
+  const [industryName, setIndustryName] = useState<string | null>(null);
+  const [printCompany, setPrintCompany] = useState<CompanyRecord | null>(null);
+  const [printCopies, setPrintCopies] = useState<readonly SalesPrintCopy[]>(["original"]);
+
   useEffect(() => void getPurchase(purchaseId).then(setRecord), [purchaseId]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    Promise.all([
+      listCompanies({ signal: controller.signal }),
+      getCoreEnvSettings({ signal: controller.signal }).catch(() => null),
+    ])
+      .then(([companies, settings]) => {
+        if (controller.signal.aborted) return;
+        const company = companies.find((item) => item.isPrimary) ?? companies[0] ?? null;
+        setPrintCompany(company);
+        setIndustryCode(getAppTypeFromSettings(settings) ?? company?.industryCode ?? null);
+        setIndustryName(company?.industryName ?? null);
+      })
+      .catch((error) => {
+        if (isAbortError(error)) return;
+        setPrintCompany(null);
+        setIndustryCode(null);
+        setIndustryName(null);
+      });
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    if (!record || !shouldPrint) return;
+    const printTimer = window.setTimeout(() => window.print(), 250);
+    return () => window.clearTimeout(printTimer);
+  }, [record, shouldPrint]);
+
+  if (!record) {
+    return (
+      <MasterListPageFrame
+        description="Loading purchase bill."
+        technicalName="page.entries.purchase.show"
+        title="Purchase"
+      >
+        <div className="rounded-md border border-border/70 bg-card p-6 text-sm text-muted-foreground">
+          Loading.
+        </div>
+      </MasterListPageFrame>
+    );
+  }
+
+  const previousPurchaseId = purchaseId > 1 ? purchaseId - 1 : null;
+  const industryValue = industryCode ?? industryName;
+  const purchaseLayout = resolveSalesBillingLayout(industryValue);
+  const selectedPrintCopies = purchasePrintCopyOptions
+    .map((option) => option.value)
+    .filter((copy) => printCopies.includes(copy));
+  const purchasePrintRecord = toSalesPrintRecord(record);
+  const detailLines: readonly SalesPrintDetailLine[] = [
+    { label: "Entry No:", value: record.documentNo, strong: true },
+    { label: "Entry Date:", value: printDate(record.documentDate), strong: true },
+  ];
+  const rightDetailLines: readonly SalesPrintDetailLine[] = [
+    { label: "Supplier Bill No:", value: record.supplierInvoiceNo ?? "" },
+    {
+      label: "Purchase Bill Dt:",
+      value: record.supplierInvoiceDate ? printDate(record.supplierInvoiceDate) : "",
+    },
+    { label: "PO/Order Ref:", value: record.referenceNo ?? "" },
+  ];
+
+  function togglePrintCopy(copy: SalesPrintCopy) {
+    setPrintCopies((currentCopies) => {
+      if (!currentCopies.includes(copy)) return [...currentCopies, copy];
+      if (currentCopies.length === 1) return currentCopies;
+      return currentCopies.filter((currentCopy) => currentCopy !== copy);
+    });
+  }
+
   return (
-    <MasterListPageFrame
-      action={
-        <div className="flex flex-wrap gap-2">
-          <Button asChild className="rounded-xl">
-            <Link href={`/desk/purchase/${purchaseId}/edit`}>Edit</Link>
-          </Button>
-          <Button variant="outline" className="rounded-xl" onClick={() => window.print()}>
+    <main className="theme-shell mx-auto min-h-screen w-[94%] pb-8 pt-8 text-black sm:w-[92%] lg:w-[90%] print:fixed print:inset-0 print:z-[9999] print:min-h-0 print:w-full print:overflow-visible print:bg-white print:p-0">
+      <div className="mx-auto mb-3 flex w-full flex-wrap items-center justify-between gap-3 print:hidden">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-normal text-foreground">
+            {record.partyName}
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">{record.documentNo}</p>
+        </div>
+        <div className="flex flex-wrap justify-end gap-2">
+          <div className="flex min-h-10 flex-wrap items-center gap-1 rounded-xl border border-border bg-card px-2 py-1 text-sm shadow-sm">
+            {purchasePrintCopyOptions.map((option) => (
+              <label
+                key={option.value}
+                className="flex h-8 cursor-pointer items-center gap-1.5 rounded-md px-2 font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <input
+                  type="checkbox"
+                  className="size-3.5 accent-primary"
+                  checked={printCopies.includes(option.value)}
+                  onChange={() => togglePrintCopy(option.value)}
+                />
+                {option.label}
+              </label>
+            ))}
+          </div>
+          <Button className="rounded-xl" onClick={() => window.print()}>
             <Printer className="size-4" />
             Print
           </Button>
+          <Button asChild variant="outline" className="rounded-xl">
+            <Link href={`/desk/purchase/${purchaseId}/edit`}>
+              <Pencil className="size-4" />
+              Edit
+            </Link>
+          </Button>
+          <Button asChild variant="outline" className="rounded-xl">
+            <Link href="/desk/purchase">
+              <ArrowLeft className="size-4" />
+              Back
+            </Link>
+          </Button>
+          {previousPurchaseId ? (
+            <Button asChild variant="outline" className="rounded-xl">
+              <Link href={`/desk/purchase/${previousPurchaseId}`}>
+                <ChevronLeft className="size-4" />
+                Prev
+              </Link>
+            </Button>
+          ) : (
+            <Button variant="outline" className="rounded-xl" disabled>
+              <ChevronLeft className="size-4" />
+              Prev
+            </Button>
+          )}
+          <Button asChild variant="outline" className="rounded-xl">
+            <Link href={`/desk/purchase/${purchaseId + 1}`}>
+              <ChevronRight className="size-4" />
+              Next
+            </Link>
+          </Button>
         </div>
-      }
-      description={record?.partyName ?? "Loading purchase."}
-      technicalName="page.entries.purchase.show"
-      title={record?.documentNo ?? "Purchase"}
-    >
-      <MasterListShowCard className={entryShowCardClassName} title="Totals">
-        {record ? `${formatMoney(record.grandTotal)} / ${record.paymentStatus}` : "Loading."}
-      </MasterListShowCard>
-    </MasterListPageFrame>
+      </div>
+      <section className="mx-auto w-fit max-w-full overflow-hidden rounded-md border border-border/70 bg-card shadow-sm print:contents">
+        <div className="grid gap-4 overflow-x-auto p-3 print:contents sm:p-4">
+          {selectedPrintCopies.map((copy, index) => (
+            <div
+              key={copy}
+              className={
+                index === selectedPrintCopies.length - 1 ? "print:contents" : "print:break-after-page"
+              }
+            >
+              <SalesInvoiceDocument
+                company={printCompany}
+                copy={copy}
+                detailLines={detailLines}
+                documentTitle="PURCHASE RECEIPT BILL"
+                industryName={industryValue}
+                partyAddressLabel="Supplier"
+                record={purchasePrintRecord}
+                rightDetailLines={rightDetailLines}
+                salesLayout={purchaseLayout}
+                showEInvoiceDetails={false}
+                showFooterDetails={false}
+              />
+            </div>
+          ))}
+        </div>
+      </section>
+      <div className="mx-auto mt-4 w-full print:hidden">
+        <EntryCollaborationPanel
+          entryId={purchaseId}
+          entryKind="purchase"
+          entryLabel={record.documentNo}
+        />
+      </div>
+    </main>
   );
 }
 
@@ -274,6 +464,9 @@ export function PurchaseUpsertPage({ purchaseId }: { readonly purchaseId?: numbe
             ...defaultPurchaseInput(),
             ...record,
             documentDate: record.documentDate.slice(0, 10),
+            supplierInvoiceDate: record.supplierInvoiceDate
+              ? record.supplierInvoiceDate.slice(0, 10)
+              : null,
           }),
       );
   }, [purchaseId]);
@@ -281,7 +474,8 @@ export function PurchaseUpsertPage({ purchaseId }: { readonly purchaseId?: numbe
     const record = await upsertPurchase(preparePurchaseInput(form), purchaseId);
     toast.success(purchaseId ? "Purchase updated" : "Purchase created");
     if (printAfterSave) {
-      window.print();
+      router.push(`/desk/purchase/${record.id}?print=1`);
+      return;
     }
     router.push(`/desk/purchase/${record.id}`);
   }
@@ -295,91 +489,587 @@ export function PurchaseUpsertPage({ purchaseId }: { readonly purchaseId?: numbe
           </Link>
         </Button>
       }
-      description="Basic purchase billing entry."
+      className="w-[calc(100%-2rem)] max-w-[1500px] sm:w-[calc(100%-3rem)] lg:w-[calc(100%-4rem)]"
+      description="Create a tabbed purchase bill with item-level GST totals."
       technicalName="page.entries.purchase.upsert"
       title={purchaseId ? "Edit purchase" : "New purchase"}
     >
       <MasterListUpsertLayout>
-        <MasterListUpsertCard>
+        <MasterListUpsertCard className="overflow-hidden p-0 [&>div]:p-0">
           <form
-            className="space-y-5"
             onSubmit={(event) => {
               event.preventDefault();
               void save();
             }}
           >
-            <div className="grid gap-4 md:grid-cols-3">
-              <Input
-                value={form.documentNo}
-                placeholder="Bill no"
-                onChange={(event) => setForm({ ...form, documentNo: event.target.value })}
-              />
-              <Input
-                type="date"
-                value={form.documentDate}
-                onChange={(event) => setForm({ ...form, documentDate: event.target.value })}
-              />
-              <Input
-                value={form.partyName}
-                placeholder="Supplier name"
-                onChange={(event) => setForm({ ...form, partyName: event.target.value })}
-              />
-              <Input
-                value={form.supplierInvoiceNo ?? ""}
-                placeholder="Supplier invoice no"
-                onChange={(event) => setForm({ ...form, supplierInvoiceNo: event.target.value })}
-              />
+            <div className="px-0 pb-4 pt-3 md:pb-5">
+              <PurchaseVoucherTabs form={form} setForm={setForm} />
             </div>
-            {form.items.map((item, index) => (
-              <div
-                key={index}
-                className="grid gap-3 rounded-md border border-border/70 p-3 md:grid-cols-4"
-              >
-                <Input
-                  value={item.productName}
-                  placeholder="Product"
-                  onChange={(event) =>
-                    setItem(form, setForm, index, { productName: event.target.value })
-                  }
-                />
-                <Input
-                  type="number"
-                  value={item.quantity}
-                  onChange={(event) =>
-                    setItem(form, setForm, index, { quantity: Number(event.target.value || 0) })
-                  }
-                />
-                <Input
-                  type="number"
-                  value={item.rate}
-                  onChange={(event) =>
-                    setItem(form, setForm, index, { rate: Number(event.target.value || 0) })
-                  }
-                />
-                <Input
-                  type="number"
-                  value={item.taxRate}
-                  onChange={(event) =>
-                    setItem(form, setForm, index, { taxRate: Number(event.target.value || 0) })
-                  }
-                />
-              </div>
-            ))}
-            <Button
-              type="button"
-              variant="outline"
-              className="rounded-xl"
-              onClick={() => setForm({ ...form, items: [...form.items, defaultPurchaseItem()] })}
-            >
-              Add item
-            </Button>
-            <Separator />
-            <SavePrintButtons saveLabel="Save purchase" onSavePrint={() => void save(true)} />
+            <div className="flex flex-wrap justify-start gap-3 border-t border-border/70 bg-muted/20 px-4 py-4 md:px-6">
+              <SavePrintButtons saveLabel="Save" onSavePrint={() => void save(true)} />
+              <Button asChild type="button" variant="outline" className="rounded-xl">
+                <Link href={purchaseId ? `/desk/purchase/${purchaseId}` : "/desk/purchase"}>
+                  <ArrowLeft className="size-4" />
+                  Cancel
+                </Link>
+              </Button>
+            </div>
           </form>
         </MasterListUpsertCard>
       </MasterListUpsertLayout>
     </MasterListPageFrame>
   );
+}
+
+function PurchaseVoucherTabs({
+  form,
+  setForm,
+}: {
+  readonly form: PurchaseInput;
+  readonly setForm: (value: PurchaseInput) => void;
+}) {
+  const totals = useMemo(() => calculatePurchaseTotals(form), [form.items, form.roundOff]);
+  const tabs = [
+    {
+      value: "details",
+      label: "Details",
+      content: <PurchaseDetailsTab form={form} setForm={setForm} totals={totals} />,
+    },
+    {
+      value: "address",
+      label: "Address",
+      content: <PurchaseAddressTab form={form} setForm={setForm} />,
+    },
+    {
+      value: "terms",
+      label: "Terms",
+      content: <PurchaseTermsTab form={form} setForm={setForm} />,
+    },
+  ];
+
+  return (
+    <AnimatedTabs
+      className="[&>div:first-child]:rounded-none [&>div:first-child]:border-x-0 [&>div:first-child]:border-t-0 [&>div:first-child]:border-b [&>div:first-child]:border-border/70 [&>div:first-child]:bg-card [&>div:first-child]:px-4 [&>div:first-child]:py-0.5 [&>div:first-child]:shadow-none md:[&>div:first-child]:px-6 [&>div:first-child_button]:min-h-8 [&>div:first-child_button]:py-1 [&>div:last-child]:mx-auto [&>div:last-child]:mt-3 [&>div:last-child]:w-full [&>div:last-child]:px-4 [&>div:last-child]:pb-3 md:[&>div:last-child]:px-6 md:[&>div:last-child]:pb-4"
+      tabs={tabs}
+    />
+  );
+}
+
+function PurchaseDetailsTab({
+  form,
+  setForm,
+  totals,
+}: {
+  readonly form: PurchaseInput;
+  readonly setForm: (value: PurchaseInput) => void;
+  readonly totals: PurchaseTotals;
+}) {
+  const [itemDraft, setItemDraft] = useState(defaultPurchaseItem());
+  const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
+
+  function addItem() {
+    if (!itemDraft.productName.trim()) return;
+    if (editingItemIndex !== null) {
+      setForm({
+        ...form,
+        items: form.items.map((item, index) =>
+          index === editingItemIndex
+            ? { ...itemDraft, productName: itemDraft.productName.trim(), sortOrder: index + 1 }
+            : item,
+        ),
+      });
+      setItemDraft(defaultPurchaseItem());
+      setEditingItemIndex(null);
+      return;
+    }
+    setForm({
+      ...form,
+      items: [
+        ...form.items.filter((item) => item.productName.trim()),
+        { ...itemDraft, productName: itemDraft.productName.trim(), sortOrder: form.items.length + 1 },
+      ],
+    });
+    setItemDraft(defaultPurchaseItem());
+  }
+
+  function editItem(index: number) {
+    const item = form.items[index];
+    if (!item) return;
+    setItemDraft(item);
+    setEditingItemIndex(index);
+  }
+
+  function deleteItem(index: number) {
+    setForm({ ...form, items: form.items.filter((_, itemIndex) => itemIndex !== index) });
+    if (editingItemIndex === index) {
+      setItemDraft(defaultPurchaseItem());
+      setEditingItemIndex(null);
+    }
+  }
+
+  function cancelItemEdit() {
+    setItemDraft(defaultPurchaseItem());
+    setEditingItemIndex(null);
+  }
+
+  return (
+    <div className="space-y-8">
+      <div className="grid gap-5 lg:grid-cols-2">
+        <div className="space-y-5">
+          <Field label="Supplier name">
+            <Input
+              className="h-11 rounded-md"
+              value={form.partyName}
+              onChange={(event) => setForm({ ...form, partyName: event.target.value })}
+            />
+          </Field>
+          <Field label="Supplier bill no">
+            <Input
+              className="h-11 rounded-md"
+              value={form.supplierInvoiceNo ?? ""}
+              onChange={(event) => setForm({ ...form, supplierInvoiceNo: event.target.value })}
+            />
+          </Field>
+          <Field label="Purchase bill date">
+            <Input
+              className="h-11 rounded-md text-right"
+              type="date"
+              value={form.supplierInvoiceDate ?? ""}
+              onChange={(event) =>
+                setForm({ ...form, supplierInvoiceDate: event.target.value || null })
+              }
+            />
+          </Field>
+          <Field label="PO/Order Reference">
+            <Input
+              className="h-11 rounded-md"
+              value={form.referenceNo ?? ""}
+              onChange={(event) => setForm({ ...form, referenceNo: event.target.value })}
+            />
+          </Field>
+        </div>
+        <div className="space-y-5">
+          <Field label="Entry no">
+            <Input
+              className="h-11 rounded-md text-left"
+              value={form.documentNo}
+              onChange={(event) => setForm({ ...form, documentNo: event.target.value })}
+            />
+          </Field>
+          <Field label="Entry date">
+            <Input
+              className="h-11 rounded-md text-right"
+              type="date"
+              value={form.documentDate}
+              onChange={(event) => setForm({ ...form, documentDate: event.target.value })}
+            />
+          </Field>
+          <Field label="Purchase tax type">
+            <Select
+              value={form.placeOfSupply ?? purchaseTypeOptions[0].value}
+              onValueChange={(value) => setForm({ ...form, placeOfSupply: value })}
+            >
+              <SelectTrigger className="h-11 rounded-md">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {purchaseTypeOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+        </div>
+      </div>
+      <section className="space-y-5">
+        <h2 className="text-lg font-semibold text-primary underline underline-offset-4">
+          Purchase Items
+        </h2>
+        <div className="grid gap-3 lg:grid-cols-[repeat(6,minmax(0,1fr))_auto]">
+          <Field label="Product name">
+            <Input
+              className="h-11 rounded-md"
+              value={itemDraft.productName}
+              onChange={(event) => setItemDraft({ ...itemDraft, productName: event.target.value })}
+            />
+          </Field>
+          <Field label="Description">
+            <Input
+              className="h-11 rounded-md"
+              value={itemDraft.description ?? ""}
+              onChange={(event) => setItemDraft({ ...itemDraft, description: event.target.value })}
+            />
+          </Field>
+          <Field label="Size">
+            <Input
+              className="h-11 rounded-md"
+              value={itemDraft.size ?? ""}
+              onChange={(event) => setItemDraft({ ...itemDraft, size: event.target.value })}
+            />
+          </Field>
+          <Field label="Colour">
+            <Input
+              className="h-11 rounded-md"
+              value={itemDraft.colour ?? ""}
+              onChange={(event) => setItemDraft({ ...itemDraft, colour: event.target.value })}
+            />
+          </Field>
+          <Field label="Quantity">
+            <Input
+              className="h-11 rounded-md text-right"
+              inputMode="decimal"
+              type="text"
+              value={itemDraft.quantity}
+              onChange={(event) => {
+                const value = event.target.value.replace(/[^0-9.]/g, "");
+                setItemDraft({ ...itemDraft, quantity: Number(value || 0) });
+              }}
+            />
+          </Field>
+          <Field label="Price">
+            <Input
+              className="h-11 rounded-md text-right"
+              inputMode="decimal"
+              type="text"
+              value={itemDraft.rate}
+              onChange={(event) => {
+                const value = event.target.value.replace(/[^0-9.]/g, "");
+                setItemDraft({ ...itemDraft, rate: Number(value || 0) });
+              }}
+            />
+          </Field>
+          <div className="mt-6 flex h-11 items-center gap-2">
+            <Button
+              type="button"
+              className="h-11 rounded-md"
+              disabled={!itemDraft.productName.trim()}
+              onClick={addItem}
+            >
+              {editingItemIndex === null ? <Plus className="size-4" /> : <Check className="size-4" />}
+              {editingItemIndex === null ? "Add" : "Update"}
+            </Button>
+            {editingItemIndex !== null ? (
+              <Button
+                type="button"
+                size="icon"
+                variant="outline"
+                className="size-11 rounded-md"
+                onClick={cancelItemEdit}
+                aria-label="Cancel item edit"
+              >
+                <X className="size-4" />
+              </Button>
+            ) : null}
+          </div>
+        </div>
+        <PurchaseItemsTable
+          form={form}
+          onDeleteItem={deleteItem}
+          onEditItem={editItem}
+          totals={totals}
+        />
+        <PurchaseTotalsFooter form={form} setForm={setForm} totals={totals} />
+      </section>
+    </div>
+  );
+}
+
+function PurchaseAddressTab({
+  form,
+  setForm,
+}: {
+  readonly form: PurchaseInput;
+  readonly setForm: (value: PurchaseInput) => void;
+}) {
+  return (
+    <div className="grid gap-4 md:grid-cols-2">
+      <Field label="Billing address">
+        <textarea
+          className="min-h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+          value={form.billingAddress ?? ""}
+          placeholder="Supplier billing address"
+          onChange={(event) => setForm({ ...form, billingAddress: event.target.value })}
+        />
+      </Field>
+      <div className="grid gap-4">
+        <Field label="Place of supply">
+          <Input
+            value={form.placeOfSupply ?? ""}
+            placeholder="Place of supply"
+            onChange={(event) => setForm({ ...form, placeOfSupply: event.target.value })}
+          />
+        </Field>
+        <Field label="Due date">
+          <Input
+            type="date"
+            value={form.dueDate ?? ""}
+            onChange={(event) => setForm({ ...form, dueDate: event.target.value || null })}
+          />
+        </Field>
+      </div>
+    </div>
+  );
+}
+
+function PurchaseTermsTab({
+  form,
+  setForm,
+}: {
+  readonly form: PurchaseInput;
+  readonly setForm: (value: PurchaseInput) => void;
+}) {
+  return (
+    <div className="grid gap-4 md:grid-cols-2">
+      <Field label="Terms">
+        <textarea
+          className="min-h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+          value={form.terms ?? ""}
+          placeholder="Purchase terms"
+          onChange={(event) => setForm({ ...form, terms: event.target.value })}
+        />
+      </Field>
+      <Field label="Notes">
+        <textarea
+          className="min-h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+          value={form.notes ?? ""}
+          placeholder="Internal notes"
+          onChange={(event) => setForm({ ...form, notes: event.target.value })}
+        />
+      </Field>
+    </div>
+  );
+}
+
+function PurchaseItemsTable({
+  form,
+  onDeleteItem,
+  onEditItem,
+  totals,
+}: {
+  readonly form: PurchaseInput;
+  readonly onDeleteItem: (index: number) => void;
+  readonly onEditItem: (index: number) => void;
+  readonly totals: PurchaseTotals;
+}) {
+  const taxMode = form.placeOfSupply === "igst" ? "igst" : "cgst-sgst";
+  return (
+    <div className="w-full overflow-hidden rounded-md border border-border/70">
+      <table className="w-full min-w-0 table-fixed border-collapse text-[11px] sm:text-xs xl:text-sm">
+        <thead className="bg-muted/45 text-muted-foreground">
+          <tr>
+            <PurchaseItemHeader className="w-[3%] text-center">#</PurchaseItemHeader>
+            <PurchaseItemHeader className="w-[17%] text-left">Product name</PurchaseItemHeader>
+            <PurchaseItemHeader className="w-[15%] text-left">Description</PurchaseItemHeader>
+            <PurchaseItemHeader className="w-[6%] text-center">HSN Code</PurchaseItemHeader>
+            <PurchaseItemHeader className="w-[6%] text-center">Size</PurchaseItemHeader>
+            <PurchaseItemHeader className="w-[6%] text-center">Colour</PurchaseItemHeader>
+            <PurchaseItemHeader className="w-[6%] text-center">Quantity</PurchaseItemHeader>
+            <PurchaseItemHeader className="w-[7%] text-right">Price</PurchaseItemHeader>
+            <PurchaseItemHeader className="w-[8%] text-right">Taxable</PurchaseItemHeader>
+            <PurchaseItemHeader className="w-[6%] text-center">GST Percent</PurchaseItemHeader>
+            {taxMode === "igst" ? (
+              <PurchaseItemHeader className="w-[7%] text-right">IGST</PurchaseItemHeader>
+            ) : (
+              <>
+                <PurchaseItemHeader className="w-[7%] text-right">CGST</PurchaseItemHeader>
+                <PurchaseItemHeader className="w-[7%] text-right">SGST</PurchaseItemHeader>
+              </>
+            )}
+            <PurchaseItemHeader className="w-[8%] text-right">Sub Total</PurchaseItemHeader>
+            <PurchaseItemHeader className="w-[4%] text-center">Action</PurchaseItemHeader>
+          </tr>
+        </thead>
+        <tbody>
+          {form.items.map((item, index) => {
+            const taxable = item.quantity * item.rate;
+            const gst = (taxable * item.taxRate) / 100;
+            const splitGst = gst / 2;
+            return (
+              <tr key={`${item.productName}-${index}`} className="border-b border-border/60 last:border-b-0">
+                <PurchaseItemCell className="text-center text-muted-foreground">{index + 1}</PurchaseItemCell>
+                <PurchaseItemCell className="text-left">{item.productName}</PurchaseItemCell>
+                <PurchaseItemCell className="text-left">{item.description ?? ""}</PurchaseItemCell>
+                <PurchaseItemCell className="text-center">{item.hsnCodeId ?? "-"}</PurchaseItemCell>
+                <PurchaseItemCell className="text-center">{item.size ?? ""}</PurchaseItemCell>
+                <PurchaseItemCell className="text-center">{item.colour ?? ""}</PurchaseItemCell>
+                <PurchaseItemCell className="text-center">{item.quantity}</PurchaseItemCell>
+                <PurchaseItemCell className="text-right">{formatMoney(item.rate)}</PurchaseItemCell>
+                <PurchaseItemCell className="text-right">{formatMoney(taxable)}</PurchaseItemCell>
+                <PurchaseItemCell className="text-center">{item.taxRate}%</PurchaseItemCell>
+                {taxMode === "igst" ? (
+                  <PurchaseItemCell className="text-right">{formatMoney(gst)}</PurchaseItemCell>
+                ) : (
+                  <>
+                    <PurchaseItemCell className="text-right">{formatMoney(splitGst)}</PurchaseItemCell>
+                    <PurchaseItemCell className="text-right">{formatMoney(splitGst)}</PurchaseItemCell>
+                  </>
+                )}
+                <PurchaseItemCell className="text-right">{formatMoney(taxable + gst)}</PurchaseItemCell>
+                <PurchaseItemCell className="text-center">
+                  <div className="flex items-center justify-center gap-1">
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      className="size-7 rounded-full"
+                      onClick={() => onEditItem(index)}
+                      aria-label="Edit item"
+                    >
+                      <Pencil className="size-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      className="size-7 rounded-full"
+                      onClick={() => onDeleteItem(index)}
+                      aria-label="Delete item"
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </div>
+                </PurchaseItemCell>
+              </tr>
+            );
+          })}
+          <tr className="bg-muted/20 font-medium">
+            <td className="border-r border-border/70 px-1.5 py-2" />
+            <td className="border-r border-border/70 px-1.5 py-2 text-center">TOTALS.</td>
+            <td className="border-r border-border/70 px-1.5 py-2" />
+            <td className="border-r border-border/70 px-1.5 py-2" />
+            <td className="border-r border-border/70 px-1.5 py-2" />
+            <td className="border-r border-border/70 px-1.5 py-2" />
+            <td className="border-r border-border/70 px-1.5 py-2 text-center">{totals.quantity}</td>
+            <td className="border-r border-border/70 px-1.5 py-2" />
+            <td className="border-r border-border/70 px-1.5 py-2 text-right">{formatMoney(totals.taxableAmount)}</td>
+            <td className="border-r border-border/70 px-1.5 py-2" />
+            {taxMode === "igst" ? (
+              <td className="border-r border-border/70 px-1.5 py-2 text-right">{formatMoney(totals.gstTotal)}</td>
+            ) : (
+              <>
+                <td className="border-r border-border/70 px-1.5 py-2 text-right">{formatMoney(totals.gstTotal / 2)}</td>
+                <td className="border-r border-border/70 px-1.5 py-2 text-right">{formatMoney(totals.gstTotal / 2)}</td>
+              </>
+            )}
+            <td className="border-r border-border/70 px-1.5 py-2 text-right">{formatMoney(totals.grandTotal)}</td>
+            <td className="px-1.5 py-2" />
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function PurchaseTotalsFooter({
+  form,
+  setForm,
+  totals,
+}: {
+  readonly form: PurchaseInput;
+  readonly setForm: (value: PurchaseInput) => void;
+  readonly totals: PurchaseTotals;
+}) {
+  return (
+    <div className="ml-auto grid w-full max-w-sm gap-3 text-sm">
+      <SummaryRow label="Taxable amount" value={formatMoney(totals.taxableAmount)} />
+      <SummaryRow label="GST total" value={formatMoney(totals.gstTotal)} />
+      <div className="grid grid-cols-[1fr_auto_8rem] items-center gap-4">
+        <span className="font-medium text-muted-foreground">Round off</span>
+        <span>:</span>
+        <Input
+          className="h-9 rounded-md text-right"
+          inputMode="decimal"
+          type="text"
+          value={form.roundOff}
+          onChange={(event) => {
+            const value = event.target.value.replace(/[^0-9.-]/g, "");
+            setForm({ ...form, roundOff: Number(value || 0) });
+          }}
+        />
+      </div>
+      <SummaryRow label="Grand total" value={formatMoney(totals.grandTotal)} strong />
+    </div>
+  );
+}
+
+function SummaryRow({
+  label,
+  strong = false,
+  value,
+}: {
+  readonly label: string;
+  readonly strong?: boolean;
+  readonly value: string;
+}) {
+  return (
+    <div className={`grid grid-cols-[1fr_auto_8rem] gap-4 ${strong ? "font-semibold" : ""}`}>
+      <span className="font-medium text-muted-foreground">{label}</span>
+      <span>:</span>
+      <span className="text-right">{value}</span>
+    </div>
+  );
+}
+function PurchaseItemHeader({
+  children,
+  className = "",
+}: {
+  readonly children: ReactNode;
+  readonly className?: string;
+}) {
+  return <th className={`border-r border-border/70 px-2 py-2 font-medium last:border-r-0 ${className}`}>{children}</th>;
+}
+
+function PurchaseItemCell({
+  children,
+  className = "",
+}: {
+  readonly children?: ReactNode;
+  readonly className?: string;
+}) {
+  return <td className={`border-r border-border/70 px-2 py-2 align-middle last:border-r-0 ${className}`}>{children}</td>;
+}
+
+function Field({ children, label }: { readonly children: ReactNode; readonly label: string }) {
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-xs font-medium text-muted-foreground">{label}</Label>
+      {children}
+    </div>
+  );
+}
+
+interface PurchaseTotals {
+  readonly grandTotal: number;
+  readonly gstPercentDisplay: string;
+  readonly gstTotal: number;
+  readonly quantity: number;
+  readonly taxableAmount: number;
+}
+
+function calculatePurchaseTotals(form: PurchaseInput): PurchaseTotals {
+  const quantity = form.items.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+  const taxableAmount = form.items.reduce(
+    (sum, item) => sum + Number(item.quantity || 0) * Number(item.rate || 0),
+    0,
+  );
+  const gstTotal = form.items.reduce(
+    (sum, item) =>
+      sum +
+      (Number(item.quantity || 0) * Number(item.rate || 0) * Number(item.taxRate || 0)) / 100,
+    0,
+  );
+  const taxRates = [...new Set(form.items.map((item) => Number(item.taxRate || 0)))].filter(
+    (rate) => rate > 0,
+  );
+  return {
+    grandTotal: taxableAmount + gstTotal + Number(form.roundOff || 0),
+    gstPercentDisplay: taxRates.length === 1 ? `${taxRates[0]}%` : taxRates.length ? "Mixed" : "-",
+    gstTotal,
+    quantity,
+    taxableAmount,
+  };
 }
 
 function setItem(
@@ -394,6 +1084,61 @@ function setItem(
       itemIndex === index ? { ...item, ...patch } : item,
     ),
   });
+}
+
+const purchasePrintCopyOptions: readonly {
+  readonly label: string;
+  readonly value: SalesPrintCopy;
+}[] = [
+  { label: "Original", value: "original" },
+  { label: "Duplicate", value: "duplicate" },
+  { label: "Office Copy", value: "triplicate" },
+];
+
+function toSalesPrintRecord(record: PurchaseRecord): SalesRecord {
+  return {
+    id: record.id,
+    balanceAmount: record.balanceAmount,
+    billingAddress: record.billingAddress,
+    documentDate: record.documentDate,
+    documentNo: record.documentNo,
+    dueDate: record.dueDate,
+    eInvoiceAckDate: null,
+    eInvoiceAckNo: null,
+    eInvoiceIrn: null,
+    eInvoiceSignedQr: null,
+    ewayBillDate: null,
+    ewayBillNo: null,
+    grandTotal: record.grandTotal,
+    isActive: record.isActive,
+    items: record.items,
+    notes: record.notes,
+    partyId: record.partyId,
+    partyName: record.partyName,
+    paymentStatus: record.paymentStatus,
+    placeOfSupply: record.placeOfSupply,
+    referenceNo: record.referenceNo,
+    roundOff: record.roundOff ?? 0,
+    shippingAddress: record.billingAddress,
+    status: record.status,
+    terms: record.terms,
+    updatedAt: record.updatedAt,
+  };
+}
+
+function getAppTypeFromSettings(
+  settings: Awaited<ReturnType<typeof getCoreEnvSettings>> | null,
+) {
+  return settings?.groups
+    .flatMap((group) => group.settings)
+    .find((setting) => setting.key === "APP_TYPE")
+    ?.value.trim() || null;
+}
+
+function printDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("en-GB").format(date).replaceAll("/", "-");
 }
 
 function ListHeader({
@@ -416,4 +1161,6 @@ function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Please try again.";
 }
 
-const entryShowCardClassName = "rounded-md [&>div:last-child]:p-6 sm:[&>div:last-child]:p-7";
+function isAbortError(error: unknown) {
+  return error instanceof DOMException && error.name === "AbortError";
+}

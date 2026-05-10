@@ -29,6 +29,7 @@ const commonEndpointByKey: Record<string, string> = {
   stockRejectionTypes: "stock-rejection-types",
   currencies: "currencies",
   paymentTerms: "payment-terms",
+  months: "months",
   accountingYear: "accounting-years",
 };
 

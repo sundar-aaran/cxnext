@@ -2,8 +2,51 @@ import type { Kysely } from "kysely";
 import { defineDatabaseSeeder } from "../process/types";
 
 type DynamicDatabase = Record<string, Record<string, unknown>>;
+type BillingSeed = {
+  readonly address: string;
+  readonly date: string;
+  readonly documentNo: string;
+  readonly dueDate: string;
+  readonly item: string;
+  readonly partyId: string;
+  readonly partyName: string;
+  readonly productId: string;
+  readonly productSku: string;
+  readonly quantity: number;
+  readonly rate: number;
+  readonly referenceNo: string;
+  readonly supplierInvoiceNo?: string;
+};
+type MoneySeed = {
+  readonly amount: number;
+  readonly date: string;
+  readonly documentNo: string;
+  readonly partyId: string;
+  readonly partyName: string;
+  readonly referenceNo: string;
+};
+type SeedParty = {
+  readonly address: string;
+  readonly id: string;
+  readonly name: string;
+};
 
 const timestamp = "2026-04-30 12:00:00";
+const customerParties = [
+  { id: "contact:seed-contact-maya-rao", name: "Sundar Kala Arunes Company Pvt Ltd", address: "21 Lake View Road" },
+  { id: "contact:customer-aster", name: "Aster Retail House", address: "18 Market Street" },
+  { id: "contact:customer-urban", name: "Urban Weaves Studio", address: "44 Textile Avenue" },
+] as const;
+const supplierParties = [
+  { id: "contact:seed-contact-swift-drop", name: "Swift Drop Logistics", address: "8 Logistics Hub" },
+  { id: "contact:supplier-fabric", name: "Prime Fabric Mills", address: "12 Mill Compound" },
+  { id: "contact:supplier-pack", name: "North Star Packaging", address: "5 Industrial Estate" },
+] as const;
+const products = [
+  { id: "product:aster-linen-shirt", name: "Aster Linen Shirt", sku: "ASTER-LINEN-SHIRT-001", rate: 1890 },
+  { id: "product:luna-utility-tote", name: "Luna Utility Tote", sku: "LUNA-UTILITY-TOTE-01", rate: 1490 },
+  { id: "product:cotton-roll", name: "Cotton Roll", sku: "COTTON-ROLL-01", rate: 920 },
+] as const;
 
 function asQueryDatabase(database: Kysely<unknown>) {
   return database as unknown as Kysely<DynamicDatabase>;
@@ -17,243 +60,208 @@ export const seedEntriesSeeder = defineDatabaseSeeder({
   order: 110,
   run: async ({ database }) => {
     const db = asQueryDatabase(database);
-    await seedSale(db);
-    await seedPurchase(db);
-    await seedPayment(db);
-    await seedReceipt(db);
+    await seedSales(db);
+    await seedPurchases(db);
+    await seedPayments(db);
+    await seedReceipts(db);
   },
 });
 
-async function seedSale(db: Kysely<DynamicDatabase>) {
-  const existing = await db
-    .selectFrom("sales")
-    .select("id")
-    .where("invoice_no", "=", "SAL-0001")
-    .executeTakeFirst();
-  if (existing) return;
-  const result = await db
-    .insertInto("sales")
-    .values({
-      uuid: "seed-sale-0001",
-      invoice_no: "SAL-0001",
-      invoice_date: timestamp,
-      customer_id: "contact:seed-contact-maya-rao",
-      customer_name: "Sundar Kala Arunes Company Pvt Ltd",
-      billing_address: "21 Lake View Road",
-      shipping_address: "21 Lake View Road",
-      place_of_supply: "Tamil Nadu",
-      price_list_id: null,
-      reference_no: "SO-REF-001",
-      due_date: "2026-05-15 00:00:00",
-      subtotal: 1890,
-      discount_total: 0,
-      taxable_total: 1890,
-      tax_total: 340.2,
-      round_off: -0.2,
-      grand_total: 2230,
-      paid_amount: 0,
-      balance_amount: 2230,
-      status: "draft",
-      payment_status: "unpaid",
-      notes: "Seed sales invoice.",
-      terms: "Due on receipt.",
-      is_active: true,
-      created_at: timestamp,
-      updated_at: timestamp,
-      deleted_at: null,
-    })
-    .executeTakeFirst();
+async function seedSales(db: Kysely<DynamicDatabase>) {
+  for (const seed of billingSeeds("SAL", customerParties)) {
+    if (await exists(db, "sales", "invoice_no", seed.documentNo)) continue;
+    const totals = billingTotals(seed);
+    const result = await db
+      .insertInto("sales")
+      .values({
+        uuid: `seed-sale-${seed.documentNo.toLowerCase()}`,
+        invoice_no: seed.documentNo,
+        invoice_date: seed.date,
+        customer_id: seed.partyId,
+        customer_name: seed.partyName,
+        billing_address: seed.address,
+        shipping_address: seed.address,
+        place_of_supply: "cgst-sgst",
+        price_list_id: null,
+        reference_no: seed.referenceNo,
+        due_date: seed.dueDate,
+        subtotal: totals.subtotal,
+        discount_total: 0,
+        taxable_total: totals.subtotal,
+        tax_total: totals.tax,
+        round_off: totals.roundOff,
+        grand_total: totals.grandTotal,
+        paid_amount: 0,
+        balance_amount: totals.grandTotal,
+        status: "posted",
+        payment_status: "unpaid",
+        notes: "Seed sales invoice.",
+        terms: "Due on receipt.",
+        is_active: true,
+        created_at: timestamp,
+        updated_at: timestamp,
+        deleted_at: null,
+      })
+      .executeTakeFirst();
+    await insertBillingItem(db, "sales_items", "sale_id", Number(result.insertId), seed, totals);
+  }
+}
+
+async function seedPurchases(db: Kysely<DynamicDatabase>) {
+  for (const seed of billingSeeds("PUR", supplierParties)) {
+    if (await exists(db, "purchases", "bill_no", seed.documentNo)) continue;
+    const totals = billingTotals(seed);
+    const result = await db
+      .insertInto("purchases")
+      .values({
+        uuid: `seed-purchase-${seed.documentNo.toLowerCase()}`,
+        bill_no: seed.documentNo,
+        bill_date: seed.date,
+        supplier_id: seed.partyId,
+        supplier_name: seed.partyName,
+        supplier_invoice_no: seed.supplierInvoiceNo,
+        supplier_invoice_date: seed.date,
+        billing_address: seed.address,
+        place_of_supply: "cgst-sgst",
+        reference_no: seed.referenceNo,
+        due_date: seed.dueDate,
+        subtotal: totals.subtotal,
+        discount_total: 0,
+        taxable_total: totals.subtotal,
+        tax_total: totals.tax,
+        round_off: totals.roundOff,
+        grand_total: totals.grandTotal,
+        paid_amount: 0,
+        balance_amount: totals.grandTotal,
+        status: "posted",
+        payment_status: "unpaid",
+        notes: "Seed purchase bill.",
+        terms: "Due on receipt.",
+        is_active: true,
+        created_at: timestamp,
+        updated_at: timestamp,
+        deleted_at: null,
+      })
+      .executeTakeFirst();
+    await insertBillingItem(db, "purchase_items", "purchase_id", Number(result.insertId), seed, totals);
+  }
+}
+
+async function seedPayments(db: Kysely<DynamicDatabase>) {
+  for (const seed of moneySeeds("PAY", supplierParties)) {
+    if (await exists(db, "payments", "payment_no", seed.documentNo)) continue;
+    const result = await db
+      .insertInto("payments")
+      .values({
+        uuid: `seed-payment-${seed.documentNo.toLowerCase()}`,
+        payment_no: seed.documentNo,
+        payment_date: seed.date,
+        party_id: seed.partyId,
+        party_name: seed.partyName,
+        party_type: "supplier",
+        ledger_id: "ledger-sundry-creditors",
+        ledger_name: "Sundry Creditors",
+        payment_mode: modeFor(seed.documentNo),
+        bank_account_id: "bank:primary",
+        reference_no: seed.referenceNo,
+        reference_date: seed.date,
+        amount: seed.amount,
+        tds_amount: 0,
+        discount_amount: 0,
+        round_off: 0,
+        net_amount: seed.amount,
+        allocated_amount: seed.amount,
+        unallocated_amount: 0,
+        status: "posted",
+        notes: "Seed supplier payment.",
+        is_active: true,
+        created_at: timestamp,
+        updated_at: timestamp,
+        deleted_at: null,
+      })
+      .executeTakeFirst();
+    await seedAllocation(db, "payment_allocations", "payment_id", Number(result.insertId), "purchase", linkedDocument("PUR", seed.documentNo), seed);
+  }
+}
+
+async function seedReceipts(db: Kysely<DynamicDatabase>) {
+  for (const seed of moneySeeds("REC", customerParties)) {
+    if (await exists(db, "receipts", "receipt_no", seed.documentNo)) continue;
+    const result = await db
+      .insertInto("receipts")
+      .values({
+        uuid: `seed-receipt-${seed.documentNo.toLowerCase()}`,
+        receipt_no: seed.documentNo,
+        receipt_date: seed.date,
+        party_id: seed.partyId,
+        party_name: seed.partyName,
+        party_type: "customer",
+        ledger_id: "ledger-sundry-debtors",
+        ledger_name: "Sundry Debtors",
+        receipt_mode: modeFor(seed.documentNo),
+        bank_account_id: seed.documentNo.endsWith("001") ? null : "bank:primary",
+        reference_no: seed.referenceNo,
+        reference_date: seed.date,
+        amount: seed.amount,
+        tds_amount: 0,
+        discount_amount: 0,
+        round_off: 0,
+        net_amount: seed.amount,
+        allocated_amount: seed.amount,
+        unallocated_amount: 0,
+        status: "posted",
+        notes: "Seed customer receipt.",
+        is_active: true,
+        created_at: timestamp,
+        updated_at: timestamp,
+        deleted_at: null,
+      })
+      .executeTakeFirst();
+    await seedAllocation(db, "receipt_allocations", "receipt_id", Number(result.insertId), "sales", linkedDocument("SAL", seed.documentNo), seed);
+  }
+}
+
+async function insertBillingItem(
+  db: Kysely<DynamicDatabase>,
+  table: string,
+  parentColumn: string,
+  parentId: number,
+  seed: BillingSeed,
+  totals: ReturnType<typeof billingTotals>,
+) {
   await db
-    .insertInto("sales_items")
+    .insertInto(table)
     .values({
-      sale_id: Number(result.insertId),
-      product_id: "product:aster-linen-shirt",
-      product_name: "Aster Linen Shirt",
-      product_sku: "ASTER-LINEN-SHIRT-001",
-      description: "Seed sale line.",
+      [parentColumn]: parentId,
+      product_id: seed.productId,
+      product_name: seed.item,
+      product_sku: seed.productSku,
+      po_no: seed.referenceNo,
+      dc_no: null,
+      description: "Seed line.",
+      size: "M",
+      colour: "Blue",
+      area_sq: 0,
       hsn_code_id: "hsn:default",
       unit_id: "unit:piece",
-      quantity: 1,
+      quantity: seed.quantity,
       free_quantity: 0,
-      rate: 1890,
-      mrp: 2230,
+      rate: seed.rate,
+      mrp: seed.rate,
       discount_type: null,
       discount_value: 0,
       discount_amount: 0,
       tax_id: "tax:gst-standard",
       tax_rate: 18,
-      tax_amount: 340.2,
-      line_subtotal: 1890,
-      line_total: 2230.2,
+      tax_amount: totals.tax,
+      line_subtotal: totals.subtotal,
+      line_total: totals.subtotal + totals.tax,
       sort_order: 1,
       is_active: true,
       created_at: timestamp,
       updated_at: timestamp,
     })
     .execute();
-}
-
-async function seedPurchase(db: Kysely<DynamicDatabase>) {
-  const existing = await db
-    .selectFrom("purchases")
-    .select("id")
-    .where("bill_no", "=", "PUR-0001")
-    .executeTakeFirst();
-  if (existing) return;
-  const result = await db
-    .insertInto("purchases")
-    .values({
-      uuid: "seed-purchase-0001",
-      bill_no: "PUR-0001",
-      bill_date: timestamp,
-      supplier_id: "contact:seed-contact-swift-drop",
-      supplier_name: "Swift Drop Logistics",
-      supplier_invoice_no: "SUP-INV-001",
-      supplier_invoice_date: timestamp,
-      billing_address: "8 Logistics Hub",
-      place_of_supply: "Karnataka",
-      reference_no: "PO-REF-001",
-      due_date: "2026-05-15 00:00:00",
-      subtotal: 1490,
-      discount_total: 0,
-      taxable_total: 1490,
-      tax_total: 268.2,
-      round_off: -0.2,
-      grand_total: 1758,
-      paid_amount: 0,
-      balance_amount: 1758,
-      status: "draft",
-      payment_status: "unpaid",
-      notes: "Seed purchase bill.",
-      terms: "Due on receipt.",
-      is_active: true,
-      created_at: timestamp,
-      updated_at: timestamp,
-      deleted_at: null,
-    })
-    .executeTakeFirst();
-  await db
-    .insertInto("purchase_items")
-    .values({
-      purchase_id: Number(result.insertId),
-      product_id: "product:luna-utility-tote",
-      product_name: "Luna Utility Tote",
-      product_sku: "LUNA-UTILITY-TOTE-01",
-      description: "Seed purchase line.",
-      hsn_code_id: "hsn:default",
-      unit_id: "unit:piece",
-      quantity: 1,
-      free_quantity: 0,
-      rate: 1490,
-      mrp: 2490,
-      discount_type: null,
-      discount_value: 0,
-      discount_amount: 0,
-      tax_id: "tax:gst-standard",
-      tax_rate: 18,
-      tax_amount: 268.2,
-      line_subtotal: 1490,
-      line_total: 1758.2,
-      sort_order: 1,
-      is_active: true,
-      created_at: timestamp,
-      updated_at: timestamp,
-    })
-    .execute();
-}
-
-async function seedPayment(db: Kysely<DynamicDatabase>) {
-  const existing = await db
-    .selectFrom("payments")
-    .select("id")
-    .where("payment_no", "=", "PAY-0001")
-    .executeTakeFirst();
-  if (existing) return;
-  const result = await db
-    .insertInto("payments")
-    .values({
-      uuid: "seed-payment-0001",
-      payment_no: "PAY-0001",
-      payment_date: timestamp,
-      party_id: "contact:seed-contact-swift-drop",
-      party_name: "Swift Drop Logistics",
-      party_type: "supplier",
-      ledger_id: "ledger-sundry-creditors",
-      ledger_name: "Sundry Creditors",
-      payment_mode: "bank",
-      bank_account_id: "bank:primary",
-      reference_no: "BANK-PAY-001",
-      reference_date: timestamp,
-      amount: 500,
-      tds_amount: 0,
-      discount_amount: 0,
-      round_off: 0,
-      net_amount: 500,
-      allocated_amount: 500,
-      unallocated_amount: 0,
-      status: "draft",
-      notes: "Seed supplier payment.",
-      is_active: true,
-      created_at: timestamp,
-      updated_at: timestamp,
-      deleted_at: null,
-    })
-    .executeTakeFirst();
-  await seedAllocation(
-    db,
-    "payment_allocations",
-    "payment_id",
-    Number(result.insertId),
-    "purchase",
-    "PUR-0001",
-  );
-}
-
-async function seedReceipt(db: Kysely<DynamicDatabase>) {
-  const existing = await db
-    .selectFrom("receipts")
-    .select("id")
-    .where("receipt_no", "=", "REC-0001")
-    .executeTakeFirst();
-  if (existing) return;
-  const result = await db
-    .insertInto("receipts")
-    .values({
-      uuid: "seed-receipt-0001",
-      receipt_no: "REC-0001",
-      receipt_date: timestamp,
-      party_id: "contact:seed-contact-maya-rao",
-      party_name: "Sundar Kala Arunes Company Pvt Ltd",
-      party_type: "customer",
-      ledger_id: "ledger-sundry-debtors",
-      ledger_name: "Sundry Debtors",
-      receipt_mode: "cash",
-      bank_account_id: null,
-      reference_no: "CASH-REC-001",
-      reference_date: timestamp,
-      amount: 750,
-      tds_amount: 0,
-      discount_amount: 0,
-      round_off: 0,
-      net_amount: 750,
-      allocated_amount: 750,
-      unallocated_amount: 0,
-      status: "draft",
-      notes: "Seed customer receipt.",
-      is_active: true,
-      created_at: timestamp,
-      updated_at: timestamp,
-      deleted_at: null,
-    })
-    .executeTakeFirst();
-  await seedAllocation(
-    db,
-    "receipt_allocations",
-    "receipt_id",
-    Number(result.insertId),
-    "sales",
-    "SAL-0001",
-  );
 }
 
 async function seedAllocation(
@@ -263,6 +271,7 @@ async function seedAllocation(
   parentId: number,
   documentType: string,
   documentNo: string,
+  seed: MoneySeed,
 ) {
   await db
     .insertInto(table)
@@ -271,14 +280,81 @@ async function seedAllocation(
       document_type: documentType,
       document_id: documentNo,
       document_no: documentNo,
-      document_date: timestamp,
-      document_total: 1000,
-      previous_balance: 1000,
-      allocated_amount: 500,
-      balance_after_allocation: 500,
+      document_date: seed.date,
+      document_total: seed.amount * 1.4,
+      previous_balance: seed.amount * 1.4,
+      allocated_amount: seed.amount,
+      balance_after_allocation: seed.amount * 0.4,
       sort_order: 1,
       created_at: timestamp,
       updated_at: timestamp,
     })
     .execute();
+}
+
+function billingSeeds(prefix: "PUR" | "SAL", parties: readonly SeedParty[]) {
+  return Array.from({ length: 18 }, (_, index): BillingSeed => {
+    const serial = index + 1;
+    const party = parties[index % parties.length];
+    const product = products[index % products.length];
+    const date = dateFor(index, 0);
+    return {
+      address: party.address,
+      date,
+      documentNo: `${prefix}-${String(serial).padStart(4, "0")}`,
+      dueDate: dateFor(index, 18),
+      item: product.name,
+      partyId: party.id,
+      partyName: party.name,
+      productId: product.id,
+      productSku: product.sku,
+      quantity: 1 + (index % 5),
+      rate: product.rate + (index % 4) * 75,
+      referenceNo: `${prefix === "SAL" ? "SO" : "PO"}-REF-${String(serial).padStart(3, "0")}`,
+      supplierInvoiceNo: prefix === "PUR" ? `SUP-INV-${String(serial).padStart(3, "0")}` : undefined,
+    };
+  });
+}
+
+function moneySeeds(prefix: "PAY" | "REC", parties: readonly SeedParty[]) {
+  return Array.from({ length: 18 }, (_, index): MoneySeed => {
+    const serial = index + 1;
+    const party = parties[index % parties.length];
+    return {
+      amount: 500 + (index % 6) * 275,
+      date: dateFor(index, 5),
+      documentNo: `${prefix}-${String(serial).padStart(4, "0")}`,
+      partyId: party.id,
+      partyName: party.name,
+      referenceNo: `${prefix}-BANK-${String(serial).padStart(3, "0")}`,
+    };
+  });
+}
+
+function billingTotals(seed: BillingSeed) {
+  const subtotal = seed.quantity * seed.rate;
+  const tax = Number((subtotal * 0.18).toFixed(2));
+  const beforeRound = subtotal + tax;
+  const grandTotal = Math.round(beforeRound);
+  return { grandTotal, roundOff: Number((grandTotal - beforeRound).toFixed(2)), subtotal, tax };
+}
+
+function dateFor(index: number, offsetDays: number) {
+  const date = new Date(Date.UTC(2026, 3, 1 + index * 2 + offsetDays));
+  return `${date.toISOString().slice(0, 10)} 00:00:00`;
+}
+
+function linkedDocument(prefix: "PUR" | "SAL", documentNo: string) {
+  return `${prefix}-${documentNo.slice(-4)}`;
+}
+
+function modeFor(documentNo: string) {
+  const modes = ["cash", "rtgs-transfer", "neft-transfer", "upi-transfer"];
+  return modes[Number(documentNo.slice(-2)) % modes.length];
+}
+
+async function exists(db: Kysely<DynamicDatabase>, table: string, column: string, value: string) {
+  return Boolean(
+    await db.selectFrom(table).select("id").where(column, "=", value).executeTakeFirst(),
+  );
 }

@@ -13,6 +13,8 @@ import {
   FileKey2,
   Flag,
   HandCoins,
+  Landmark,
+  LineChart,
   Package,
   ReceiptText,
   Settings,
@@ -116,6 +118,34 @@ const entriesMenuLabels: Record<string, string> = Object.fromEntries(
   entriesNavItems.map((item) => [item.id, item.label]),
 );
 
+const reportNavItems = [
+  {
+    id: "report-customer-statement",
+    label: "Customer Statement",
+    href: "/desk/reports/customer-statement",
+    icon: <LineChart className="h-4 w-4" />,
+  },
+  {
+    id: "report-supplier-statement",
+    label: "Supplier Statement",
+    href: "/desk/reports/supplier-statement",
+    icon: <LineChart className="h-4 w-4" />,
+  },
+  {
+    id: "report-gst-statement",
+    label: "GST Statement",
+    href: "/desk/reports/gst-statement",
+    icon: <LineChart className="h-4 w-4" />,
+  },
+] as const;
+
+const reportMenuLabels: Record<string, string> = {
+  "customer-statement": "Customer Statement",
+  "gst-statement": "GST Statement",
+  reports: "Reports",
+  "supplier-statement": "Supplier Statement",
+};
+
 const settingsNavItems = [
   {
     id: "settings-core",
@@ -129,11 +159,18 @@ const settingsNavItems = [
     href: "/desk/settings/billing-layout",
     icon: <ReceiptText className="h-4 w-4" />,
   },
+  {
+    id: "settings-duties-taxes",
+    label: "Duties & Taxes",
+    href: "/desk/settings/duties-taxes",
+    icon: <Landmark className="h-4 w-4" />,
+  },
 ] as const;
 
 const settingsMenuLabels: Record<string, string> = {
   core: "Core Settings",
   "billing-layout": "Sales Settings",
+  "duties-taxes": "Duties & Taxes",
   settings: "Settings",
 };
 
@@ -173,6 +210,10 @@ function getWorkspaceLabel(pathname: string, isDeskRoot: boolean, fallbackLabel:
     return entriesMenuLabels[portalId];
   }
 
+  if (root === "desk" && portalId === "reports") {
+    return reportMenuLabels[moduleKey ?? portalId] ?? "Reports";
+  }
+
   if (root === "desk" && portalId === "settings") {
     return settingsMenuLabels[moduleKey ?? portalId] ?? "Settings";
   }
@@ -208,6 +249,10 @@ export function DeskShell({ children }: { readonly children: ReactNode }) {
     active: pathname === item.href || pathname.startsWith(`${item.href}/`),
   }));
   const settingsItems = settingsNavItems.map((item) => ({
+    ...item,
+    active: pathname === item.href || pathname.startsWith(`${item.href}/`),
+  }));
+  const reportItems = reportNavItems.map((item) => ({
     ...item,
     active: pathname === item.href || pathname.startsWith(`${item.href}/`),
   }));
@@ -272,7 +317,14 @@ export function DeskShell({ children }: { readonly children: ReactNode }) {
           : undefined
       }
       workspace={workspaceLabel}
-      navItems={[...navItems, ...masterItems, ...entriesItems, ...settingsItems, ...adminItems]}
+      navItems={[
+        ...navItems,
+        ...masterItems,
+        ...entriesItems,
+        ...reportItems,
+        ...settingsItems,
+        ...adminItems,
+      ]}
       navGroups={[
         {
           id: "organisation",
@@ -291,6 +343,12 @@ export function DeskShell({ children }: { readonly children: ReactNode }) {
           label: "Entries",
           icon: <ReceiptText className="size-4" />,
           items: entriesItems,
+        },
+        {
+          id: "reports",
+          label: "Reports",
+          icon: <LineChart className="size-4" />,
+          items: reportItems,
         },
         {
           id: "settings",

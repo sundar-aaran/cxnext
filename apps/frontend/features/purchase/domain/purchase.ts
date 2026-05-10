@@ -4,6 +4,12 @@ export interface PurchaseItemInput {
   readonly productName: string;
   readonly productId: string | null;
   readonly productSku: string | null;
+  readonly poNo: string | null;
+  readonly dcNo: string | null;
+  readonly description: string | null;
+  readonly size: string | null;
+  readonly colour: string | null;
+  readonly areaSq: number;
   readonly quantity: number;
   readonly rate: number;
   readonly taxRate: number;
@@ -16,7 +22,6 @@ export interface PurchaseItemInput {
   readonly taxAmount: number;
   readonly hsnCodeId: string | null;
   readonly unitId: string | null;
-  readonly description: string | null;
   readonly sortOrder: number;
   readonly isActive: boolean;
 }
@@ -33,6 +38,7 @@ export interface PurchaseRecord {
   readonly placeOfSupply: string | null;
   readonly referenceNo: string | null;
   readonly dueDate: string | null;
+  readonly roundOff: number;
   readonly grandTotal: number;
   readonly balanceAmount: number;
   readonly status: string;
@@ -55,6 +61,7 @@ export interface PurchaseInput {
   readonly placeOfSupply: string | null;
   readonly referenceNo: string | null;
   readonly dueDate: string | null;
+  readonly roundOff: number;
   readonly status: string;
   readonly paymentStatus: string;
   readonly notes: string | null;
@@ -81,10 +88,10 @@ export const purchaseColumnCatalog: readonly {
   readonly id: PurchaseColumnId;
   readonly label: string;
 }[] = [
-  { id: "documentNo", label: "Bill" },
-  { id: "documentDate", label: "Date" },
+  { id: "documentNo", label: "Entry no" },
+  { id: "documentDate", label: "Entry date" },
   { id: "party", label: "Supplier" },
-  { id: "supplierInvoice", label: "Supplier invoice" },
+  { id: "supplierInvoice", label: "Supplier bill no" },
   { id: "status", label: "Status" },
   { id: "paymentStatus", label: "Payment" },
   { id: "total", label: "Total" },
@@ -116,6 +123,12 @@ export function defaultPurchaseItem(): PurchaseItemInput {
     productName: "",
     productId: null,
     productSku: null,
+    poNo: null,
+    dcNo: null,
+    description: null,
+    size: null,
+    colour: null,
+    areaSq: 0,
     quantity: 1,
     rate: 0,
     taxRate: 0,
@@ -128,7 +141,6 @@ export function defaultPurchaseItem(): PurchaseItemInput {
     taxAmount: 0,
     hsnCodeId: null,
     unitId: null,
-    description: null,
     sortOrder: 1,
     isActive: true,
   };
@@ -146,6 +158,7 @@ export function defaultPurchaseInput(): PurchaseInput {
     placeOfSupply: null,
     referenceNo: null,
     dueDate: null,
+    roundOff: 0,
     status: "draft",
     paymentStatus: "unpaid",
     notes: null,

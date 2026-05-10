@@ -45,7 +45,7 @@ export const commonMenuGroups = [
     label: "Orders",
     items: ["warehouses", "transports", "destinations", "orderTypes", "stockRejectionTypes"],
   },
-  { label: "Others", items: ["currencies", "paymentTerms"] },
+  { label: "Others", items: ["currencies", "paymentTerms", "months"] },
   { label: "Accounts", items: ["accountingYear"] },
 ] as const;
 
@@ -75,6 +75,7 @@ export const commonMenuLabels: Record<string, string> = {
   warehouses: "Warehouses",
   destinations: "Destinations",
   paymentTerms: "Payment Terms",
+  months: "Months",
   stockRejectionTypes: "Stock Rejection Types",
   accountingYear: "Accounting Year",
   storefrontTemplates: "Storefront Templates",
@@ -299,6 +300,20 @@ export const fallbackCommonModules: readonly CommonModuleDefinition[] = [
     defaultSortKey: "start_date",
     idPrefix: "accounting-year",
     columns: accountingYearColumns,
+  },
+  {
+    key: "months",
+    label: "Months",
+    tableName: "common_months",
+    defaultSortKey: "start_date",
+    idPrefix: "month",
+    columns: [
+      { key: "code", label: "Code", type: "string", required: true, nullable: false },
+      { key: "name", label: "Name", type: "string", required: true, nullable: false },
+      { key: "start_date", label: "Start Date", type: "string", required: true, nullable: false },
+      { key: "end_date", label: "End Date", type: "string", required: true, nullable: false },
+      { key: "description", label: "Description", type: "string", nullable: true },
+    ],
   },
   simpleModule("stockRejectionTypes", "common_stock_rejection_types", "stock-rejection-type"),
   {

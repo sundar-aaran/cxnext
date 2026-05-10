@@ -13,6 +13,7 @@ import { CurrenciesModule } from "./currencies/currencies.module";
 import { DestinationsModule } from "./destinations/destinations.module";
 import { DistrictsModule } from "./districts/districts.module";
 import { HsnCodesModule } from "./hsn-codes/hsn-codes.module";
+import { MonthsModule } from "./months/months.module";
 import { OrderTypesModule } from "./order-types/order-types.module";
 import { PaymentTermsModule } from "./payment-terms/payment-terms.module";
 import { PincodesModule } from "./pincodes/pincodes.module";
@@ -56,6 +57,7 @@ import { WarehousesModule } from "./warehouses/warehouses.module";
     StockRejectionTypesModule,
     CurrenciesModule,
     PaymentTermsModule,
+    MonthsModule,
     AccountingYearsModule,
   ],
   providers: [CommonRegistryBootstrap],

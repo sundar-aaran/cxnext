@@ -6,9 +6,10 @@ import {
   ChevronDown,
   ChevronUp,
   Mail,
+  MessageCircle,
   Paperclip,
   Plus,
-  Share2,
+  Send,
   Tag,
   UserRound,
   X,
@@ -87,12 +88,6 @@ export function EntryCollaborationPanel({
     setCommentDraft("");
   }
 
-  function sendEmail() {
-    toast.info("Email send is ready for mail provider integration.", {
-      description: `${entryLabel} can be sent once SMTP/API credentials are configured.`,
-    });
-  }
-
   const activities = buildActivities(state, entryLabel);
 
   return (
@@ -160,6 +155,11 @@ export function EntryCollaborationPanel({
         </button>
         {drawerCollapsed ? null : (
           <div className="divide-y divide-border/70">
+            <DrawerActionSection
+              icon={<Mail className="size-4" />}
+              entryLabel={entryLabel}
+              label="Send to Email"
+            />
             <DrawerListSection
               icon={<UserRound className="size-4" />}
               label="Assign"
@@ -182,16 +182,103 @@ export function EntryCollaborationPanel({
               onChange={(values) => updateState({ ...state, tags: values })}
             />
             <DrawerListSection
-              icon={<Share2 className="size-4" />}
-              label="Share"
+              icon={<MessageCircle className="size-4" />}
+              label="Send to WhatsApp"
               values={state.shares}
-              placeholder="Email or user"
+              placeholder="WhatsApp number"
               onChange={(values) => updateState({ ...state, shares: values })}
             />
           </div>
         )}
       </aside>
     </div>
+  );
+}
+
+function DrawerActionSection({
+  entryLabel,
+  icon,
+  label,
+}: {
+  readonly entryLabel: string;
+  readonly icon: ReactNode;
+  readonly label: string;
+}) {
+  const [collapsed, setCollapsed] = useState(false);
+  const [emailDraft, setEmailDraft] = useState("");
+  const [isAdding, setIsAdding] = useState(false);
+
+  function sendEmail() {
+    const email = emailDraft.trim();
+    if (!email) return;
+    toast.info("Email send is ready for mail provider integration.", {
+      description: `${entryLabel} can be sent to ${email} once SMTP/API credentials are configured.`,
+    });
+    setEmailDraft("");
+    setIsAdding(false);
+  }
+
+  return (
+    <section className="px-3 py-3">
+      <div className="flex items-center gap-3 text-sm text-muted-foreground">
+        {icon}
+        <button
+          type="button"
+          className="min-w-0 flex-1 text-left font-medium"
+          onClick={() => setCollapsed((current) => !current)}
+        >
+          {label}
+        </button>
+        <Button
+          type="button"
+          size="icon"
+          variant="ghost"
+          className="size-7 rounded-md"
+          onClick={() => {
+            setCollapsed(false);
+            setIsAdding((current) => !current);
+          }}
+        >
+          <Plus className="size-4" />
+        </Button>
+      </div>
+      {collapsed || !isAdding ? null : (
+        <div className="mt-3 flex gap-1.5">
+          <Input
+            autoFocus
+            className="h-8 min-w-0 rounded-md text-sm"
+            value={emailDraft}
+            placeholder="Email address"
+            type="email"
+            onBlur={() => {
+              if (!emailDraft.trim()) setIsAdding(false);
+            }}
+            onChange={(event) => setEmailDraft(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                sendEmail();
+              }
+              if (event.key === "Escape") {
+                event.preventDefault();
+                setEmailDraft("");
+                setIsAdding(false);
+              }
+            }}
+          />
+          <Button
+            type="button"
+            size="icon"
+            className="size-8 rounded-md"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={sendEmail}
+            aria-label="Send email"
+          >
+            <Send className="size-3.5" />
+          </Button>
+        </div>
+      )}
+    </section>
   );
 }
 

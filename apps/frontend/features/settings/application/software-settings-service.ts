@@ -73,6 +73,20 @@ export function updateSalesDocumentSetting(
   };
 }
 
+export function updateDutiesTaxSetting(
+  state: SoftwareSettingsState,
+  key: keyof SoftwareSettingsState["dutiesTaxSettings"],
+  value: string,
+): SoftwareSettingsState {
+  return {
+    ...state,
+    dutiesTaxSettings: {
+      ...state.dutiesTaxSettings,
+      [key]: value,
+    },
+  };
+}
+
 export function updateFeatureSetting(
   state: SoftwareSettingsState,
   settingId: string,
@@ -109,6 +123,10 @@ function mergeSoftwareSettings(
   );
 
   return {
+    dutiesTaxSettings: {
+      ...defaults.dutiesTaxSettings,
+      ...(storedState.dutiesTaxSettings ?? {}),
+    },
     salesDocumentSettings: {
       ...defaults.salesDocumentSettings,
       ...(storedState.salesDocumentSettings ?? {}),

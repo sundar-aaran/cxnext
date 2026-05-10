@@ -3,25 +3,32 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Plus, Printer, X } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Pencil, Plus, Printer, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   AnimatedTabs,
   Button,
   Input,
+  Label,
   MasterListEmptyState,
   MasterListPageFrame,
   MasterListPaginationCard,
-  MasterListShowCard,
   MasterListTableCard,
   MasterListToolbarCard,
   MasterListUpsertCard,
   MasterListUpsertLayout,
   RowActionMenu,
   SavePrintButtons,
-  Separator,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   buildMasterListShowingLabel,
 } from "@cxnext/ui";
+import { listCompanies } from "../../../company/application/company-service";
+import type { CompanyRecord } from "../../../company/domain/company";
+import { EntryCollaborationPanel } from "../../../entries/interface/components/entry-collaboration-panel";
 import {
   buildReceiptColumnOptions,
   deleteReceipt,
@@ -43,6 +50,13 @@ import {
   type ReceiptRecord,
   type ReceiptStatusFilter,
 } from "../../domain/receipt";
+
+const receiptModeOptions = [
+  { label: "Cash", value: "cash" },
+  { label: "RTGS Transfer", value: "rtgs-transfer" },
+  { label: "NEFT Transfer", value: "neft-transfer" },
+  { label: "UPI Transfer", value: "upi-transfer" },
+] as const;
 
 export function ReceiptListPage() {
   const [records, setRecords] = useState<readonly ReceiptRecord[]>([]);
@@ -202,6 +216,7 @@ export function ReceiptListPage() {
                     <RowActionMenu
                       editHref={`/desk/receipt/${record.id}/edit`}
                       isActive={record.isActive}
+                      printHref={`/desk/receipt/${record.id}?print=1`}
                       viewHref={`/desk/receipt/${record.id}`}
                       onDelete={() => void remove(record)}
                       onRestore={() => void restore(record)}
@@ -239,34 +254,107 @@ export function ReceiptListPage() {
   );
 }
 
-export function ReceiptShowPage({ receiptId }: { readonly receiptId: number }) {
+export function ReceiptShowPage({
+  receiptId,
+  shouldPrint = false,
+}: {
+  readonly receiptId: number;
+  readonly shouldPrint?: boolean;
+}) {
   const [record, setRecord] = useState<ReceiptRecord | null>(null);
+  const [company, setCompany] = useState<CompanyRecord | null>(null);
 
   useEffect(() => void getReceipt(receiptId).then(setRecord), [receiptId]);
+  useEffect(() => {
+    const controller = new AbortController();
+    void listCompanies({ signal: controller.signal })
+      .then((companies) => setCompany(companies.find((item) => item.isPrimary) ?? companies[0] ?? null))
+      .catch(() => setCompany(null));
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    if (!record || !shouldPrint) return;
+    const printTimer = window.setTimeout(() => window.print(), 250);
+    return () => window.clearTimeout(printTimer);
+  }, [record, shouldPrint]);
+
+  if (!record) {
+    return (
+      <MasterListPageFrame
+        description="Loading receipt."
+        technicalName="page.entries.receipt.show"
+        title="Receipt"
+      >
+        <div className="rounded-md border border-border/70 bg-card p-6 text-sm text-muted-foreground">
+          Loading.
+        </div>
+      </MasterListPageFrame>
+    );
+  }
+
+  const previousReceiptId = receiptId > 1 ? receiptId - 1 : null;
 
   return (
-    <MasterListPageFrame
-      action={
-        <div className="flex flex-wrap gap-2">
-          <Button asChild className="rounded-xl">
-            <Link href={`/desk/receipt/${receiptId}/edit`}>Edit</Link>
-          </Button>
-          <Button variant="outline" className="rounded-xl" onClick={() => window.print()}>
+    <main className="theme-shell mx-auto min-h-screen w-[94%] pb-8 pt-8 text-black sm:w-[92%] lg:w-[90%] print:fixed print:inset-0 print:z-[9999] print:min-h-0 print:w-full print:overflow-visible print:bg-white print:p-0">
+      <div className="mx-auto mb-3 flex w-full flex-wrap items-center justify-between gap-3 print:hidden">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-normal text-foreground">
+            {record.partyName}
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">{record.documentNo}</p>
+        </div>
+        <div className="flex flex-wrap justify-end gap-2">
+          <Button className="rounded-xl" onClick={() => window.print()}>
             <Printer className="size-4" />
             Print
           </Button>
+          <Button asChild variant="outline" className="rounded-xl">
+            <Link href={`/desk/receipt/${receiptId}/edit`}>
+              <Pencil className="size-4" />
+              Edit
+            </Link>
+          </Button>
+          <Button asChild variant="outline" className="rounded-xl">
+            <Link href="/desk/receipt">
+              <ArrowLeft className="size-4" />
+              Back
+            </Link>
+          </Button>
+          {previousReceiptId ? (
+            <Button asChild variant="outline" className="rounded-xl">
+              <Link href={`/desk/receipt/${previousReceiptId}`}>
+                <ChevronLeft className="size-4" />
+                Prev
+              </Link>
+            </Button>
+          ) : (
+            <Button variant="outline" className="rounded-xl" disabled>
+              <ChevronLeft className="size-4" />
+              Prev
+            </Button>
+          )}
+          <Button asChild variant="outline" className="rounded-xl">
+            <Link href={`/desk/receipt/${receiptId + 1}`}>
+              <ChevronRight className="size-4" />
+              Next
+            </Link>
+          </Button>
         </div>
-      }
-      description={record?.partyName ?? "Loading receipt."}
-      technicalName="page.entries.receipt.show"
-      title={record?.documentNo ?? "Receipt"}
-    >
-      <MasterListShowCard className={entryShowCardClassName} title="Summary">
-        {record
-          ? `${formatMoney(record.netAmount)} received / ${formatMoney(record.unallocatedAmount)} unallocated`
-          : "Loading."}
-      </MasterListShowCard>
-    </MasterListPageFrame>
+      </div>
+      <section className="mx-auto w-fit max-w-full overflow-hidden rounded-md border border-border/70 bg-card shadow-sm print:contents">
+        <div className="overflow-x-auto p-3 print:contents sm:p-4">
+          <ReceiptPrintDocument company={company} record={record} />
+        </div>
+      </section>
+      <div className="mx-auto mt-4 w-full print:hidden">
+        <EntryCollaborationPanel
+          entryId={receiptId}
+          entryKind="receipt"
+          entryLabel={record.documentNo}
+        />
+      </div>
+    </main>
   );
 }
 
@@ -290,7 +378,8 @@ export function ReceiptUpsertPage({ receiptId }: { readonly receiptId?: number }
     const record = await upsertReceipt(prepareReceiptInput(form), receiptId);
     toast.success(receiptId ? "Receipt updated" : "Receipt created");
     if (printAfterSave) {
-      window.print();
+      router.push(`/desk/receipt/${record.id}?print=1`);
+      return;
     }
     router.push(`/desk/receipt/${record.id}`);
   }
@@ -305,35 +394,45 @@ export function ReceiptUpsertPage({ receiptId }: { readonly receiptId?: number }
           </Link>
         </Button>
       }
-      description="Basic incoming receipt entry."
+      className="w-[calc(100%-2rem)] max-w-[1500px] sm:w-[calc(100%-3rem)] lg:w-[calc(100%-4rem)]"
+      description="Create a tabbed incoming receipt with allocation details."
       technicalName="page.entries.receipt.upsert"
       title={receiptId ? "Edit receipt" : "New receipt"}
     >
       <MasterListUpsertLayout>
-        <MasterListUpsertCard>
+        <MasterListUpsertCard className="overflow-hidden p-0 [&>div]:p-0">
           <form
-            className="space-y-5"
             onSubmit={(event) => {
               event.preventDefault();
               void save();
             }}
           >
-            <AnimatedTabs
-              tabs={[
-                {
-                  value: "details",
-                  label: "Details",
-                  content: <ReceiptDetailsTab form={form} setForm={setForm} />,
-                },
-                {
-                  value: "allocations",
-                  label: "Allocations",
-                  content: <ReceiptAllocationsTab form={form} setForm={setForm} />,
-                },
-              ]}
-            />
-            <Separator />
-            <SavePrintButtons saveLabel="Save receipt" onSavePrint={() => void save(true)} />
+            <div className="px-0 pb-4 pt-3 md:pb-5">
+              <AnimatedTabs
+                className="[&>div:first-child]:rounded-none [&>div:first-child]:border-x-0 [&>div:first-child]:border-t-0 [&>div:first-child]:border-b [&>div:first-child]:border-border/70 [&>div:first-child]:bg-card [&>div:first-child]:px-4 [&>div:first-child]:py-0.5 [&>div:first-child]:shadow-none md:[&>div:first-child]:px-6 [&>div:first-child_button]:min-h-8 [&>div:first-child_button]:py-1 [&>div:last-child]:mx-auto [&>div:last-child]:mt-3 [&>div:last-child]:w-full [&>div:last-child]:px-4 [&>div:last-child]:pb-3 md:[&>div:last-child]:px-6 md:[&>div:last-child]:pb-4"
+                tabs={[
+                  {
+                    value: "details",
+                    label: "Details",
+                    content: <ReceiptDetailsTab form={form} setForm={setForm} />,
+                  },
+                  {
+                    value: "allocations",
+                    label: "Allocations",
+                    content: <ReceiptAllocationsTab form={form} setForm={setForm} />,
+                  },
+                ]}
+              />
+            </div>
+            <div className="flex flex-wrap justify-start gap-3 border-t border-border/70 bg-muted/20 px-4 py-4 md:px-6">
+              <SavePrintButtons saveLabel="Save" onSavePrint={() => void save(true)} />
+              <Button asChild type="button" variant="outline" className="rounded-xl">
+                <Link href={receiptId ? `/desk/receipt/${receiptId}` : "/desk/receipt"}>
+                  <ArrowLeft className="size-4" />
+                  Cancel
+                </Link>
+              </Button>
+            </div>
           </form>
         </MasterListUpsertCard>
       </MasterListUpsertLayout>
@@ -349,55 +448,56 @@ function ReceiptDetailsTab({
   readonly setForm: (value: ReceiptInput) => void;
 }) {
   return (
-    <div className="grid gap-4 md:grid-cols-3">
-      <Input
-        value={form.documentNo}
-        placeholder="Receipt no"
-        onChange={(event) => setForm({ ...form, documentNo: event.target.value })}
-      />
-      <Input
-        type="date"
-        value={form.documentDate}
-        onChange={(event) => setForm({ ...form, documentDate: event.target.value })}
-      />
-      <Input
-        value={form.partyName}
-        placeholder="Customer name"
-        onChange={(event) => setForm({ ...form, partyName: event.target.value })}
-      />
-      <Input
-        value={form.mode}
-        placeholder="Mode"
-        onChange={(event) => setForm({ ...form, mode: event.target.value })}
-      />
-      <Input
-        value={form.ledgerName ?? ""}
-        placeholder="Ledger"
-        onChange={(event) => setForm({ ...form, ledgerName: event.target.value })}
-      />
-      <Input
-        type="number"
-        value={form.amount}
-        placeholder="Amount"
-        onChange={(event) => setForm({ ...form, amount: Number(event.target.value || 0) })}
-      />
-      <Input
-        type="number"
-        value={form.tdsAmount}
-        placeholder="TDS"
-        onChange={(event) => setForm({ ...form, tdsAmount: Number(event.target.value || 0) })}
-      />
-      <Input
-        type="number"
-        value={form.discountAmount}
-        placeholder="Discount"
-        onChange={(event) => setForm({ ...form, discountAmount: Number(event.target.value || 0) })}
-      />
-      <Input
-        value={form.referenceNo ?? ""}
-        placeholder="Reference no"
-        onChange={(event) => setForm({ ...form, referenceNo: event.target.value })}
-      />
+    <div className="grid gap-5 lg:grid-cols-2">
+      <div className="space-y-5">
+        <Field label="Customer name">
+          <Input className="h-11 rounded-md" value={form.partyName} onChange={(event) => setForm({ ...form, partyName: event.target.value })} />
+        </Field>
+        <Field label="Amount">
+          <Input
+            className="h-12 rounded-md text-left text-lg font-semibold"
+            inputMode="decimal"
+            type="text"
+            value={form.amount}
+            onChange={(event) => {
+              const value = event.target.value.replace(/[^0-9.]/g, "");
+              setForm({ ...form, amount: Number(value || 0) });
+            }}
+          />
+        </Field>
+        <Field label="Reference no">
+          <Input className="h-11 rounded-md" value={form.referenceNo ?? ""} onChange={(event) => setForm({ ...form, referenceNo: event.target.value })} />
+        </Field>
+      </div>
+      <div className="space-y-5">
+        <Field label="Receipt no">
+          <Input className="h-11 rounded-md" value={form.documentNo} onChange={(event) => setForm({ ...form, documentNo: event.target.value })} />
+        </Field>
+        <Field label="Date">
+          <Input className="h-11 rounded-md text-right" type="date" value={form.documentDate} onChange={(event) => setForm({ ...form, documentDate: event.target.value })} />
+        </Field>
+        <Field label="Mode">
+          <Select value={form.mode} onValueChange={(value) => setForm({ ...form, mode: value })}>
+            <SelectTrigger className="h-11 rounded-md">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {receiptModeOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+        <Field label="Notes">
+          <textarea
+            className="min-h-[5.5rem] w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-foreground/40"
+            value={form.notes ?? ""}
+            onChange={(event) => setForm({ ...form, notes: event.target.value })}
+          />
+        </Field>
+      </div>
     </div>
   );
 }
@@ -480,6 +580,101 @@ function setAllocation(
   });
 }
 
+function ReceiptPrintDocument({
+  company,
+  record,
+}: {
+  readonly company: CompanyRecord | null;
+  readonly record: ReceiptRecord;
+}) {
+  const companyName = company?.legalName?.trim() || company?.name || "";
+  const amountInWords = numberToIndianCurrencyWords(record.netAmount);
+  return (
+    <section className="mx-auto w-[210mm] max-w-full bg-white p-4 font-[Verdana,Arial,sans-serif] text-[10px] text-black print:w-[198mm] print:p-0">
+      <div className="grid grid-cols-[1fr_auto_1fr] border border-gray-400 border-b-0 px-2 py-1">
+        <span />
+        <span className="text-[12px] font-bold">RECEIPT VOUCHER</span>
+        <span className="text-right">Original Copy</span>
+      </div>
+      <div className="grid min-h-[110px] grid-cols-[130px_1fr] border border-gray-400 border-b-0">
+        <div className="flex items-center justify-center border-r border-gray-400 text-4xl font-bold">
+          {(companyName || "C").slice(0, 2).toUpperCase()}
+        </div>
+        <div className="flex flex-col items-center justify-center px-4 text-center">
+          <div className="font-['Times_New_Roman'] text-[30px] font-bold leading-tight">
+            {companyName}
+          </div>
+          {company?.gstinUin ? <div>GSTIN: {company.gstinUin}</div> : null}
+          {company?.primaryEmail ? <div>Email: {company.primaryEmail}</div> : null}
+        </div>
+      </div>
+      <div className="grid grid-cols-2 border border-gray-400 border-b-0">
+        <div className="space-y-1 border-r border-gray-400 p-2">
+          <PrintLine label="Receipt No">{record.documentNo}</PrintLine>
+          <PrintLine label="Receipt Date">{formatEntryDate(record.documentDate)}</PrintLine>
+          <PrintLine label="Customer">{record.partyName}</PrintLine>
+        </div>
+        <div className="space-y-1 p-2">
+          <PrintLine label="Mode">{record.mode}</PrintLine>
+          <PrintLine label="Ledger">{record.ledgerName ?? ""}</PrintLine>
+          <PrintLine label="Reference">{record.referenceNo ?? ""}</PrintLine>
+        </div>
+      </div>
+      <table className="w-full border-collapse border border-gray-400">
+        <tbody>
+          <tr>
+            <td className="w-1/2 border-r border-gray-400 p-2 align-top">
+              <div className="text-[8px]">Amount (in words)</div>
+              <b>{amountInWords} Only</b>
+            </td>
+            <td className="w-1/2 p-0 align-top">
+              <table className="w-full border-collapse">
+                <tbody>
+                  <ReceiptSummaryLine label="Amount" value={formatMoney(record.amount)} />
+                  <ReceiptSummaryLine label="Round Off" value={formatMoney(record.roundOff)} />
+                  <ReceiptSummaryLine label="Net Amount" value={formatMoney(record.netAmount)} strong />
+                </tbody>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td className="h-14 border-r border-t border-gray-400 p-2">Receiver Sign</td>
+            <td className="h-14 border-t border-gray-400 p-2 text-right align-bottom">
+              Authorised Signatory
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  );
+}
+
+function PrintLine({ children, label }: { readonly children: ReactNode; readonly label: string }) {
+  return (
+    <div className="grid grid-cols-[90px_1fr] gap-2">
+      <span className="font-bold">{label}:</span>
+      <span>{children}</span>
+    </div>
+  );
+}
+
+function ReceiptSummaryLine({
+  label,
+  strong = false,
+  value,
+}: {
+  readonly label: string;
+  readonly strong?: boolean;
+  readonly value: string;
+}) {
+  return (
+    <tr className={strong ? "font-bold" : ""}>
+      <td className="border-b border-r border-gray-400 px-2 py-1">{label}</td>
+      <td className="border-b border-gray-400 px-2 py-1 text-right">{value}</td>
+    </tr>
+  );
+}
+
 function ListHeader({
   align = "left",
   children,
@@ -496,8 +691,74 @@ function ListHeader({
   );
 }
 
+function Field({ children, label }: { readonly children: ReactNode; readonly label: string }) {
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-xs font-medium text-muted-foreground">{label}</Label>
+      {children}
+    </div>
+  );
+}
+
+function numberToIndianCurrencyWords(value: number) {
+  const amount = Math.abs(Number(value || 0));
+  const rupees = Math.floor(amount);
+  const paise = Math.round((amount - rupees) * 100);
+  const paiseText = paise ? ` and ${numberToIndianWords(paise)} Paise` : "";
+  return `${value < 0 ? "Minus " : ""}${numberToIndianWords(rupees)} Rupees${paiseText}`;
+}
+
+function numberToIndianWords(value: number): string {
+  if (value === 0) return "Zero";
+  const parts: string[] = [];
+  const crore = Math.floor(value / 10_000_000);
+  value %= 10_000_000;
+  const lakh = Math.floor(value / 100_000);
+  value %= 100_000;
+  const thousand = Math.floor(value / 1_000);
+  value %= 1_000;
+  const hundred = Math.floor(value / 100);
+  const rest = value % 100;
+  if (crore) parts.push(`${numberBelowHundred(crore)} Crore`);
+  if (lakh) parts.push(`${numberBelowHundred(lakh)} Lakh`);
+  if (thousand) parts.push(`${numberBelowHundred(thousand)} Thousand`);
+  if (hundred) parts.push(`${ones[hundred]} Hundred`);
+  if (rest) parts.push(numberBelowHundred(rest));
+  return parts.join(" ");
+}
+
+function numberBelowHundred(value: number) {
+  if (value < 20) return ones[value];
+  const ten = Math.floor(value / 10);
+  const unit = value % 10;
+  return unit ? `${tens[ten]} ${ones[unit]}` : tens[ten];
+}
+
+const ones = [
+  "Zero",
+  "One",
+  "Two",
+  "Three",
+  "Four",
+  "Five",
+  "Six",
+  "Seven",
+  "Eight",
+  "Nine",
+  "Ten",
+  "Eleven",
+  "Twelve",
+  "Thirteen",
+  "Fourteen",
+  "Fifteen",
+  "Sixteen",
+  "Seventeen",
+  "Eighteen",
+  "Nineteen",
+] as const;
+
+const tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"] as const;
+
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Please try again.";
 }
-
-const entryShowCardClassName = "rounded-md [&>div:last-child]:p-6 sm:[&>div:last-child]:p-7";

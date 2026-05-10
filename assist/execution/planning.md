@@ -1,25 +1,26 @@
 # Planning
 
-Active reference: `#70`
+Active reference: `#71`
 
 ## Active
 
-- `#70` Hide empty Sales print barcode divider
+- `#71` Split GST Statement summary into two cards
   - Goal:
-    - Remove the visual divider beside the company header when the e-invoice barcode area is empty.
+    - Make the GST Statement lower summary content read as two clear cards.
   - Scope:
-    - Sales invoice print header styling.
+    - GST Statement frontend report summary layout only.
   - Constraints:
-    - Preserve the divider when real IRN and signed QR data exists.
-    - Leave missing data blank.
+    - Keep Sales and Purchase side tables unchanged.
+    - Preserve existing calculations and values.
     - Do not modify unrelated dirty worktree changes.
-    - Keep the active reference aligned with the current package version `1.0.70`.
+    - Keep the active reference aligned with the current changelog state `1.0.71`.
   - Planned validation:
     - Run focused frontend typecheck.
   - Implemented:
-    - Added an e-invoice barcode availability check in the Sales print header.
-    - Removed the company header right divider when IRN or signed QR data is missing.
-    - Added a `v 1.0.70` changelog entry for hiding the empty barcode divider.
+    - Combined GST Balance and Tax Split into one GST Summary card.
+    - Kept Period Comparison as the second summary card with month and year mini tables side by side on wider screens.
+    - Preserved Sales and Purchase side-table rendering and existing GST calculations.
+    - Added a `v 1.0.71` changelog entry for the GST Statement two-card summary layout.
   - Validation:
     - Ran `corepack pnpm --filter @cxnext/frontend typecheck`.
   - Residual risk:
