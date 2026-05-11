@@ -15,6 +15,35 @@ export interface AuthRole {
   readonly name: string;
   readonly description: string | null;
   readonly isSystem: boolean;
+  readonly isActive: boolean;
+  readonly permissions: readonly AuthPermission[];
+}
+
+export interface AuthRoleInput {
+  readonly key: string;
+  readonly name: string;
+  readonly description?: string | null;
+  readonly isActive: boolean;
+}
+
+export interface AuthPolicy {
+  readonly key: string;
+  readonly name: string;
+  readonly boundedContext: string;
+  readonly actions: readonly string[];
+  readonly description: string;
+  readonly permissionKeys: readonly string[];
+}
+
+export interface AuthGate {
+  readonly userId: string;
+  readonly tenant: AuthTenant;
+  readonly username: string;
+  readonly displayName: string;
+  readonly email: string;
+  readonly isActive: boolean;
+  readonly roleKeys: readonly string[];
+  readonly permissionKeys: readonly string[];
   readonly permissions: readonly AuthPermission[];
 }
 

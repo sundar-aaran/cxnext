@@ -1,5 +1,6 @@
 import {
   authPermissionKeys,
+  authPolicyModuleList,
   authPolicyModules,
   authRoleBlueprints,
   buildAuthPermissionKey,
@@ -12,6 +13,7 @@ import type { BillingEntryKind, MoneyEntryKind } from "../../../entries/domain/e
 
 export {
   authPermissionKeys,
+  authPolicyModuleList,
   authPolicyModules,
   authRoleBlueprints,
   buildAuthPermissionKey,

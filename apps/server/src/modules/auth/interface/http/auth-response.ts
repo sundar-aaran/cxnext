@@ -1,4 +1,10 @@
-import type { AuthPermissionRecord, AuthRoleRecord, AuthUserRecord } from "../../domain/auth-record";
+import type {
+  AuthGateRecord,
+  AuthPermissionRecord,
+  AuthPolicyRecord,
+  AuthRoleRecord,
+  AuthUserRecord,
+} from "../../domain/auth-record";
 
 export function toAuthPermissionResponse(permission: AuthPermissionRecord) {
   return {
@@ -18,7 +24,33 @@ export function toAuthRoleResponse(role: AuthRoleRecord) {
     name: role.name,
     description: role.description,
     isSystem: role.isSystem,
+    isActive: role.isActive,
     permissions: role.permissions.map(toAuthPermissionResponse),
+  };
+}
+
+export function toAuthPolicyResponse(policy: AuthPolicyRecord) {
+  return {
+    key: policy.key,
+    name: policy.name,
+    boundedContext: policy.boundedContext,
+    actions: policy.actions,
+    description: policy.description,
+    permissionKeys: policy.permissionKeys,
+  };
+}
+
+export function toAuthGateResponse(gate: AuthGateRecord) {
+  return {
+    userId: gate.userId,
+    tenant: gate.tenant,
+    username: gate.username,
+    displayName: gate.displayName,
+    email: gate.email,
+    isActive: gate.isActive,
+    roleKeys: gate.roleKeys,
+    permissionKeys: gate.permissionKeys,
+    permissions: gate.permissions.map(toAuthPermissionResponse),
   };
 }
 

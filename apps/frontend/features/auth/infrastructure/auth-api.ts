@@ -1,4 +1,13 @@
-import type { AuthRole, AuthSession, AuthUser, AuthUserInput } from "../domain/auth";
+import type {
+  AuthGate,
+  AuthPermission,
+  AuthPolicy,
+  AuthRole,
+  AuthRoleInput,
+  AuthSession,
+  AuthUser,
+  AuthUserInput,
+} from "../domain/auth";
 import { getRequiredPublicApiUrl } from "@/lib/runtime-env";
 import { clearStoredAuthSession, getStoredAccessToken } from "./session-storage";
 
@@ -58,6 +67,44 @@ export async function listAuthRoles() {
   const response = await authFetch(`${apiBaseUrl()}/auth/roles`);
   if (!response.ok) throw new Error(`Role list failed with status ${response.status}.`);
   return (await response.json()) as AuthRole[];
+}
+
+export async function upsertAuthRole(input: AuthRoleInput, roleId?: string) {
+  const response = await authFetch(`${apiBaseUrl()}/auth/roles${roleId ? `/${roleId}` : ""}`, {
+    body: JSON.stringify(input),
+    headers: { "Content-Type": "application/json" },
+    method: roleId ? "PATCH" : "POST",
+  });
+
+  if (!response.ok) throw new Error(`Role save failed with status ${response.status}.`);
+  return (await response.json()) as AuthRole;
+}
+
+export async function deleteAuthRole(roleId: string) {
+  const response = await authFetch(`${apiBaseUrl()}/auth/roles/${roleId}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) throw new Error(`Role delete failed with status ${response.status}.`);
+  return (await response.json()) as { readonly deleted: boolean };
+}
+
+export async function listAuthPermissions() {
+  const response = await authFetch(`${apiBaseUrl()}/auth/permissions`);
+  if (!response.ok) throw new Error(`Permission list failed with status ${response.status}.`);
+  return (await response.json()) as AuthPermission[];
+}
+
+export async function listAuthPolicies() {
+  const response = await authFetch(`${apiBaseUrl()}/auth/policies`);
+  if (!response.ok) throw new Error(`Policy list failed with status ${response.status}.`);
+  return (await response.json()) as AuthPolicy[];
+}
+
+export async function listAuthGates() {
+  const response = await authFetch(`${apiBaseUrl()}/auth/gates`);
+  if (!response.ok) throw new Error(`Gate list failed with status ${response.status}.`);
+  return (await response.json()) as AuthGate[];
 }
 
 export async function listTenants() {

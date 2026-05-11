@@ -1,6 +1,6 @@
 {
   "name": "@cxnext/desktop",
-  "version": "1.0.69",
+  "version": "1.0.72",
   "private": true,
   "main": "dist/main.js",
   "scripts": {
@@ -11,12 +11,12 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "electron": "42.0.0-alpha.5"
+    "electron": "42.0.1"
   },
   "devDependencies": {
-    "@types/node": "^25.6.0",
+    "@types/node": "^25.6.2",
     "concurrently": "^9.2.1",
     "typescript": "^6.0.3",
-    "wait-on": "^9.0.5"
+    "wait-on": "^9.0.6"
   }
 }

@@ -13,11 +13,15 @@ import {
   FileKey2,
   Flag,
   HandCoins,
+  KeyRound,
   Landmark,
   LineChart,
   Package,
   ReceiptText,
+  ScrollText,
   Settings,
+  Shield,
+  ShieldCheck,
   ShoppingBag,
   Users,
   WalletCards,
@@ -70,7 +74,40 @@ const adminNavItems = [
     href: "/desk/admin/users",
     icon: <Users className="h-4 w-4" />,
   },
+  {
+    id: "admin-roles",
+    label: "Roles",
+    href: "/desk/admin/roles",
+    icon: <ShieldCheck className="h-4 w-4" />,
+  },
+  {
+    id: "admin-permissions",
+    label: "Permissions",
+    href: "/desk/admin/permissions",
+    icon: <KeyRound className="h-4 w-4" />,
+  },
+  {
+    id: "admin-policy",
+    label: "Policy",
+    href: "/desk/admin/policy",
+    icon: <ScrollText className="h-4 w-4" />,
+  },
+  {
+    id: "admin-gate",
+    label: "Gate",
+    href: "/desk/admin/gate",
+    icon: <Shield className="h-4 w-4" />,
+  },
 ] as const;
+
+const adminMenuLabels: Record<string, string> = {
+  admin: "Admin",
+  gate: "Gate",
+  permissions: "Permissions",
+  policy: "Policy",
+  roles: "Roles",
+  users: "Users",
+};
 
 const masterNavItems = [
   {
@@ -216,6 +253,10 @@ function getWorkspaceLabel(pathname: string, isDeskRoot: boolean, fallbackLabel:
 
   if (root === "desk" && portalId === "settings") {
     return settingsMenuLabels[moduleKey ?? portalId] ?? "Settings";
+  }
+
+  if (root === "desk" && portalId === "admin") {
+    return adminMenuLabels[moduleKey ?? portalId] ?? "Admin";
   }
 
   if (root === "desk" && portalId === "common" && moduleKey) {

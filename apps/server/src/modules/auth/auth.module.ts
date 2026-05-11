@@ -6,11 +6,16 @@ import { JwtService } from "./application/services/jwt.service";
 import { PasswordService } from "./application/services/password.service";
 import { LoginUseCase } from "./application/use-cases/login.use-case";
 import {
+  CreateAuthRoleUseCase,
   CreateAuthUserUseCase,
+  DeleteAuthRoleUseCase,
   GetAuthUserUseCase,
+  ListAuthGatesUseCase,
   ListAuthPermissionsUseCase,
+  ListAuthPoliciesUseCase,
   ListAuthRolesUseCase,
   ListAuthUsersUseCase,
+  UpdateAuthRoleUseCase,
   UpdateAuthUserUseCase,
 } from "./application/use-cases/user-admin.use-cases";
 import { KyselyAuthRepository } from "./infrastructure/persistence/kysely-auth.repository";
@@ -30,7 +35,12 @@ import { AuthGuard } from "./interface/http/auth.guard";
     CreateAuthUserUseCase,
     UpdateAuthUserUseCase,
     ListAuthRolesUseCase,
+    CreateAuthRoleUseCase,
+    UpdateAuthRoleUseCase,
+    DeleteAuthRoleUseCase,
     ListAuthPermissionsUseCase,
+    ListAuthPoliciesUseCase,
+    ListAuthGatesUseCase,
     {
       provide: AUTH_REPOSITORY,
       useClass: KyselyAuthRepository,

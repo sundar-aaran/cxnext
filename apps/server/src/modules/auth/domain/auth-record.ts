@@ -13,6 +13,28 @@ export interface AuthRoleRecord {
   readonly name: string;
   readonly description: string | null;
   readonly isSystem: boolean;
+  readonly isActive: boolean;
+  readonly permissions: readonly AuthPermissionRecord[];
+}
+
+export interface AuthPolicyRecord {
+  readonly key: string;
+  readonly name: string;
+  readonly boundedContext: string;
+  readonly actions: readonly string[];
+  readonly description: string;
+  readonly permissionKeys: readonly string[];
+}
+
+export interface AuthGateRecord {
+  readonly userId: string;
+  readonly tenant: AuthTenantRecord;
+  readonly username: string;
+  readonly displayName: string;
+  readonly email: string;
+  readonly isActive: boolean;
+  readonly roleKeys: readonly string[];
+  readonly permissionKeys: readonly string[];
   readonly permissions: readonly AuthPermissionRecord[];
 }
 

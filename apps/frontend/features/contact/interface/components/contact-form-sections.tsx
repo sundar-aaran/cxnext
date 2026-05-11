@@ -34,7 +34,7 @@ export function ContactStatusSwitch({
     <label
       className={
         checked
-          ? "flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-950 dark:border-emerald-900/70 dark:bg-emerald-950/30 dark:text-emerald-100"
+          ? "flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-emerald-300 bg-emerald-50/90 px-4 py-3 text-emerald-950 shadow-sm shadow-emerald-100/80 ring-1 ring-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-100 dark:shadow-none dark:ring-emerald-900/40"
           : "flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-border/70 bg-muted/10 px-4 py-3"
       }
     >

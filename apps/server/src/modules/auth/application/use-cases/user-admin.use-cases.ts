@@ -3,8 +3,11 @@ import { AUTH_DOMAIN_EVENT_PUBLISHER, type AuthDomainEventPublisher } from "../s
 import {
   AUTH_REPOSITORY,
   type AuthRepository,
+  type AuthRoleUpsertParams,
   type AuthUserUpsertParams,
 } from "../services/auth.repository";
+import { authPolicyModuleList, buildAuthPermissionKey } from "../../domain/services/rbac-catalog";
+import { AuthRoleAccessUpdatedEvent } from "../../domain/events/auth-role-access-updated.event";
 import { PasswordService } from "../services/password.service";
 import { AuthUserAccessUpdatedEvent } from "../../domain/events/auth-user-access-updated.event";
 import { AuthUserProvisionedEvent } from "../../domain/events/auth-user-provisioned.event";
@@ -100,11 +103,105 @@ export class ListAuthRolesUseCase {
 }
 
 @Injectable()
+export class CreateAuthRoleUseCase {
+  public constructor(
+    @Inject(AUTH_REPOSITORY) private readonly repository: AuthRepository,
+    @Inject(AUTH_DOMAIN_EVENT_PUBLISHER)
+    private readonly eventPublisher: AuthDomainEventPublisher,
+  ) {}
+
+  public async execute(params: AuthRoleUpsertParams) {
+    const role = await this.repository.createRole(params);
+
+    await this.eventPublisher.publishAll([
+      new AuthRoleAccessUpdatedEvent(
+        role.id,
+        role.key,
+        role.permissions.map((permission) => permission.key),
+        role.isActive,
+      ),
+    ]);
+
+    return role;
+  }
+}
+
+@Injectable()
+export class UpdateAuthRoleUseCase {
+  public constructor(
+    @Inject(AUTH_REPOSITORY) private readonly repository: AuthRepository,
+    @Inject(AUTH_DOMAIN_EVENT_PUBLISHER)
+    private readonly eventPublisher: AuthDomainEventPublisher,
+  ) {}
+
+  public async execute(roleId: string, params: AuthRoleUpsertParams) {
+    const role = await this.repository.updateRole(roleId, params);
+
+    if (role) {
+      await this.eventPublisher.publishAll([
+        new AuthRoleAccessUpdatedEvent(
+          role.id,
+          role.key,
+          role.permissions.map((permission) => permission.key),
+          role.isActive,
+        ),
+      ]);
+    }
+
+    return role;
+  }
+}
+
+@Injectable()
+export class DeleteAuthRoleUseCase {
+  public constructor(@Inject(AUTH_REPOSITORY) private readonly repository: AuthRepository) {}
+
+  public execute(roleId: string) {
+    return this.repository.deleteRole(roleId);
+  }
+}
+
+@Injectable()
 export class ListAuthPermissionsUseCase {
   public constructor(@Inject(AUTH_REPOSITORY) private readonly repository: AuthRepository) {}
 
   public execute() {
     return this.repository.listPermissions();
+  }
+}
+
+@Injectable()
+export class ListAuthPoliciesUseCase {
+  public execute() {
+    return authPolicyModuleList.map((policy) => ({
+      key: policy.key,
+      name: policy.name,
+      boundedContext: policy.boundedContext,
+      actions: policy.actions,
+      description: policy.description,
+      permissionKeys: policy.actions.map((action) => buildAuthPermissionKey(policy.key, action)),
+    }));
+  }
+}
+
+@Injectable()
+export class ListAuthGatesUseCase {
+  public constructor(@Inject(AUTH_REPOSITORY) private readonly repository: AuthRepository) {}
+
+  public async execute() {
+    const users = await this.repository.listUsers();
+
+    return users.map((user) => ({
+      userId: user.id,
+      tenant: user.tenant,
+      username: user.username,
+      displayName: user.displayName,
+      email: user.email,
+      isActive: user.isActive,
+      roleKeys: user.roles.map((role) => role.key),
+      permissionKeys: user.permissions.map((permission) => permission.key),
+      permissions: user.permissions,
+    }));
   }
 }
 

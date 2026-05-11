@@ -77,6 +77,25 @@ export const seedAuthRbacSeeder = defineDatabaseSeeder({
       }
     }
 
+    const desiredRoleKeys = authRoleBlueprints.map((role) => role.key);
+    const obsoleteRoles = (await db
+      .selectFrom("auth_roles")
+      .select(["id", "role_key"])
+      .where("role_key", "not in", desiredRoleKeys)
+      .execute()) as Array<{ id: number | bigint; role_key: string }>;
+
+    for (const role of obsoleteRoles) {
+      await db
+        .deleteFrom("auth_user_roles")
+        .where("role_id", "=", Number(role.id))
+        .execute();
+      await db
+        .deleteFrom("auth_role_permissions")
+        .where("role_id", "=", Number(role.id))
+        .execute();
+      await db.deleteFrom("auth_roles").where("id", "=", Number(role.id)).execute();
+    }
+
     const seededRoles = (await db
       .selectFrom("auth_roles")
       .select(["id", "role_key"])
@@ -131,6 +150,8 @@ export const seedAuthRbacSeeder = defineDatabaseSeeder({
       .where("username", "=", "admin")
       .executeTakeFirst();
 
+    let adminUserId = existingAdmin ? Number((existingAdmin as { id: number | bigint }).id) : null;
+
     if (!existingAdmin) {
       const result = await db
         .insertInto("auth_users")
@@ -138,7 +159,7 @@ export const seedAuthRbacSeeder = defineDatabaseSeeder({
           tenant_id: Number(tenant.id),
           username: "admin",
           email: "admin@cxnext.local",
-          display_name: "Platform Admin",
+          display_name: "Super Admin",
           password_hash: hashPassword(process.env.AUTH_DEFAULT_ADMIN_PASSWORD ?? "Admin@12345"),
           is_active: true,
           created_at: now,
@@ -146,13 +167,24 @@ export const seedAuthRbacSeeder = defineDatabaseSeeder({
           deleted_at: null,
         })
         .executeTakeFirstOrThrow();
-      const adminRoleId = roleByKey.get("platform_admin");
+      adminUserId = Number(result.insertId);
+    }
 
-      if (adminRoleId) {
+    const adminRoleId = roleByKey.get("super_admin");
+
+    if (adminUserId && adminRoleId) {
+      const existingAdminRole = await db
+        .selectFrom("auth_user_roles")
+        .select("user_id")
+        .where("user_id", "=", adminUserId)
+        .where("role_id", "=", adminRoleId)
+        .executeTakeFirst();
+
+      if (!existingAdminRole) {
         await db
           .insertInto("auth_user_roles")
           .values({
-            user_id: Number(result.insertId),
+            user_id: adminUserId,
             role_id: adminRoleId,
             created_at: now,
           })

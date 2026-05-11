@@ -2,19 +2,76 @@
 
 ## Version State
 
-- Current package version: `1.0.71`
-- Current release tag: `v-1.0.71`
+- Current package version: `1.0.72`
+- Current release tag: `v-1.0.72`
 - Versioned changelog label format: `v 1.0.<reference>`
 - Version section format: `## v-1.0.<reference>`
 - Entry format: `### [v 1.0.<reference>] YYYY-MM-DD - Title`
 
+## v-1.0.72
+
+### [v 1.0.72] 2026-05-11 - Simplify Role Master Workflow
+
+- Slimmed seeded system roles to Super Admin, Admin, Manager, Operator, Viewer, Web Client, and Premium Client.
+- Updated RBAC seeding to remove obsolete seeded roles and keep the default admin assigned to Super Admin.
+- Reworked Roles admin into a Common-list-style page with popup create/edit and protected delete actions.
+- Removed separate Role create/edit routes and kept role records independent from permission editing.
+- Revalidated frontend, server, db, and shared types focused typechecks.
+
+### [v 1.0.72] 2026-05-11 - Bump Workspace Version
+
+- Bumped workspace package manifests and active changelog state to `1.0.72`.
+
 ## v-1.0.71
 
-### [v 1.0.71] 2026-05-10 - Split GST Statement Summary Cards
+### [v 1.0.71] 2026-05-11 - Split Authorization Admin Surfaces
 
-- Split the GST Statement lower summary content into two cards: GST Summary and Period Comparison.
-- Grouped GST Balance and Tax Split inside the GST Summary card while preserving existing values.
-- Kept Period Comparison as the second card with month and year comparisons side by side on wide screens.
+- Changed Roles into a standalone master workflow for role list, create, edit, and delete without assigning permissions from the role form.
+- Grouped the Permissions admin page by module and kept Policy as the deeper permission definition/catalog view.
+- Added a User show page with animated Role, Permission, and Policy tabs for user-specific access review.
+- Simplified User upsert to user content only and linked user list/gate rows into the show page.
+- Revalidated focused server and frontend typechecks.
+
+### [v 1.0.71] 2026-05-11 - Add Admin Authorization Management
+
+- Added role create/update endpoints, permission validation, policy catalog output, and effective user gate output inside the existing Auth bounded context.
+- Published role access changes through the auth domain event publisher to keep the modular monolith event-driven.
+- Added Admin side-menu entries and pages for Roles, Permissions, Policy, and Gate.
+- Connected role management to the permission catalog and user access model, with focused server and frontend typechecks passing.
+
+### [v 1.0.71] 2026-05-11 - Fix Dev Startup And Update Dependencies
+
+- Fixed the dev launcher so Turbo `--filter` flags are consumed by Turbo instead of being forwarded into frontend, server, and desktop package scripts.
+- Updated workspace dependencies and the package-manager pin to pnpm `11.0.9`, with pnpm build-script approvals recorded in the workspace config.
+- Kept Kysely pinned to `0.28.16` because latest `0.29.0` requires an ESM migration for the current server/db package architecture.
+- Increased the default dev readiness timeout for cold starts and verified the dev smoke test reaches `cxnext dev is ready`.
+- Revalidated full workspace typecheck, server build, frontend typecheck, launcher syntax, and Turbo filter resolution.
+
+### [v 1.0.71] 2026-05-11 - Speed Up Dev Server Startup
+
+- Limited the default root `dev` launcher to frontend and server workspaces so server startup is not coupled to the desktop dev task.
+- Added `dev:all` and launcher `--desktop`/`--all` support for the full frontend, server, and desktop development flow.
+- Ran preflight and dev port release in parallel before starting Turbo to reduce avoidable sequential startup delay.
+- Revalidated the dev launcher syntax, root package JSON, server typecheck, and Turbo filter resolution.
+
+### [v 1.0.71] 2026-05-10 - Add Statement Contact Lookup Filters
+
+- Moved Customer Statement and Supplier Statement party filters before the date filters.
+- Replaced the free-text party filter with a no-create autocomplete lookup from the contact master.
+- Filtered Customer Statement lookup options to active `contact-type:customer` contacts and Supplier Statement options to active `contact-type:supplier` contacts.
+- Revalidated the frontend workspace with focused typecheck.
+
+### [v 1.0.71] 2026-05-10 - Add Report Letterhead Printing
+
+- Added company letterhead output for Customer Statement, Supplier Statement, and GST Statement printing.
+- Loaded the primary company record for report print headers and kept a graceful fallback when no company is available.
+- Moved report print components into a focused file and kept printed pages limited to the letterhead and report content.
+- Revalidated the frontend workspace with focused typecheck.
+
+### [v 1.0.71] 2026-05-10 - Split GST Statement Into Two Cards
+
+- Split GST Statement content into two stacked cards: Sales/Purchase tables first, then GST Balance, Tax Split, and Period Comparison together.
+- Preserved existing report values, calculations, and table content.
 - Revalidated the frontend workspace with focused typecheck.
 
 ### [v 1.0.71] 2026-05-10 - Refine Sales Show Collaboration Placement

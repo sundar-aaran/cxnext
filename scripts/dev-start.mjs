@@ -12,7 +12,13 @@ const runtimeEnv = resolveRuntimeEnv();
 const frontendUrl = runtimeEnv.FRONTEND_URL;
 const backendUrl = runtimeEnv.BACKEND_URL;
 const backendHealthUrl = runtimeEnv.BACKEND_HEALTH_URL;
-const readinessTimeoutMs = Number(runtimeEnv.DEV_READY_TIMEOUT_MS ?? 60000);
+const readinessTimeoutMs = Number(runtimeEnv.DEV_READY_TIMEOUT_MS ?? 120000);
+const includeDesktop = process.argv.includes("--desktop") || process.argv.includes("--all");
+const devServiceFilters = [
+  "@cxnext/frontend",
+  "@cxnext/server",
+  ...(includeDesktop ? ["@cxnext/desktop"] : []),
+];
 
 function sleep(ms) {
   return new Promise((resolve) => {
@@ -81,18 +87,19 @@ async function waitForReadiness(child) {
 
 function resolvePnpmInvocation() {
   const npmExecPath = process.env.npm_execpath;
+  const args = ["exec", "turbo", "dev", ...devServiceFilters.map((name) => `--filter=${name}`)];
 
   if (npmExecPath?.toLowerCase().includes("pnpm")) {
     return {
       command: process.execPath,
-      args: [npmExecPath, "run", "dev:turbo"],
+      args: [npmExecPath, ...args],
       shell: false,
     };
   }
 
   return {
     command: pnpmCommand,
-    args: ["run", "dev:turbo"],
+    args,
     shell: process.platform === "win32",
   };
 }
@@ -140,8 +147,9 @@ function runTurbo() {
       `cxnext frontend listening on ${frontendUrl}`,
       `cxnext server listening on ${backendUrl}`,
       `cxnext server health on ${backendHealthUrl}`,
+      includeDesktop ? "cxnext desktop app will start after services are ready" : "",
       "",
-    ].join("\n"),
+    ].filter(Boolean).join("\n"),
   );
 
   const child = spawn(pnpm.command, pnpm.args, {
@@ -174,6 +182,5 @@ function runTurbo() {
   void waitForReadiness(child);
 }
 
-await runPreflight();
-await releasePorts();
+await Promise.all([runPreflight(), releasePorts()]);
 runTurbo();

@@ -1,6 +1,6 @@
 {
   "name": "@cxnext/db",
-  "version": "1.0.69",
+  "version": "1.0.72",
   "private": true,
   "exports": {
     ".": {
@@ -23,6 +23,6 @@
     "@cxnext/types": "workspace:*",
     "kysely": "0.28.16",
     "mysql2": "^3.22.3",
-    "zod": "^4.3.6"
+    "zod": "^4.4.3"
   }
 }

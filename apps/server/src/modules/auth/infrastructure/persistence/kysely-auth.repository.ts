@@ -2,6 +2,7 @@ import { Injectable, type OnModuleDestroy } from "@nestjs/common";
 import { createDatabaseConnection, loadDatabaseEnv, type DatabaseConnection } from "@cxnext/db";
 import type {
   AuthRepository,
+  AuthRoleUpsertParams,
   AuthSessionParams,
   AuthUserUpsertParams,
 } from "../../application/services/auth.repository";
@@ -150,11 +151,84 @@ export class KyselyAuthRepository implements AuthRepository, OnModuleDestroy {
     const rows = (await this.db()
       .selectFrom("auth_roles")
       .selectAll()
-      .where("is_active", "=", true)
       .orderBy("id", "asc")
       .execute()) as Array<Record<string, unknown>>;
 
     return Promise.all(rows.map((row) => this.hydrateRole(row)));
+  }
+
+  public async createRole(params: AuthRoleUpsertParams): Promise<AuthRoleRecord> {
+    const now = new Date();
+    const result = await this.db()
+      .insertInto("auth_roles")
+      .values({
+        role_key: normalizeRoleKey(params.key),
+        name: params.name.trim(),
+        description: normalizeNullable(params.description),
+        is_system: false,
+        is_active: params.isActive,
+        created_at: now,
+        updated_at: now,
+      })
+      .executeTakeFirstOrThrow();
+
+    const role = await this.findRoleById(String(result.insertId));
+    if (!role) throw new Error("Role was created but could not be read back.");
+    return role;
+  }
+
+  public async updateRole(
+    roleId: string,
+    params: AuthRoleUpsertParams,
+  ): Promise<AuthRoleRecord | null> {
+    const existing = (await this.db()
+      .selectFrom("auth_roles")
+      .select(["id", "is_system"])
+      .where("id", "=", Number(roleId))
+      .executeTakeFirst()) as { id: number | bigint; is_system: boolean | number } | undefined;
+
+    if (!existing) {
+      return null;
+    }
+
+    const values: Record<string, unknown> = {
+      name: params.name.trim(),
+      description: normalizeNullable(params.description),
+      is_active: params.isActive,
+      updated_at: new Date(),
+    };
+
+    if (!Boolean(existing.is_system)) {
+      values.role_key = normalizeRoleKey(params.key);
+    }
+
+    await this.db()
+      .updateTable("auth_roles")
+      .set(values)
+      .where("id", "=", Number(roleId))
+      .executeTakeFirst();
+
+    return this.findRoleById(roleId);
+  }
+
+  public async deleteRole(roleId: string): Promise<boolean> {
+    const existing = (await this.db()
+      .selectFrom("auth_roles")
+      .select(["id", "is_system"])
+      .where("id", "=", Number(roleId))
+      .executeTakeFirst()) as { id: number | bigint; is_system: boolean | number } | undefined;
+
+    if (!existing || Boolean(existing.is_system)) {
+      return false;
+    }
+
+    await this.db().deleteFrom("auth_user_roles").where("role_id", "=", Number(roleId)).execute();
+    await this.db()
+      .deleteFrom("auth_role_permissions")
+      .where("role_id", "=", Number(roleId))
+      .execute();
+    await this.db().deleteFrom("auth_roles").where("id", "=", Number(roleId)).execute();
+    return true;
   }
 
   public async findActiveRoleKeys(roleKeys: readonly string[]): Promise<readonly string[]> {
@@ -182,6 +256,21 @@ export class KyselyAuthRepository implements AuthRepository, OnModuleDestroy {
       .execute()) as Array<Record<string, unknown>>;
 
     return rows.map(toPermission);
+  }
+
+  public async findActivePermissionKeys(permissionKeys: readonly string[]): Promise<readonly string[]> {
+    if (permissionKeys.length === 0) {
+      return [];
+    }
+
+    const rows = (await this.db()
+      .selectFrom("auth_permissions")
+      .select(["permission_key"])
+      .where("is_active", "=", true)
+      .where("permission_key", "in", [...new Set(permissionKeys)])
+      .execute()) as Array<{ permission_key: string }>;
+
+    return rows.map((row) => row.permission_key);
   }
 
   public async createSession(params: AuthSessionParams): Promise<void> {
@@ -315,8 +404,19 @@ export class KyselyAuthRepository implements AuthRepository, OnModuleDestroy {
       name: String(row.name),
       description: row.description ? String(row.description) : null,
       isSystem: Boolean(row.is_system),
+      isActive: Boolean(row.is_active),
       permissions: permissions.map(toPermission),
     };
+  }
+
+  private async findRoleById(roleId: string): Promise<AuthRoleRecord | null> {
+    const row = (await this.db()
+      .selectFrom("auth_roles")
+      .selectAll()
+      .where("id", "=", Number(roleId))
+      .executeTakeFirst()) as Record<string, unknown> | undefined;
+
+    return row ? this.hydrateRole(row) : null;
   }
 
   private async replaceUserRoles(userId: string, roleKeys: readonly string[]) {
@@ -361,4 +461,17 @@ function toPermission(row: Record<string, unknown>): AuthPermissionRecord {
 
 function toDate(value: Date | string): Date {
   return value instanceof Date ? value : new Date(value);
+}
+
+function normalizeRoleKey(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+function normalizeNullable(value: string | null | undefined) {
+  const normalized = value?.trim();
+  return normalized ? normalized : null;
 }

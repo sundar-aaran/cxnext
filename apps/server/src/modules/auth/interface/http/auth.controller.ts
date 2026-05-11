@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   Inject,
   NotFoundException,
@@ -11,11 +12,16 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import {
+  CreateAuthRoleUseCase,
   CreateAuthUserUseCase,
+  DeleteAuthRoleUseCase,
   GetAuthUserUseCase,
+  ListAuthGatesUseCase,
   ListAuthPermissionsUseCase,
+  ListAuthPoliciesUseCase,
   ListAuthRolesUseCase,
   ListAuthUsersUseCase,
+  UpdateAuthRoleUseCase,
   UpdateAuthUserUseCase,
 } from "../../application/use-cases/user-admin.use-cases";
 import { LoginUseCase } from "../../application/use-cases/login.use-case";
@@ -23,7 +29,13 @@ import { AUTH_REPOSITORY, type AuthRepository } from "../../application/services
 import { AuthGuard } from "./auth.guard";
 import { CurrentAuth, RequirePermissions, type AuthRequestContext } from "./auth-context";
 import { modulePermission } from "./module-permissions";
-import { toAuthPermissionResponse, toAuthRoleResponse, toAuthUserResponse } from "./auth-response";
+import {
+  toAuthGateResponse,
+  toAuthPermissionResponse,
+  toAuthPolicyResponse,
+  toAuthRoleResponse,
+  toAuthUserResponse,
+} from "./auth-response";
 
 interface LoginRequest {
   readonly login?: unknown;
@@ -40,6 +52,13 @@ interface UserUpsertRequest {
   readonly roleKeys?: unknown;
 }
 
+interface RoleUpsertRequest {
+  readonly key?: unknown;
+  readonly name?: unknown;
+  readonly description?: unknown;
+  readonly isActive?: unknown;
+}
+
 @Controller("auth")
 @UseGuards(AuthGuard)
 export class AuthController {
@@ -50,7 +69,12 @@ export class AuthController {
     private readonly createUserUseCase: CreateAuthUserUseCase,
     private readonly updateUserUseCase: UpdateAuthUserUseCase,
     private readonly listRolesUseCase: ListAuthRolesUseCase,
+    private readonly createRoleUseCase: CreateAuthRoleUseCase,
+    private readonly updateRoleUseCase: UpdateAuthRoleUseCase,
+    private readonly deleteRoleUseCase: DeleteAuthRoleUseCase,
     private readonly listPermissionsUseCase: ListAuthPermissionsUseCase,
+    private readonly listPoliciesUseCase: ListAuthPoliciesUseCase,
+    private readonly listGatesUseCase: ListAuthGatesUseCase,
     @Inject(AUTH_REPOSITORY) private readonly repository: AuthRepository,
   ) {}
 
@@ -117,11 +141,48 @@ export class AuthController {
     return roles.map(toAuthRoleResponse);
   }
 
+  @Post("roles")
+  @RequirePermissions(modulePermission("auth", "manage"))
+  public async createRole(@Body() body: RoleUpsertRequest) {
+    const role = await this.createRoleUseCase.execute(parseRoleRequest(body));
+    return toAuthRoleResponse(role);
+  }
+
+  @Patch("roles/:roleId")
+  @RequirePermissions(modulePermission("auth", "manage"))
+  public async updateRole(@Param("roleId") roleId: string, @Body() body: RoleUpsertRequest) {
+    const role = await this.updateRoleUseCase.execute(roleId, parseRoleRequest(body));
+    if (!role) throw new NotFoundException(`Role "${roleId}" was not found.`);
+    return toAuthRoleResponse(role);
+  }
+
+  @Delete("roles/:roleId")
+  @RequirePermissions(modulePermission("auth", "manage"))
+  public async deleteRole(@Param("roleId") roleId: string) {
+    const deleted = await this.deleteRoleUseCase.execute(roleId);
+    if (!deleted) throw new NotFoundException(`Role "${roleId}" was not found or cannot be deleted.`);
+    return { deleted: true };
+  }
+
   @Get("permissions")
   @RequirePermissions(modulePermission("auth", "read"))
   public async listPermissions() {
     const permissions = await this.listPermissionsUseCase.execute();
     return permissions.map(toAuthPermissionResponse);
+  }
+
+  @Get("policies")
+  @RequirePermissions(modulePermission("auth", "read"))
+  public listPolicies() {
+    const policies = this.listPoliciesUseCase.execute();
+    return policies.map(toAuthPolicyResponse);
+  }
+
+  @Get("gates")
+  @RequirePermissions(modulePermission("auth", "read"))
+  public async listGates() {
+    const gates = await this.listGatesUseCase.execute();
+    return gates.map(toAuthGateResponse);
   }
 }
 
@@ -142,5 +203,25 @@ function parseUserRequest(body: UserUpsertRequest, requiresPassword: boolean) {
     roleKeys: Array.isArray(body.roleKeys)
       ? body.roleKeys.filter((roleKey): roleKey is string => typeof roleKey === "string")
       : [],
+  };
+}
+
+function parseRoleRequest(body: RoleUpsertRequest) {
+  const key = typeof body.key === "string" ? body.key : "";
+  const name = typeof body.name === "string" ? body.name : "";
+
+  if (!key.trim()) {
+    throw new BadRequestException("Role key is required.");
+  }
+
+  if (!name.trim()) {
+    throw new BadRequestException("Role name is required.");
+  }
+
+  return {
+    key,
+    name,
+    description: typeof body.description === "string" ? body.description : null,
+    isActive: body.isActive !== false,
   };
 }

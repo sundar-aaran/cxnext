@@ -131,8 +131,8 @@ export const authPermissionKeys = Object.fromEntries(
 
 export const authRoleBlueprints = [
   {
-    key: "platform_admin",
-    name: "Platform admin",
+    key: "super_admin",
+    name: "Super Admin",
     description: "Full access across every bounded context, tenant, and shared platform surface.",
     permissionKeys: authPolicyModuleList.flatMap((moduleDefinition) =>
       moduleDefinition.actions.map((action) =>
@@ -142,9 +142,9 @@ export const authRoleBlueprints = [
     isSystem: true,
   },
   {
-    key: "tenant_admin",
-    name: "Tenant admin",
-    description: "Tenant-wide access to business modules, user management, and shared masters.",
+    key: "admin",
+    name: "Admin",
+    description: "Tenant administration, user management, and full business module access.",
     permissionKeys: [
       ...permissionsForModules(["auth"], ["read", "manage"]),
       ...permissionsForModules(["tenant"], ["read"]),
@@ -156,9 +156,9 @@ export const authRoleBlueprints = [
     isSystem: true,
   },
   {
-    key: "operations_manager",
-    name: "Operations manager",
-    description: "Operational ownership across business modules without tenant or auth administration.",
+    key: "manager",
+    name: "Manager",
+    description: "Operational ownership across business modules without auth administration.",
     permissionKeys: permissionsForModules(
       ["industry", "company", "contact", "product", "sales", "purchase", "payment", "receipt", "common"],
       ["read", "create", "update", "delete"],
@@ -185,15 +185,20 @@ export const authRoleBlueprints = [
     ),
     isSystem: true,
   },
-  ...createScopedRoleBlueprints("industry"),
-  ...createScopedRoleBlueprints("company"),
-  ...createScopedRoleBlueprints("contact"),
-  ...createScopedRoleBlueprints("product"),
-  ...createScopedRoleBlueprints("sales"),
-  ...createScopedRoleBlueprints("purchase"),
-  ...createScopedRoleBlueprints("payment"),
-  ...createScopedRoleBlueprints("receipt"),
-  ...createScopedRoleBlueprints("common"),
+  {
+    key: "web_client",
+    name: "Web Client",
+    description: "External client access for viewing catalog, contact, and sales-facing records.",
+    permissionKeys: permissionsForModules(["contact", "product", "sales"], ["read"]),
+    isSystem: true,
+  },
+  {
+    key: "premium_client",
+    name: "Premium Client",
+    description: "External client access with limited create and update workflows.",
+    permissionKeys: permissionsForModules(["contact", "product", "sales"], ["read", "create", "update"]),
+    isSystem: true,
+  },
 ] as const satisfies readonly AuthRoleBlueprint[];
 
 export function buildAuthPermissionKey(moduleKey: AuthPolicyModuleKey, action: AuthPolicyAction) {

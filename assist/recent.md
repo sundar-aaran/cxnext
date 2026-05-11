@@ -104,5 +104,5 @@ warning: [D:\Workspace\websites\cxnext\apps\frontend\middleware.ts](D:/Workspace
 should eventually move to the newer `proxy` convention. Functionally it’s working right now.
 
 The app is currently up on `http://localhost:3000` and the API on `http://127.0.0.1:4000`. The next worthwhile pass
-would be adding a dedicated role-matrix e2e suite so `viewer`, `operator`, `tenant_admin`, and the scoped roles keep
+would be adding a dedicated role-matrix e2e suite so `viewer`, `operator`, `admin`, and `manager` keep
 their boundaries over time.

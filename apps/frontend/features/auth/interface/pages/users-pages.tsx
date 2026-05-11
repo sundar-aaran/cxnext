@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ArrowLeft, ArrowRight, Save, UserPlus } from "lucide-react";
 import {
-  AnimatedTabs,
   Badge,
   Button,
   Input,
@@ -17,11 +16,10 @@ import {
   MasterListToolbarCard,
   MasterListUpsertCard,
   MasterListUpsertLayout,
-  Separator,
   Switch,
   buildMasterListShowingLabel,
 } from "@cxnext/ui";
-import type { AuthRole, AuthSession, AuthUser, AuthUserInput } from "../../domain/auth";
+import type { AuthSession, AuthUser, AuthUserInput } from "../../domain/auth";
 import {
   getAuthUser,
   listAuthRoles,
@@ -189,7 +187,7 @@ export function UsersListPage() {
                   </td>
                   <td className="px-4 py-3">
                     <Link
-                      href={`/desk/admin/users/${user.id}/edit`}
+                      href={`/desk/admin/users/${user.id}`}
                       className="font-medium text-foreground transition hover:underline"
                     >
                       {user.displayName}
@@ -215,8 +213,8 @@ export function UsersListPage() {
                   </td>
                   <td className="px-4 py-3 text-right">
                     <Button asChild variant="outline" size="sm" className="rounded-xl">
-                      <Link href={`/desk/admin/users/${user.id}/edit`}>
-                        Edit
+                      <Link href={`/desk/admin/users/${user.id}`}>
+                        View
                         <ArrowRight className="size-4" />
                       </Link>
                     </Button>
@@ -266,7 +264,6 @@ export function UserUpsertPage({ userId }: { readonly userId?: string }) {
   const router = useRouter();
   const [session, setSession] = useState<AuthSession | null>(null);
   const [form, setForm] = useState<AuthUserInput>(emptyInput);
-  const [roles, setRoles] = useState<readonly AuthRole[]>([]);
   const [tenants, setTenants] = useState<readonly TenantOption[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -287,7 +284,6 @@ export function UserUpsertPage({ userId }: { readonly userId?: string }) {
 
     async function load() {
       const [roleRows, tenantRows] = await Promise.all([listAuthRoles(), listTenants()]);
-      setRoles(roleRows);
       setTenants(tenantRows);
 
       if (userId) {
@@ -317,23 +313,6 @@ export function UserUpsertPage({ userId }: { readonly userId?: string }) {
       )
       .finally(() => setIsLoading(false));
   }, [userId]);
-
-  const selectedRoles = useMemo(
-    () => roles.filter((role) => form.roleKeys.includes(role.key)),
-    [form.roleKeys, roles],
-  );
-
-  const selectedPermissions = useMemo(
-    () =>
-      Array.from(
-        new Map(
-          selectedRoles
-            .flatMap((role) => role.permissions)
-            .map((permission) => [permission.key, permission] as const),
-        ).values(),
-      ),
-    [selectedRoles],
-  );
 
   async function handleSubmit() {
     setError(null);
@@ -373,174 +352,6 @@ export function UserUpsertPage({ userId }: { readonly userId?: string }) {
     );
   }
 
-  const tabs = [
-    {
-      value: "details",
-      label: "Details",
-      content: (
-        <div className="space-y-4">
-          <SectionCard
-            description="Keep identity and login coordinates aligned with the assigned tenant."
-            title="User Details"
-          >
-            <div className="grid gap-4 md:grid-cols-2">
-              <Field label="Display name">
-                <Input
-                  value={form.displayName}
-                  className="h-11 rounded-xl"
-                  onChange={(event) => setFormValue("displayName", event.target.value, setForm)}
-                />
-              </Field>
-              <Field label="Username">
-                <Input
-                  value={form.username}
-                  className="h-11 rounded-xl"
-                  onChange={(event) => setFormValue("username", event.target.value, setForm)}
-                />
-              </Field>
-              <Field label="Email">
-                <Input
-                  type="email"
-                  value={form.email}
-                  className="h-11 rounded-xl"
-                  onChange={(event) => setFormValue("email", event.target.value, setForm)}
-                />
-              </Field>
-              <Field label={isEdit ? "New password" : "Password"}>
-                <Input
-                  type="password"
-                  value={form.password ?? ""}
-                  className="h-11 rounded-xl"
-                  placeholder={isEdit ? "Leave blank to keep the current password" : "Enter password"}
-                  onChange={(event) => setFormValue("password", event.target.value, setForm)}
-                />
-              </Field>
-              <Field label="Tenant">
-                <select
-                  className="h-11 rounded-xl border border-input bg-background px-3 text-sm"
-                  value={form.tenantId}
-                  onChange={(event) => setFormValue("tenantId", event.target.value, setForm)}
-                >
-                  <option value="">Select tenant</option>
-                  {tenants.map((tenant) => (
-                    <option key={tenant.id} value={tenant.id}>
-                      {tenant.name}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              <div className="rounded-2xl border border-border/70 bg-muted/20 px-4 py-3">
-                <div className="text-sm font-medium text-foreground">Tenant session</div>
-                <div className="mt-1 text-sm text-muted-foreground">
-                  {session ? `${session.tenant.name} (${session.tenant.slug})` : "No session"}
-                </div>
-              </div>
-            </div>
-          </SectionCard>
-        </div>
-      ),
-    },
-    {
-      value: "access",
-      label: "Access",
-      content: (
-        <div className="space-y-4">
-          <SectionCard
-            description="Control whether this user can sign in and which roles contribute permissions."
-            title="Sign-in Access"
-          >
-            <div className="space-y-4">
-              <div className="rounded-2xl border border-border/70 bg-muted/20 px-4 py-4 text-sm text-muted-foreground">
-                Roles determine effective permissions. Password changes stay optional when editing
-                an existing user.
-              </div>
-              <label className="flex items-center justify-between rounded-2xl border border-border/70 bg-muted/20 px-4 py-3">
-                <div className="space-y-1">
-                  <div className="text-sm font-medium text-foreground">Active</div>
-                  <div className="text-xs text-muted-foreground">Allow this user to sign in.</div>
-                </div>
-                <Switch
-                  checked={form.isActive}
-                  onCheckedChange={(checked) => setFormValue("isActive", checked, setForm)}
-                />
-              </label>
-            </div>
-          </SectionCard>
-
-          <SectionCard
-            description="Assign one or more roles. Effective permissions below are derived from the active selection."
-            title="Roles"
-          >
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {roles.map((role) => {
-                const checked = form.roleKeys.includes(role.key);
-
-                return (
-                  <label
-                    key={role.key}
-                    className={
-                      checked
-                        ? "rounded-2xl border border-foreground/15 bg-muted/30 p-4"
-                        : "rounded-2xl border border-border/70 bg-background/80 p-4"
-                    }
-                  >
-                    <span className="flex items-start gap-3">
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        className="mt-1"
-                        onChange={(event) =>
-                          setForm((current) => ({
-                            ...current,
-                            roleKeys: event.target.checked
-                              ? [...current.roleKeys, role.key]
-                              : current.roleKeys.filter((key) => key !== role.key),
-                          }))
-                        }
-                      />
-                      <span className="space-y-1">
-                        <span className="block text-sm font-medium text-foreground">
-                          {role.name}
-                        </span>
-                        <span className="block text-xs text-muted-foreground">
-                          {role.description ?? `${role.permissions.length} permission rules`}
-                        </span>
-                      </span>
-                    </span>
-                  </label>
-                );
-              })}
-            </div>
-
-            <Separator />
-
-            <div className="space-y-3 rounded-2xl border border-border/70 bg-muted/20 px-4 py-4">
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-foreground">Effective Permissions</p>
-                <p className="text-xs text-muted-foreground">
-                  These permissions are aggregated from the selected roles.
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {selectedPermissions.length > 0 ? (
-                  selectedPermissions.map((permission) => (
-                    <Badge key={permission.key} variant="secondary">
-                      {permission.name}
-                    </Badge>
-                  ))
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    Select a role to preview permissions.
-                  </p>
-                )}
-              </div>
-            </div>
-          </SectionCard>
-        </div>
-      ),
-    },
-  ] as const;
-
   return (
     <MasterListPageFrame
       action={
@@ -562,7 +373,74 @@ export function UserUpsertPage({ userId }: { readonly userId?: string }) {
           </div>
         ) : null}
 
-        <AnimatedTabs defaultValue="details" tabs={tabs} />
+        <SectionCard
+          description="Keep identity and login coordinates aligned with the assigned tenant."
+          title="User Details"
+        >
+          <div className="grid gap-4 md:grid-cols-2">
+            <Field label="Display name">
+              <Input
+                value={form.displayName}
+                className="h-11 rounded-xl"
+                onChange={(event) => setFormValue("displayName", event.target.value, setForm)}
+              />
+            </Field>
+            <Field label="Username">
+              <Input
+                value={form.username}
+                className="h-11 rounded-xl"
+                onChange={(event) => setFormValue("username", event.target.value, setForm)}
+              />
+            </Field>
+            <Field label="Email">
+              <Input
+                type="email"
+                value={form.email}
+                className="h-11 rounded-xl"
+                onChange={(event) => setFormValue("email", event.target.value, setForm)}
+              />
+            </Field>
+            <Field label={isEdit ? "New password" : "Password"}>
+              <Input
+                type="password"
+                value={form.password ?? ""}
+                className="h-11 rounded-xl"
+                placeholder={isEdit ? "Leave blank to keep the current password" : "Enter password"}
+                onChange={(event) => setFormValue("password", event.target.value, setForm)}
+              />
+            </Field>
+            <Field label="Tenant">
+              <select
+                className="h-11 rounded-xl border border-input bg-background px-3 text-sm"
+                value={form.tenantId}
+                onChange={(event) => setFormValue("tenantId", event.target.value, setForm)}
+              >
+                <option value="">Select tenant</option>
+                {tenants.map((tenant) => (
+                  <option key={tenant.id} value={tenant.id}>
+                    {tenant.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <label className="flex items-center justify-between rounded-2xl border border-border/70 bg-muted/20 px-4 py-3">
+              <span className="space-y-1">
+                <span className="block text-sm font-medium text-foreground">Active</span>
+                <span className="block text-xs text-muted-foreground">Allow this user to sign in.</span>
+              </span>
+              <Switch
+                checked={form.isActive}
+                onCheckedChange={(checked) => setFormValue("isActive", checked, setForm)}
+              />
+            </label>
+            <div className="rounded-2xl border border-border/70 bg-muted/20 px-4 py-3">
+              <div className="text-sm font-medium text-foreground">Tenant session</div>
+              <div className="mt-1 text-sm text-muted-foreground">
+                {session ? `${session.tenant.name} (${session.tenant.slug})` : "No session"}
+              </div>
+            </div>
+          </div>
+        </SectionCard>
 
         <div className="flex justify-end">
           <Button type="button" className="rounded-xl" onClick={() => void handleSubmit()} disabled={isSaving}>
