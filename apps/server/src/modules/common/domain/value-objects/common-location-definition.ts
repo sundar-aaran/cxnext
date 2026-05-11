@@ -27,7 +27,7 @@ export const commonLocationDefinitions = {
     key: "countries",
     tableName: "common_countries",
     label: "Countries",
-    listOrder: ["name", "asc"],
+    listOrder: ["id", "asc"],
     writableColumns: ["code", "name", "phoneCode", "isActive"],
   },
   states: {

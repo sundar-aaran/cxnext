@@ -5,6 +5,12 @@ import { authPolicyActionDefinitions, authPolicyModuleList, authRoleBlueprints }
 import { defineDatabaseSeeder } from "../process/types";
 
 type DynamicDatabase = Record<string, Record<string, unknown>>;
+const seededSuperAdmin = {
+  username: "sundar",
+  email: "sundar@sundar.com",
+  displayName: "Super Admin",
+  password: "Admin@1234",
+};
 
 function asQueryDatabase(database: Kysely<unknown>) {
   return database as unknown as Kysely<DynamicDatabase>;
@@ -189,23 +195,55 @@ export const seedAuthRbacSeeder = defineDatabaseSeeder({
       throw new Error("Cannot seed auth user before at least one tenant exists.");
     }
 
-    const existingAdmin = await db
+    const existingAdmin = (await db
       .selectFrom("auth_users")
-      .select("id")
-      .where("username", "=", "admin")
-      .executeTakeFirst();
+      .select(["id", "email", "username"])
+      .where((builder) =>
+        builder.or([
+          builder("username", "=", seededSuperAdmin.username),
+          builder("email", "=", seededSuperAdmin.email),
+          builder("username", "=", "admin"),
+          builder("email", "=", "admin@cxnext.local"),
+        ]),
+      )
+      .executeTakeFirst()) as
+      | { id: number | bigint; email: string; username: string }
+      | undefined;
 
-    let adminUserId = existingAdmin ? Number((existingAdmin as { id: number | bigint }).id) : null;
+    let adminUserId = existingAdmin ? Number(existingAdmin.id) : null;
 
-    if (!existingAdmin) {
+    if (existingAdmin) {
+      const updateValues: Record<string, unknown> = {
+        tenant_id: Number(tenant.id),
+        username: seededSuperAdmin.username,
+        email: seededSuperAdmin.email,
+        display_name: seededSuperAdmin.displayName,
+        is_active: true,
+        updated_at: now,
+        deleted_at: null,
+      };
+
+      if (
+        existingAdmin.email.trim().toLowerCase() !== seededSuperAdmin.email ||
+        existingAdmin.username.trim().toLowerCase() !== seededSuperAdmin.username
+      ) {
+        updateValues.password_hash = hashPassword(seededSuperAdmin.password);
+      }
+
+      await db
+        .updateTable("auth_users")
+        .set(updateValues)
+        .where("id", "=", adminUserId)
+        .execute();
+    } else {
       const result = await db
         .insertInto("auth_users")
         .values({
           tenant_id: Number(tenant.id),
-          username: "admin",
-          email: "admin@cxnext.local",
-          display_name: "Super Admin",
-          password_hash: hashPassword(process.env.AUTH_DEFAULT_ADMIN_PASSWORD ?? "Admin@12345"),
+          username: seededSuperAdmin.username,
+          email: seededSuperAdmin.email,
+          display_name: seededSuperAdmin.displayName,
+          password_hash: hashPassword(seededSuperAdmin.password),
           is_active: true,
           created_at: now,
           updated_at: now,
@@ -218,6 +256,12 @@ export const seedAuthRbacSeeder = defineDatabaseSeeder({
     const adminRoleId = roleByKey.get("super_admin");
 
     if (adminUserId && adminRoleId) {
+      await db
+        .deleteFrom("auth_user_roles")
+        .where("role_id", "=", adminRoleId)
+        .where("user_id", "!=", adminUserId)
+        .execute();
+
       const existingAdminRole = await db
         .selectFrom("auth_user_roles")
         .select("user_id")

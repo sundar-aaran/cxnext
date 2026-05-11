@@ -2,11 +2,21 @@
 
 ## Version State
 
-- Current package version: `1.0.80`
-- Current release tag: `v-1.0.80`
+- Current package version: `1.0.81`
+- Current release tag: `v-1.0.81`
 - Versioned changelog label format: `v 1.0.<reference>`
 - Version section format: `## v-1.0.<reference>`
 - Entry format: `### [v 1.0.<reference>] YYYY-MM-DD - Title`
+
+## v-1.0.81
+
+### [v 1.0.81] 2026-05-11 - Reset Seed Defaults And Protected Admin
+
+- Added a frontend setup lookup switch that defaults to off unless explicitly enabled.
+- Reduced tenant, company, contact, product, and entry seed data to minimal `codexsun` and default `-` records.
+- Updated common country ordering so India appears first in country lists.
+- Restricted the seeded super admin to `sundar@sundar.com`, hid it from other admin users, and hid the `super_admin` role from other users and gate output.
+- Bumped workspace package manifests to `1.0.81`.
 
 ## v-1.0.80
 

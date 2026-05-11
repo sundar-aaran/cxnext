@@ -57,13 +57,13 @@ const addressTypeDisplayOrder = [
 const contactTypeOptions = [
   {
     value: "contact-type:customer",
-    label: "Customer",
+    label: "Sundry Debtors",
     ledgerId: "ledger:sundry-debitors",
-    ledgerName: "Sundry Debitors",
+    ledgerName: "Sundry Debtors",
   },
   {
     value: "contact-type:supplier",
-    label: "Supplier",
+    label: "Sundry Creditors",
     ledgerId: "ledger:sundry-creditors",
     ledgerName: "Sundry Creditors",
   },

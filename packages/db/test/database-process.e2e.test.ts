@@ -164,7 +164,7 @@ describe("database process runner e2e", () => {
     expect(firstRun.seeders.applied).toEqual(expectedSeeders);
     expect(secondRun.migrations.skipped).toEqual(firstRun.migrations.applied);
     expect(secondRun.seeders.skipped).toEqual(firstRun.seeders.applied);
-    expect(fakeDatabase.tables.get("tenants")).toHaveLength(3);
+    expect(fakeDatabase.tables.get("tenants")).toHaveLength(1);
     expect(fakeDatabase.tables.get(systemMigrationTableName)).toHaveLength(
       expectedMigrations.length,
     );

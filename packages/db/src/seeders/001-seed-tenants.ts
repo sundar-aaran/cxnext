@@ -15,27 +15,11 @@ interface TenantSeed {
 
 const tenantSeeds: readonly TenantSeed[] = [
   {
-    name: "Codexsun Commerce",
-    slug: "codexsun-commerce",
+    name: "codexsun",
+    slug: "codexsun",
     is_active: true,
     created_at: "2026-04-28 09:00:00",
     updated_at: "2026-04-28 09:00:00",
-    deleted_at: null,
-  },
-  {
-    name: "Acme Enterprise",
-    slug: "acme-enterprise",
-    is_active: true,
-    created_at: "2026-04-28 10:30:00",
-    updated_at: "2026-04-28 10:30:00",
-    deleted_at: null,
-  },
-  {
-    name: "Northwind Trial",
-    slug: "northwind-trial",
-    is_active: false,
-    created_at: "2026-04-28 11:45:00",
-    updated_at: "2026-04-29 06:15:00",
     deleted_at: null,
   },
 ];

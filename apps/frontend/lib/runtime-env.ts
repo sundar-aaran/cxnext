@@ -7,3 +7,8 @@ export function getRequiredPublicApiUrl() {
 
   return value;
 }
+
+export function isSetupLookupEnabled() {
+  const value = process.env.NEXT_PUBLIC_SETUP_LOOKUP_ENABLED?.trim().toLowerCase();
+  return value === "1" || value === "true" || value === "yes" || value === "on";
+}

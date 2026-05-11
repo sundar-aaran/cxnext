@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   Inject,
   NotFoundException,
@@ -134,59 +135,82 @@ export class AuthController {
 
   @Get("users")
   @RequirePermissions(modulePermission("auth", "read"))
-  public async listUsers() {
+  public async listUsers(@CurrentAuth() auth: AuthRequestContext) {
     const users = await this.listUsersUseCase.execute();
-    return users.map(toAuthUserResponse);
+    return users.filter((user) => canSeeProtectedSuperAdmin(auth, user)).map(toAuthUserResponse);
   }
 
   @Get("users/:userId")
   @RequirePermissions(modulePermission("auth", "read"))
-  public async getUser(@Param("userId") userId: string) {
+  public async getUser(@Param("userId") userId: string, @CurrentAuth() auth: AuthRequestContext) {
     const user = await this.getUserUseCase.execute(userId);
     if (!user) throw new NotFoundException(`User "${userId}" was not found.`);
+    if (!canSeeProtectedSuperAdmin(auth, user)) throw new NotFoundException(`User "${userId}" was not found.`);
     return toAuthUserResponse(user);
   }
 
   @Post("users")
   @RequirePermissions(modulePermission("auth", "update"))
   public async createUser(@Body() body: UserUpsertRequest) {
-    const user = await this.createUserUseCase.execute(parseUserRequest(body, true));
+    const request = parseUserRequest(body, true);
+    assertSuperAdminRequestAllowed(request);
+    const user = await this.createUserUseCase.execute(request);
     return toAuthUserResponse(user);
   }
 
   @Patch("users/:userId")
   @RequirePermissions(modulePermission("auth", "update"))
-  public async updateUser(@Param("userId") userId: string, @Body() body: UserUpsertRequest) {
-    const user = await this.updateUserUseCase.execute(userId, parseUserRequest(body, false));
+  public async updateUser(
+    @Param("userId") userId: string,
+    @Body() body: UserUpsertRequest,
+    @CurrentAuth() auth: AuthRequestContext,
+  ) {
+    const existing = await this.getUserUseCase.execute(userId);
+    if (!existing) throw new NotFoundException(`User "${userId}" was not found.`);
+    if (!canSeeProtectedSuperAdmin(auth, existing)) throw new NotFoundException(`User "${userId}" was not found.`);
+
+    const request = parseUserRequest(body, false);
+    assertSuperAdminRequestAllowed(request, existing.email);
+    const user = await this.updateUserUseCase.execute(userId, request);
     if (!user) throw new NotFoundException(`User "${userId}" was not found.`);
     return toAuthUserResponse(user);
   }
 
   @Get("roles")
   @RequirePermissions(modulePermission("auth", "read"))
-  public async listRoles() {
+  public async listRoles(@CurrentAuth() auth: AuthRequestContext) {
     const roles = await this.listRolesUseCase.execute();
-    return roles.map(toAuthRoleResponse);
+    return roles.filter((role) => canSeeProtectedSuperAdminRole(auth, role)).map(toAuthRoleResponse);
   }
 
   @Post("roles")
   @RequirePermissions(modulePermission("auth", "update"))
-  public async createRole(@Body() body: RoleUpsertRequest) {
-    const role = await this.createRoleUseCase.execute(parseRoleRequest(body));
+  public async createRole(@Body() body: RoleUpsertRequest, @CurrentAuth() auth: AuthRequestContext) {
+    const request = parseRoleRequest(body);
+    assertSuperAdminRoleRequestAllowed(auth, request.key);
+    const role = await this.createRoleUseCase.execute(request);
     return toAuthRoleResponse(role);
   }
 
   @Patch("roles/:roleId")
   @RequirePermissions(modulePermission("auth", "update"))
-  public async updateRole(@Param("roleId") roleId: string, @Body() body: RoleUpsertRequest) {
-    const role = await this.updateRoleUseCase.execute(roleId, parseRoleRequest(body));
+  public async updateRole(
+    @Param("roleId") roleId: string,
+    @Body() body: RoleUpsertRequest,
+    @CurrentAuth() auth: AuthRequestContext,
+  ) {
+    const existing = await this.getVisibleRole(roleId, auth);
+    const request = parseRoleRequest(body);
+    assertSuperAdminRoleRequestAllowed(auth, request.key, existing.key);
+    const role = await this.updateRoleUseCase.execute(roleId, request);
     if (!role) throw new NotFoundException(`Role "${roleId}" was not found.`);
     return toAuthRoleResponse(role);
   }
 
   @Delete("roles/:roleId")
   @RequirePermissions(modulePermission("auth", "update"))
-  public async deleteRole(@Param("roleId") roleId: string) {
+  public async deleteRole(@Param("roleId") roleId: string, @CurrentAuth() auth: AuthRequestContext) {
+    await this.getVisibleRole(roleId, auth);
     const deleted = await this.deleteRoleUseCase.execute(roleId);
     if (!deleted) throw new NotFoundException(`Role "${roleId}" was not found or cannot be deleted.`);
     return { deleted: true };
@@ -262,9 +286,82 @@ export class AuthController {
 
   @Get("gates")
   @RequirePermissions(modulePermission("auth", "read"))
-  public async listGates() {
+  public async listGates(@CurrentAuth() auth: AuthRequestContext) {
     const gates = await this.listGatesUseCase.execute();
-    return gates.map(toAuthGateResponse);
+    return gates
+      .filter((gate) => canSeeProtectedSuperAdmin(auth, gate))
+      .map((gate) => ({
+        ...toAuthGateResponse(gate),
+        roleKeys: gate.roleKeys.filter((roleKey) => canSeeProtectedSuperAdminRole(auth, { key: roleKey })),
+      }));
+  }
+
+  private async getVisibleRole(roleId: string, auth: AuthRequestContext) {
+    const role = (await this.listRolesUseCase.execute()).find((record) => record.id === roleId);
+
+    if (!role || !canSeeProtectedSuperAdminRole(auth, role)) {
+      throw new NotFoundException(`Role "${roleId}" was not found.`);
+    }
+
+    return role;
+  }
+}
+
+const protectedSuperAdminEmail = "sundar@sundar.com";
+
+function isProtectedSuperAdmin(user: { readonly email: string }) {
+  return user.email.trim().toLowerCase() === protectedSuperAdminEmail;
+}
+
+function canSeeProtectedSuperAdmin(
+  auth: AuthRequestContext,
+  user: { readonly id?: string; readonly userId?: string; readonly email: string },
+) {
+  if (!isProtectedSuperAdmin(user)) {
+    return true;
+  }
+
+  return (user.id ?? user.userId) === auth.user.id;
+}
+
+function canSeeProtectedSuperAdminRole(auth: AuthRequestContext, role: { readonly key: string }) {
+  return role.key !== "super_admin" || isProtectedSuperAdmin(auth.user);
+}
+
+function assertSuperAdminRoleRequestAllowed(
+  auth: AuthRequestContext,
+  requestedKey: string,
+  existingKey?: string,
+) {
+  const touchesSuperAdmin =
+    requestedKey.trim().toLowerCase() === "super_admin" || existingKey === "super_admin";
+
+  if (touchesSuperAdmin && !isProtectedSuperAdmin(auth.user)) {
+    throw new NotFoundException("Role was not found.");
+  }
+}
+
+function assertSuperAdminRequestAllowed(
+  request: ReturnType<typeof parseUserRequest>,
+  existingEmail?: string,
+) {
+  const requestedProtectedEmail = request.email.trim().toLowerCase() === protectedSuperAdminEmail;
+  const isExistingProtectedAccount = existingEmail?.trim().toLowerCase() === protectedSuperAdminEmail;
+
+  if (requestedProtectedEmail && !isExistingProtectedAccount) {
+    throw new ForbiddenException("The protected super admin email cannot be assigned to another user.");
+  }
+
+  if (isExistingProtectedAccount && !requestedProtectedEmail) {
+    throw new ForbiddenException("The protected super admin email cannot be changed.");
+  }
+
+  if (isExistingProtectedAccount && !request.roleKeys.includes("super_admin")) {
+    throw new ForbiddenException("The protected super admin account must keep the super_admin role.");
+  }
+
+  if (request.roleKeys.includes("super_admin") && !isExistingProtectedAccount) {
+    throw new ForbiddenException("Only the protected super admin account can use the super_admin role.");
   }
 }
 
