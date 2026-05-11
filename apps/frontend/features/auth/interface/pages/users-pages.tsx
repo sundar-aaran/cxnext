@@ -338,7 +338,7 @@ export function UserUpsertPage({ userId }: { readonly userId?: string }) {
         <MasterListUpsertCard title="User workspace">
           <div className="space-y-3">
             <div className="h-5 w-40 animate-pulse rounded bg-muted" />
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4">
               {Array.from({ length: 6 }).map((_, index) => (
                 <div key={index} className="space-y-2">
                   <div className="h-4 w-24 animate-pulse rounded bg-muted" />
@@ -377,7 +377,7 @@ export function UserUpsertPage({ userId }: { readonly userId?: string }) {
           description="Keep identity and login coordinates aligned with the assigned tenant."
           title="User Details"
         >
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4">
             <Field label="Display name">
               <Input
                 value={form.displayName}
@@ -423,13 +423,22 @@ export function UserUpsertPage({ userId }: { readonly userId?: string }) {
                 ))}
               </select>
             </Field>
-            <label className="flex items-center justify-between rounded-2xl border border-border/70 bg-muted/20 px-4 py-3">
+            <label
+              className={
+                form.isActive
+                  ? "flex items-center justify-between gap-4 rounded-2xl border border-emerald-300 bg-emerald-50/80 px-4 py-3 text-emerald-950 shadow-sm shadow-emerald-100/70 ring-1 ring-emerald-100"
+                  : "flex items-center justify-between gap-4 rounded-2xl border border-border/70 bg-muted/20 px-4 py-3"
+              }
+            >
               <span className="space-y-1">
                 <span className="block text-sm font-medium text-foreground">Active</span>
-                <span className="block text-xs text-muted-foreground">Allow this user to sign in.</span>
+                <span className="block text-xs text-muted-foreground">
+                  Active users can sign in and access assigned roles.
+                </span>
               </span>
               <Switch
                 checked={form.isActive}
+                aria-label="Active"
                 onCheckedChange={(checked) => setFormValue("isActive", checked, setForm)}
               />
             </label>

@@ -1,4 +1,4 @@
-export const authPolicyActions = ["read", "create", "update", "delete", "manage"] as const;
+export const authPolicyActions = ["read", "list", "create", "update", "delete", "report"] as const;
 
 export type AuthPolicyAction = (typeof authPolicyActions)[number];
 
@@ -23,6 +23,13 @@ export interface AuthPolicyModuleDefinition {
   readonly description: string;
 }
 
+export interface AuthPolicyActionDefinition {
+  readonly key: AuthPolicyAction;
+  readonly name: string;
+  readonly description: string;
+  readonly isSystem: boolean;
+}
+
 export interface AuthRoleBlueprint {
   readonly key: string;
   readonly name: string;
@@ -36,82 +43,121 @@ export const authPolicyModules = {
     key: "auth",
     name: "Auth",
     boundedContext: "security",
-    actions: ["read", "manage"],
+    actions: ["read", "list", "create", "update", "delete", "report"],
     description: "Identity, session, user administration, and role assignment.",
   },
   tenant: {
     key: "tenant",
     name: "Tenant",
     boundedContext: "organisation",
-    actions: ["read", "create", "update", "delete", "manage"],
+    actions: ["read", "list", "create", "update", "delete", "report"],
     description: "Tenant lifecycle, workspace provisioning, and tenant administration.",
   },
   industry: {
     key: "industry",
     name: "Industry",
     boundedContext: "organisation",
-    actions: ["read", "create", "update", "delete"],
+    actions: ["read", "list", "create", "update", "delete", "report"],
     description: "Industry records used for organisation classification.",
   },
   company: {
     key: "company",
     name: "Company",
     boundedContext: "organisation",
-    actions: ["read", "create", "update", "delete"],
+    actions: ["read", "list", "create", "update", "delete", "report"],
     description: "Company master records and organisation configuration.",
   },
   contact: {
     key: "contact",
     name: "Contact",
     boundedContext: "crm",
-    actions: ["read", "create", "update", "delete"],
+    actions: ["read", "list", "create", "update", "delete", "report"],
     description: "Contacts, parties, customer profiles, and supplier records.",
   },
   product: {
     key: "product",
     name: "Product",
     boundedContext: "catalog",
-    actions: ["read", "create", "update", "delete"],
+    actions: ["read", "list", "create", "update", "delete", "report"],
     description: "Product catalog, pricing, variants, and supporting metadata.",
   },
   sales: {
     key: "sales",
     name: "Sales",
     boundedContext: "entries",
-    actions: ["read", "create", "update", "delete"],
+    actions: ["read", "list", "create", "update", "delete", "report"],
     description: "Sales billing entries and downstream commercial documents.",
   },
   purchase: {
     key: "purchase",
     name: "Purchase",
     boundedContext: "entries",
-    actions: ["read", "create", "update", "delete"],
+    actions: ["read", "list", "create", "update", "delete", "report"],
     description: "Purchase billing entries and procurement documents.",
   },
   payment: {
     key: "payment",
     name: "Payment",
     boundedContext: "entries",
-    actions: ["read", "create", "update", "delete"],
+    actions: ["read", "list", "create", "update", "delete", "report"],
     description: "Outgoing payment entries and money movement records.",
   },
   receipt: {
     key: "receipt",
     name: "Receipt",
     boundedContext: "entries",
-    actions: ["read", "create", "update", "delete"],
+    actions: ["read", "list", "create", "update", "delete", "report"],
     description: "Incoming receipt entries and cash collection records.",
   },
   common: {
     key: "common",
     name: "Common",
     boundedContext: "shared",
-    actions: ["read", "create", "update", "delete"],
+    actions: ["read", "list", "create", "update", "delete", "report"],
     description: "Shared common masters and location records used across modules.",
   },
 } as const satisfies Record<AuthPolicyModuleKey, AuthPolicyModuleDefinition>;
 
 export const authPolicyModuleList = Object.values(authPolicyModules);
+
+export const authPolicyActionDefinitions = [
+  {
+    key: "read",
+    name: "Read",
+    description: "Allow viewing a single record or detail surface.",
+    isSystem: true,
+  },
+  {
+    key: "list",
+    name: "List",
+    description: "Allow listing records and opening index surfaces.",
+    isSystem: true,
+  },
+  {
+    key: "create",
+    name: "Create",
+    description: "Allow creating new records.",
+    isSystem: true,
+  },
+  {
+    key: "update",
+    name: "Update",
+    description: "Allow editing existing records.",
+    isSystem: true,
+  },
+  {
+    key: "delete",
+    name: "Delete",
+    description: "Allow deleting or dropping records.",
+    isSystem: true,
+  },
+  {
+    key: "report",
+    name: "Report",
+    description: "Allow report and analytical output for a module.",
+    isSystem: true,
+  },
+] as const satisfies readonly AuthPolicyActionDefinition[];
 
 export const authPermissionKeys = Object.fromEntries(
   authPolicyModuleList.map((moduleDefinition) => [
@@ -146,11 +192,11 @@ export const authRoleBlueprints = [
     name: "Admin",
     description: "Tenant administration, user management, and full business module access.",
     permissionKeys: [
-      ...permissionsForModules(["auth"], ["read", "manage"]),
-      ...permissionsForModules(["tenant"], ["read"]),
+      ...permissionsForModules(["auth"], ["read", "list", "create", "update", "delete", "report"]),
+      ...permissionsForModules(["tenant"], ["read", "list", "report"]),
       ...permissionsForModules(
         ["industry", "company", "contact", "product", "sales", "purchase", "payment", "receipt", "common"],
-        ["read", "create", "update", "delete"],
+        ["read", "list", "create", "update", "delete", "report"],
       ),
     ],
     isSystem: true,
@@ -161,7 +207,7 @@ export const authRoleBlueprints = [
     description: "Operational ownership across business modules without auth administration.",
     permissionKeys: permissionsForModules(
       ["industry", "company", "contact", "product", "sales", "purchase", "payment", "receipt", "common"],
-      ["read", "create", "update", "delete"],
+      ["read", "list", "create", "update", "delete", "report"],
     ),
     isSystem: true,
   },
@@ -171,7 +217,7 @@ export const authRoleBlueprints = [
     description: "Day-to-day data entry with update access across enabled business modules.",
     permissionKeys: permissionsForModules(
       ["industry", "company", "contact", "product", "sales", "purchase", "payment", "receipt", "common"],
-      ["read", "create", "update"],
+      ["read", "list", "create", "update"],
     ),
     isSystem: true,
   },
@@ -181,7 +227,7 @@ export const authRoleBlueprints = [
     description: "Read-only visibility across the workspace.",
     permissionKeys: permissionsForModules(
       ["auth", "tenant", "industry", "company", "contact", "product", "sales", "purchase", "payment", "receipt", "common"],
-      ["read"],
+      ["read", "list", "report"],
     ),
     isSystem: true,
   },
@@ -189,14 +235,14 @@ export const authRoleBlueprints = [
     key: "web_client",
     name: "Web Client",
     description: "External client access for viewing catalog, contact, and sales-facing records.",
-    permissionKeys: permissionsForModules(["contact", "product", "sales"], ["read"]),
+    permissionKeys: permissionsForModules(["contact", "product", "sales"], ["read", "list"]),
     isSystem: true,
   },
   {
     key: "premium_client",
     name: "Premium Client",
     description: "External client access with limited create and update workflows.",
-    permissionKeys: permissionsForModules(["contact", "product", "sales"], ["read", "create", "update"]),
+    permissionKeys: permissionsForModules(["contact", "product", "sales"], ["read", "list", "create", "update", "report"]),
     isSystem: true,
   },
 ] as const satisfies readonly AuthRoleBlueprint[];
@@ -218,35 +264,6 @@ export function permissionsForModules(
       )
       .map((action) => buildAuthPermissionKey(moduleKey, action)),
   );
-}
-
-export function createScopedRoleBlueprints(moduleKey: Exclude<AuthPolicyModuleKey, "auth" | "tenant">) {
-  const moduleDefinition = authPolicyModules[moduleKey];
-  const moduleLabel = moduleDefinition.name;
-
-  return [
-    {
-      key: `${moduleKey}_manager`,
-      name: `${moduleLabel} manager`,
-      description: `Full ${moduleLabel.toLowerCase()} access for create, update, delete, and read workflows.`,
-      permissionKeys: permissionsForModules([moduleKey], ["read", "create", "update", "delete"]),
-      isSystem: true,
-    },
-    {
-      key: `${moduleKey}_editor`,
-      name: `${moduleLabel} editor`,
-      description: `Operational ${moduleLabel.toLowerCase()} access for create and update workflows.`,
-      permissionKeys: permissionsForModules([moduleKey], ["read", "create", "update"]),
-      isSystem: true,
-    },
-    {
-      key: `${moduleKey}_viewer`,
-      name: `${moduleLabel} viewer`,
-      description: `Read-only access for ${moduleLabel.toLowerCase()} records and workflows.`,
-      permissionKeys: permissionsForModules([moduleKey], ["read"]),
-      isSystem: true,
-    },
-  ] as const satisfies readonly AuthRoleBlueprint[];
 }
 
 type ExtractSupportedAction<TModuleKey extends AuthPolicyModuleKey> =

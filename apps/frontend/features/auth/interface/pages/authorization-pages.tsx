@@ -30,19 +30,32 @@ import {
   buildCommonListShowingLabel,
   useGlobalLoader,
 } from "@cxnext/ui";
-import type { AuthGate, AuthPermission, AuthPolicy, AuthRole, AuthRoleInput } from "../../domain/auth";
+import type {
+  AuthGate,
+  AuthPermissionModule,
+  AuthPermissionModuleInput,
+  AuthPolicy,
+  AuthPolicyInput,
+  AuthRole,
+  AuthRoleInput,
+} from "../../domain/auth";
 import {
+  deleteAuthPermissionModule,
+  deleteAuthPolicy,
   listAuthGates,
   listAuthPermissions,
   listAuthPolicies,
   listAuthRoles,
   deleteAuthRole,
+  upsertAuthPermissionModule,
+  upsertAuthPolicy,
   upsertAuthRole,
 } from "../../infrastructure/auth-api";
 import { readStoredAuthSession } from "../../infrastructure/session-storage";
 
 type AuthAdminPageKind = "roles" | "permissions" | "policy" | "gate";
 type RoleDialogMode = "create" | "edit";
+type PopupMode = "create" | "edit";
 
 const pageCopy: Record<AuthAdminPageKind, { readonly title: string; readonly description: string }> = {
   roles: {
@@ -51,11 +64,11 @@ const pageCopy: Record<AuthAdminPageKind, { readonly title: string; readonly des
   },
   permissions: {
     title: "Permissions",
-    description: "Review the generated permission catalog used by guards and policies.",
+    description: "Maintain modules and map policies to generated permission keys.",
   },
   policy: {
     title: "Policy",
-    description: "Review bounded contexts and the actions each context exposes.",
+    description: "Maintain action policies used by permission modules.",
   },
   gate: {
     title: "Gate",
@@ -326,33 +339,43 @@ function RoleUpsertDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-background/55 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 grid place-items-center bg-background/55 p-2 backdrop-blur-sm sm:p-4">
       <CommonListPopupLayout>
-        <CommonListPopupFormCard
-          title={mode === "edit" ? "Edit Role" : "New Role"}
-          description="Keep roles simple. Permissions are reviewed from the user access pages."
-        >
-          <div className="grid w-[min(720px,calc(100vw-2rem))] gap-4 p-1 md:grid-cols-2">
-            <RoleField label="Role name">
-              <Input
-                className="h-11 rounded-xl"
-                value={form.name}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, name: event.target.value }))
-                }
-              />
-            </RoleField>
-            <RoleField label="Role key">
-              <Input
-                className="h-11 rounded-xl font-mono"
-                disabled={isSystemRole}
-                value={form.key}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, key: event.target.value }))
-                }
-              />
-            </RoleField>
-            <div className="md:col-span-2">
+        <div className="relative">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="absolute right-3 top-3 z-10 size-8 rounded-full"
+            aria-label="Close"
+            onClick={onClose}
+          >
+            <X className="size-4" />
+          </Button>
+          <CommonListPopupFormCard
+            title={mode === "edit" ? "Edit Role" : "New Role"}
+            description="Keep roles simple. Permissions are reviewed from the user access pages."
+          >
+            <div className="grid w-[min(720px,calc(100vw-2rem))] gap-4 p-1">
+              <RoleField label="Role name">
+                <Input
+                  className="h-11 rounded-xl"
+                  value={form.name}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, name: event.target.value }))
+                  }
+                />
+              </RoleField>
+              <RoleField label="Role key">
+                <Input
+                  className="h-11 rounded-xl font-mono"
+                  disabled={isSystemRole}
+                  value={form.key}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, key: event.target.value }))
+                  }
+                />
+              </RoleField>
               <RoleField label="Description">
                 <textarea
                   className="min-h-24 rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
@@ -362,40 +385,40 @@ function RoleUpsertDialog({
                   }
                 />
               </RoleField>
-            </div>
-            <label
-              className={
-                form.isActive
-                  ? "flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-emerald-300 bg-emerald-50/90 px-4 py-3 text-emerald-950 shadow-sm shadow-emerald-100/80 ring-1 ring-emerald-100"
-                  : "flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-border/70 bg-muted/10 px-4 py-3"
-              }
-            >
-              <span>
-                <span className="block text-sm font-medium">Active</span>
-                <span className="block text-xs text-muted-foreground">
-                  Active roles can be assigned to users.
-                </span>
-              </span>
-              <Switch
-                checked={form.isActive}
-                aria-label="Active"
-                onCheckedChange={(checked) =>
-                  setForm((current) => ({ ...current, isActive: checked }))
+              <label
+                className={
+                  form.isActive
+                    ? "flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-emerald-300 bg-emerald-50/90 px-4 py-3 text-emerald-950 shadow-sm shadow-emerald-100/80 ring-1 ring-emerald-100"
+                    : "flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-border/70 bg-muted/10 px-4 py-3"
                 }
-              />
-            </label>
-          </div>
-          {error ? <p className="mt-4 text-sm font-medium text-destructive">{error}</p> : null}
-          <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-border/70 pt-4">
-            <Button type="button" className="rounded-xl" onClick={() => void submit()}>
-              {mode === "edit" ? "Update" : "Create"}
-            </Button>
-            <Button type="button" variant="outline" className="rounded-xl" onClick={onClose}>
-              <X className="size-4" />
-              Cancel
-            </Button>
-          </div>
-        </CommonListPopupFormCard>
+              >
+                <span>
+                  <span className="block text-sm font-medium">Active</span>
+                  <span className="block text-xs text-muted-foreground">
+                    Active roles can be assigned to users.
+                  </span>
+                </span>
+                <Switch
+                  checked={form.isActive}
+                  aria-label="Active"
+                  onCheckedChange={(checked) =>
+                    setForm((current) => ({ ...current, isActive: checked }))
+                  }
+                />
+              </label>
+            </div>
+            {error ? <p className="mt-4 text-sm font-medium text-destructive">{error}</p> : null}
+            <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-border/70 pt-4">
+              <Button type="button" className="rounded-xl" onClick={() => void submit()}>
+                {mode === "edit" ? "Update" : "Create"}
+              </Button>
+              <Button type="button" variant="outline" className="rounded-xl" onClick={onClose}>
+                <X className="size-4" />
+                Cancel
+              </Button>
+            </div>
+          </CommonListPopupFormCard>
+        </div>
       </CommonListPopupLayout>
     </div>
   );
@@ -411,130 +434,637 @@ function RoleField({ children, label }: { readonly children: ReactNode; readonly
 }
 
 export function PermissionsPage() {
-  const [permissions, setPermissions] = useState<readonly AuthPermission[]>([]);
+  const { show: showGlobalLoader } = useGlobalLoader();
+  const [modules, setModules] = useState<readonly AuthPermissionModule[]>([]);
+  const [policies, setPolicies] = useState<readonly AuthPolicy[]>([]);
   const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
+  const [dialog, setDialog] = useState<{ readonly mode: PopupMode; readonly module: AuthPermissionModule | null } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useAuthAdminSession("/desk/admin/permissions");
 
+  async function reload() {
+    const [moduleRows, policyRows] = await Promise.all([listAuthPermissions(), listAuthPolicies()]);
+    setModules(moduleRows);
+    setPolicies(policyRows);
+    setError(null);
+  }
+
   useEffect(() => {
-    void listAuthPermissions()
-      .then((records) => {
-        setPermissions(records);
-        setError(null);
-      })
+    void reload()
       .catch((loadError) =>
         setError(loadError instanceof Error ? loadError.message : "Could not load permissions."),
       )
       .finally(() => setIsLoading(false));
   }, []);
 
-  const filteredPermissions = useMemo(() => {
+  const filteredModules = useMemo(() => {
     const normalized = query.trim().toLowerCase();
-    if (!normalized) return permissions;
-    return permissions.filter((permission) =>
-      [permission.name, permission.key, permission.moduleKey, permission.action]
-        .join(" ")
-        .toLowerCase()
-        .includes(normalized),
+    return modules.filter((moduleRecord) =>
+      (statusFilter === "all" ||
+        (statusFilter === "active" && moduleRecord.isActive) ||
+        (statusFilter === "inactive" && !moduleRecord.isActive)) &&
+      (!normalized ||
+        [
+          moduleRecord.name,
+          moduleRecord.key,
+          moduleRecord.boundedContext,
+          moduleRecord.description ?? "",
+          moduleRecord.policies.map((policy) => policy.key).join(" "),
+        ]
+          .join(" ")
+          .toLowerCase()
+          .includes(normalized)),
     );
-  }, [permissions, query]);
+  }, [modules, query, statusFilter]);
 
-  const groupedPermissions = useMemo(() => {
-    const groups = new Map<string, AuthPermission[]>();
-    for (const permission of filteredPermissions) {
-      groups.set(permission.moduleKey, [...(groups.get(permission.moduleKey) ?? []), permission]);
+  async function handleDelete(moduleRecord: AuthPermissionModule) {
+    if (moduleRecord.isSystem) {
+      setError("System permission modules cannot be deleted.");
+      return;
     }
 
-    return [...groups.entries()].sort(([left], [right]) => left.localeCompare(right));
-  }, [filteredPermissions]);
+    if (!window.confirm(`Delete permission module "${moduleRecord.name}"?`)) return;
+
+    const hideGlobalLoader = showGlobalLoader();
+    try {
+      await deleteAuthPermissionModule(moduleRecord.id);
+      toast.success("Permission module deleted", { description: moduleRecord.name });
+      await reload();
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : "Could not delete permission module.");
+    } finally {
+      hideGlobalLoader();
+    }
+  }
 
   return (
-    <AuthAdminFrame kind="permissions">
-      <SearchToolbar value={query} onChange={setQuery} placeholder="Search permission or module" />
-      <ErrorState error={error} />
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {groupedPermissions.map(([moduleKey, modulePermissions]) => (
-          <MasterListTableCard key={moduleKey} className="rounded-md">
-            <div className="border-b border-border/70 bg-muted/45 px-4 py-3">
-              <div className="text-sm font-semibold capitalize text-foreground">{moduleKey}</div>
-              <div className="mt-1 text-xs text-muted-foreground">
-                {modulePermissions.length} permissions
-              </div>
-            </div>
-            <div className="divide-y divide-border/60">
-              {modulePermissions.map((permission) => (
-                <div key={permission.key} className="px-4 py-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="font-medium text-foreground">{permission.name}</div>
-                    <Badge variant="outline">{permission.action}</Badge>
-                  </div>
-                  <div className="mt-1 font-mono text-xs text-muted-foreground">{permission.key}</div>
-                </div>
+    <CommonListPageFrame
+      action={
+        <Button type="button" className="h-11 rounded-xl px-4" onClick={() => setDialog({ mode: "create", module: null })}>
+          <Plus className="size-4" />
+          New Module
+        </Button>
+      }
+      description={pageCopy.permissions.description}
+      technicalName="page.auth.permissions"
+      title="Permissions"
+    >
+      <CommonListToolbarCard
+        filterOptions={[
+          { id: "all", label: "All records" },
+          { id: "active", label: "Active only" },
+          { id: "inactive", label: "Inactive only" },
+        ]}
+        filterValue={statusFilter}
+        searchPlaceholder="Search module, context, or policy"
+        searchValue={query}
+        onFilterValueChange={(value) => setStatusFilter(value as "all" | "active" | "inactive")}
+        onSearchValueChange={setQuery}
+      />
+      {error ? <CommonListEmptyState>{error}</CommonListEmptyState> : null}
+      <CommonListTableCard className="rounded-md">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[920px] border-collapse text-sm">
+            <thead className="bg-muted/55">
+              <tr>
+                <HeaderCell>#</HeaderCell>
+                <HeaderCell>Module</HeaderCell>
+                <HeaderCell>Context</HeaderCell>
+                <HeaderCell>Policies</HeaderCell>
+                <HeaderCell>Status</HeaderCell>
+                <HeaderCell className="sticky right-0 z-10 bg-muted/95 text-right">Action</HeaderCell>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredModules.map((moduleRecord, index) => (
+                <tr key={moduleRecord.id} className="border-b border-border/60 last:border-b-0 hover:bg-muted/20">
+                  <td className="px-4 py-2.5 text-muted-foreground">{index + 1}</td>
+                  <td className="px-4 py-3">
+                    <div className="font-medium text-foreground">{moduleRecord.name}</div>
+                    <div className="mt-1 font-mono text-xs text-muted-foreground">{moduleRecord.key}</div>
+                  </td>
+                  <td className="px-4 py-3 text-foreground">{moduleRecord.boundedContext}</td>
+                  <td className="px-4 py-3">
+                    <PolicyBadges policies={moduleRecord.policies} />
+                  </td>
+                  <td className="px-4 py-3">
+                    <AccessBadges isActive={moduleRecord.isActive} isSystem={moduleRecord.isSystem} />
+                  </td>
+                  <td className="sticky right-0 bg-card/95 px-4 py-2 text-right shadow-[-10px_0_18px_-18px_rgba(15,23,42,0.55)]">
+                    <RowActions
+                      isSystem={moduleRecord.isSystem}
+                      label={moduleRecord.name}
+                      onDelete={() => void handleDelete(moduleRecord)}
+                      onEdit={() => setDialog({ mode: "edit", module: moduleRecord })}
+                    />
+                  </td>
+                </tr>
               ))}
-            </div>
-          </MasterListTableCard>
-        ))}
-      </div>
-      {!isLoading && groupedPermissions.length === 0 ? (
-        <MasterListEmptyState>No permissions found.</MasterListEmptyState>
+            </tbody>
+          </table>
+        </div>
+        {!isLoading && filteredModules.length === 0 ? <CommonListEmptyState>No permission modules found.</CommonListEmptyState> : null}
+        {isLoading ? <CommonListEmptyState>Loading permission modules...</CommonListEmptyState> : null}
+      </CommonListTableCard>
+      {dialog ? (
+        <PermissionModuleDialog
+          mode={dialog.mode}
+          moduleRecord={dialog.module}
+          policies={policies}
+          onClose={() => setDialog(null)}
+          onSaved={async () => {
+            setDialog(null);
+            toast.success(`Permission module ${dialog.mode === "edit" ? "updated" : "created"}`);
+            await reload();
+          }}
+        />
       ) : null}
-      {isLoading ? <MasterListEmptyState>Loading permissions...</MasterListEmptyState> : null}
-    </AuthAdminFrame>
+    </CommonListPageFrame>
   );
 }
 
 export function PolicyPage() {
+  const { show: showGlobalLoader } = useGlobalLoader();
   const [policies, setPolicies] = useState<readonly AuthPolicy[]>([]);
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
+  const [dialog, setDialog] = useState<{ readonly mode: PopupMode; readonly policy: AuthPolicy | null } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useAuthAdminSession("/desk/admin/policy");
 
+  async function reload() {
+    const records = await listAuthPolicies();
+    setPolicies(records);
+    setError(null);
+  }
+
   useEffect(() => {
-    void listAuthPolicies()
-      .then((records) => {
-        setPolicies(records);
-        setError(null);
-      })
+    void reload()
       .catch((loadError) =>
         setError(loadError instanceof Error ? loadError.message : "Could not load policies."),
       )
       .finally(() => setIsLoading(false));
   }, []);
 
+  const filteredPolicies = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    return policies.filter((policy) =>
+      (statusFilter === "all" ||
+        (statusFilter === "active" && policy.isActive) ||
+        (statusFilter === "inactive" && !policy.isActive)) &&
+      (!normalized ||
+        [policy.name, policy.key, policy.description ?? ""]
+          .join(" ")
+          .toLowerCase()
+          .includes(normalized)),
+    );
+  }, [policies, query, statusFilter]);
+
+  async function handleDelete(policy: AuthPolicy) {
+    if (policy.isSystem) {
+      setError("System policies cannot be deleted.");
+      return;
+    }
+
+    if (!window.confirm(`Delete policy "${policy.name}"?`)) return;
+
+    const hideGlobalLoader = showGlobalLoader();
+    try {
+      await deleteAuthPolicy(policy.id);
+      toast.success("Policy deleted", { description: policy.name });
+      await reload();
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : "Could not delete policy.");
+    } finally {
+      hideGlobalLoader();
+    }
+  }
+
   return (
-    <AuthAdminFrame kind="policy">
-      <ErrorState error={error} />
-      <MasterListTableCard className="rounded-md">
-        <div className="grid gap-4 md:grid-cols-2">
-          {policies.map((policy) => (
-            <div key={policy.key} className="rounded-md border border-border/70 bg-background p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="text-sm font-semibold text-foreground">{policy.name}</div>
-                  <div className="mt-1 font-mono text-xs text-muted-foreground">{policy.key}</div>
-                </div>
-                <Badge variant="outline">{policy.boundedContext}</Badge>
-              </div>
-              <p className="mt-3 text-sm text-muted-foreground">{policy.description}</p>
-              <div className="mt-4 flex flex-wrap gap-1.5">
-                {policy.actions.map((action) => (
-                  <Badge key={action} variant="secondary">
-                    {action}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          ))}
+    <CommonListPageFrame
+      action={
+        <Button type="button" className="h-11 rounded-xl px-4" onClick={() => setDialog({ mode: "create", policy: null })}>
+          <Plus className="size-4" />
+          New Policy
+        </Button>
+      }
+      description={pageCopy.policy.description}
+      technicalName="page.auth.policy"
+      title="Policy"
+    >
+      <CommonListToolbarCard
+        filterOptions={[
+          { id: "all", label: "All records" },
+          { id: "active", label: "Active only" },
+          { id: "inactive", label: "Inactive only" },
+        ]}
+        filterValue={statusFilter}
+        searchPlaceholder="Search policy"
+        searchValue={query}
+        onFilterValueChange={(value) => setStatusFilter(value as "all" | "active" | "inactive")}
+        onSearchValueChange={setQuery}
+      />
+      {error ? <CommonListEmptyState>{error}</CommonListEmptyState> : null}
+      <CommonListTableCard className="rounded-md">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[760px] border-collapse text-sm">
+            <thead className="bg-muted/55">
+              <tr>
+                <HeaderCell>#</HeaderCell>
+                <HeaderCell>Policy</HeaderCell>
+                <HeaderCell>Description</HeaderCell>
+                <HeaderCell>Status</HeaderCell>
+                <HeaderCell className="sticky right-0 z-10 bg-muted/95 text-right">Action</HeaderCell>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredPolicies.map((policy, index) => (
+                <tr key={policy.id} className="border-b border-border/60 last:border-b-0 hover:bg-muted/20">
+                  <td className="px-4 py-2.5 text-muted-foreground">{index + 1}</td>
+                  <td className="px-4 py-3">
+                    <div className="font-medium text-foreground">{policy.name}</div>
+                    <div className="mt-1 font-mono text-xs text-muted-foreground">{policy.key}</div>
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground">{policy.description}</td>
+                  <td className="px-4 py-3">
+                    <AccessBadges isActive={policy.isActive} isSystem={policy.isSystem} />
+                  </td>
+                  <td className="sticky right-0 bg-card/95 px-4 py-2 text-right shadow-[-10px_0_18px_-18px_rgba(15,23,42,0.55)]">
+                    <RowActions
+                      isSystem={policy.isSystem}
+                      label={policy.name}
+                      onDelete={() => void handleDelete(policy)}
+                      onEdit={() => setDialog({ mode: "edit", policy })}
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-        {!isLoading && policies.length === 0 ? (
-          <MasterListEmptyState>No policies found.</MasterListEmptyState>
-        ) : null}
-        {isLoading ? <MasterListEmptyState>Loading policies...</MasterListEmptyState> : null}
-      </MasterListTableCard>
-    </AuthAdminFrame>
+        {!isLoading && filteredPolicies.length === 0 ? <CommonListEmptyState>No policies found.</CommonListEmptyState> : null}
+        {isLoading ? <CommonListEmptyState>Loading policies...</CommonListEmptyState> : null}
+      </CommonListTableCard>
+      {dialog ? (
+        <PolicyDialog
+          mode={dialog.mode}
+          policy={dialog.policy}
+          onClose={() => setDialog(null)}
+          onSaved={async () => {
+            setDialog(null);
+            toast.success(`Policy ${dialog.mode === "edit" ? "updated" : "created"}`);
+            await reload();
+          }}
+        />
+      ) : null}
+    </CommonListPageFrame>
+  );
+}
+
+function RowActions({
+  isSystem,
+  label,
+  onDelete,
+  onEdit,
+}: {
+  readonly isSystem: boolean;
+  readonly label: string;
+  readonly onDelete: () => void;
+  readonly onEdit: () => void;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          aria-label={`${label} actions`}
+          size="icon"
+          variant="ghost"
+          className="size-8 rounded-full"
+        >
+          <MoreHorizontal className="size-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-40 rounded-2xl p-1">
+        <DropdownMenuItem className="gap-2.5" onSelect={onEdit}>
+          <Edit className="size-4" />
+          Edit
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          className="gap-2.5 text-destructive focus:text-destructive"
+          disabled={isSystem}
+          onSelect={onDelete}
+        >
+          <Trash2 className="size-4" />
+          Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function PolicyBadges({ policies }: { readonly policies: readonly AuthPolicy[] }) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {policies.map((policy) => (
+        <Badge key={policy.key} variant="secondary">
+          {policy.key}
+        </Badge>
+      ))}
+      {policies.length === 0 ? <span className="text-muted-foreground">No policies</span> : null}
+    </div>
+  );
+}
+
+function PolicyDialog({
+  mode,
+  policy,
+  onClose,
+  onSaved,
+}: {
+  readonly mode: PopupMode;
+  readonly policy: AuthPolicy | null;
+  readonly onClose: () => void;
+  readonly onSaved: () => void | Promise<void>;
+}) {
+  const { show: showGlobalLoader } = useGlobalLoader();
+  const [form, setForm] = useState<AuthPolicyInput>(() => ({
+    key: policy?.key ?? "",
+    name: policy?.name ?? "",
+    description: policy?.description ?? "",
+    isActive: policy?.isActive ?? true,
+  }));
+  const [error, setError] = useState<string | null>(null);
+  const isSystem = Boolean(policy?.isSystem);
+
+  async function submit() {
+    if (!form.key.trim() || !form.name.trim()) {
+      setError("Policy key and name are required.");
+      return;
+    }
+
+    const hideGlobalLoader = showGlobalLoader();
+    try {
+      await upsertAuthPolicy(form, policy?.id);
+      await onSaved();
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Save failed.");
+    } finally {
+      hideGlobalLoader();
+    }
+  }
+
+  return (
+    <PopupCard
+      title={mode === "edit" ? "Edit Policy" : "New Policy"}
+      description="Policies are reusable actions such as read, list, create, update, delete, and report."
+      error={error}
+      onClose={onClose}
+      onSubmit={() => void submit()}
+      submitLabel={mode === "edit" ? "Update" : "Create"}
+    >
+      <RoleField label="Policy name">
+        <Input
+          className="h-11 rounded-xl"
+          value={form.name}
+          onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
+        />
+      </RoleField>
+      <RoleField label="Policy key">
+        <Input
+          className="h-11 rounded-xl font-mono"
+          disabled={isSystem}
+          value={form.key}
+          onChange={(event) => setForm((current) => ({ ...current, key: event.target.value }))}
+        />
+      </RoleField>
+      <RoleField label="Description">
+        <textarea
+          className="min-h-24 rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
+          value={form.description ?? ""}
+          onChange={(event) =>
+            setForm((current) => ({ ...current, description: event.target.value }))
+          }
+        />
+      </RoleField>
+      <ActiveSwitch
+        checked={form.isActive}
+        description="Active policies can be mapped to permission modules."
+        onCheckedChange={(checked) => setForm((current) => ({ ...current, isActive: checked }))}
+      />
+    </PopupCard>
+  );
+}
+
+function PermissionModuleDialog({
+  mode,
+  moduleRecord,
+  policies,
+  onClose,
+  onSaved,
+}: {
+  readonly mode: PopupMode;
+  readonly moduleRecord: AuthPermissionModule | null;
+  readonly policies: readonly AuthPolicy[];
+  readonly onClose: () => void;
+  readonly onSaved: () => void | Promise<void>;
+}) {
+  const { show: showGlobalLoader } = useGlobalLoader();
+  const [form, setForm] = useState<AuthPermissionModuleInput>(() => ({
+    key: moduleRecord?.key ?? "",
+    name: moduleRecord?.name ?? "",
+    boundedContext: moduleRecord?.boundedContext ?? "",
+    description: moduleRecord?.description ?? "",
+    isActive: moduleRecord?.isActive ?? true,
+    policyKeys: moduleRecord?.policies.map((policy) => policy.key) ?? [],
+  }));
+  const [error, setError] = useState<string | null>(null);
+  const isSystem = Boolean(moduleRecord?.isSystem);
+  const activePolicies = policies.filter((policy) => policy.isActive);
+
+  async function submit() {
+    if (!form.key.trim() || !form.name.trim() || !form.boundedContext.trim()) {
+      setError("Module key, name, and bounded context are required.");
+      return;
+    }
+
+    const hideGlobalLoader = showGlobalLoader();
+    try {
+      await upsertAuthPermissionModule(form, moduleRecord?.id);
+      await onSaved();
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Save failed.");
+    } finally {
+      hideGlobalLoader();
+    }
+  }
+
+  return (
+    <PopupCard
+      title={mode === "edit" ? "Edit Permission Module" : "New Permission Module"}
+      description="Map policies to a module. Permission keys are generated as module.policy."
+      error={error}
+      onClose={onClose}
+      onSubmit={() => void submit()}
+      submitLabel={mode === "edit" ? "Update" : "Create"}
+    >
+      <RoleField label="Module name">
+        <Input
+          className="h-10 rounded-xl"
+          value={form.name}
+          onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
+        />
+      </RoleField>
+      <RoleField label="Module key">
+        <Input
+          className="h-10 rounded-xl font-mono"
+          disabled={isSystem}
+          value={form.key}
+          onChange={(event) => setForm((current) => ({ ...current, key: event.target.value }))}
+        />
+      </RoleField>
+      <RoleField label="Bounded context">
+        <Input
+          className="h-10 rounded-xl"
+          value={form.boundedContext}
+          onChange={(event) =>
+            setForm((current) => ({ ...current, boundedContext: event.target.value }))
+          }
+        />
+      </RoleField>
+      <RoleField label="Description">
+        <textarea
+          className="min-h-16 rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
+          value={form.description ?? ""}
+          onChange={(event) =>
+            setForm((current) => ({ ...current, description: event.target.value }))
+          }
+        />
+      </RoleField>
+      <div className="grid gap-2">
+        <Label className="text-sm font-medium">Policies</Label>
+        <div className="grid max-h-40 gap-1 overflow-y-auto rounded-xl border border-border/70 bg-muted/10 p-2">
+          {activePolicies.map((policy) => {
+            const checked = form.policyKeys.includes(policy.key);
+            return (
+              <label key={policy.key} className="flex cursor-pointer items-start gap-3 rounded-lg px-2 py-1">
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  checked={checked}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      policyKeys: event.target.checked
+                        ? [...current.policyKeys, policy.key]
+                        : current.policyKeys.filter((key) => key !== policy.key),
+                    }))
+                  }
+                />
+                <span>
+                  <span className="block text-sm font-medium text-foreground">{policy.name}</span>
+                  <span className="block font-mono text-xs text-muted-foreground">
+                    {form.key ? `${form.key}.${policy.key}` : policy.key}
+                  </span>
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      </div>
+      <ActiveSwitch
+        checked={form.isActive}
+        description="Active modules expose generated permissions."
+        onCheckedChange={(checked) => setForm((current) => ({ ...current, isActive: checked }))}
+      />
+    </PopupCard>
+  );
+}
+
+function PopupCard({
+  children,
+  description,
+  error,
+  onClose,
+  onSubmit,
+  submitLabel,
+  title,
+}: {
+  readonly children: ReactNode;
+  readonly description: string;
+  readonly error: string | null;
+  readonly onClose: () => void;
+  readonly onSubmit: () => void;
+  readonly submitLabel: string;
+  readonly title: string;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-background/55 p-4 backdrop-blur-sm">
+      <CommonListPopupLayout>
+        <div className="relative">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="absolute right-3 top-3 z-10 size-8 rounded-full"
+            aria-label="Close"
+            onClick={onClose}
+          >
+            <X className="size-4" />
+          </Button>
+          <CommonListPopupFormCard
+            className="max-h-[calc(100vh-1rem)] overflow-hidden rounded-xl sm:max-h-[calc(100vh-2rem)]"
+            title={title}
+            description={description}
+          >
+            <div className="grid max-h-[min(54vh,520px)] w-[min(680px,calc(100vw-1rem))] gap-3 overflow-y-auto p-1 pr-2 sm:w-[min(680px,calc(100vw-2rem))]">
+              {children}
+            </div>
+            {error ? <p className="mt-3 text-sm font-medium text-destructive">{error}</p> : null}
+            <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-border/70 pt-3">
+              <Button type="button" className="rounded-xl" onClick={onSubmit}>
+                {submitLabel}
+              </Button>
+              <Button type="button" variant="outline" className="rounded-xl" onClick={onClose}>
+                <X className="size-4" />
+                Cancel
+              </Button>
+            </div>
+          </CommonListPopupFormCard>
+        </div>
+      </CommonListPopupLayout>
+    </div>
+  );
+}
+
+function ActiveSwitch({
+  checked,
+  description,
+  onCheckedChange,
+}: {
+  readonly checked: boolean;
+  readonly description: string;
+  readonly onCheckedChange: (checked: boolean) => void;
+}) {
+  return (
+    <label
+      className={
+        checked
+          ? "flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-emerald-300 bg-emerald-50/90 px-4 py-3 text-emerald-950 shadow-sm shadow-emerald-100/80 ring-1 ring-emerald-100"
+          : "flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-border/70 bg-muted/10 px-4 py-3"
+      }
+    >
+      <span>
+        <span className="block text-sm font-medium">Active</span>
+        <span className="block text-xs text-muted-foreground">{description}</span>
+      </span>
+      <Switch checked={checked} aria-label="Active" onCheckedChange={onCheckedChange} />
+    </label>
   );
 }
 

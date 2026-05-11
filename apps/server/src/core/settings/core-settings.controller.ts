@@ -15,13 +15,13 @@ export class CoreSettingsController {
   ) {}
 
   @Get("env")
-  @RequirePermissions(modulePermission("auth", "manage"))
+  @RequirePermissions(modulePermission("auth", "update"))
   public async getEnvSettings() {
     return this.coreSettingsService.listEnvSettings();
   }
 
   @Patch("env")
-  @RequirePermissions(modulePermission("auth", "manage"))
+  @RequirePermissions(modulePermission("auth", "update"))
   public async updateEnvSettings(@Body() body: CoreSettingsUpdateRequest) {
     return this.coreSettingsService.updateEnvSettings(body.values ?? {});
   }

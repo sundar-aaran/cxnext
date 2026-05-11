@@ -137,9 +137,9 @@ export function UserShowPage({ userId }: { readonly userId: string }) {
         <MasterListTableCard className="rounded-md">
           <div className="grid gap-4 md:grid-cols-2">
             {policies.map((policy) => {
-              const grantedKeys = policy.permissionKeys.filter((permissionKey) =>
-                permissionKeys.has(permissionKey),
-              );
+              const grantedKeys = user.permissions
+                .filter((permission) => permission.action === policy.key)
+                .map((permission) => permission.key);
 
               return (
                 <div key={policy.key} className="rounded-md border border-border/70 bg-background p-4">
@@ -149,12 +149,12 @@ export function UserShowPage({ userId }: { readonly userId: string }) {
                       <div className="mt-1 font-mono text-xs text-muted-foreground">{policy.key}</div>
                     </div>
                     <Badge variant={grantedKeys.length > 0 ? "secondary" : "outline"}>
-                      {grantedKeys.length}/{policy.permissionKeys.length}
+                      {grantedKeys.length}
                     </Badge>
                   </div>
                   <p className="mt-3 text-sm text-muted-foreground">{policy.description}</p>
                   <div className="mt-4 flex flex-wrap gap-1.5">
-                    {policy.permissionKeys.map((permissionKey) => (
+                    {grantedKeys.map((permissionKey) => (
                       <Badge
                         key={permissionKey}
                         variant={permissionKeys.has(permissionKey) ? "secondary" : "outline"}
@@ -162,6 +162,9 @@ export function UserShowPage({ userId }: { readonly userId: string }) {
                         {permissionKey}
                       </Badge>
                     ))}
+                    {grantedKeys.length === 0 ? (
+                      <span className="text-sm text-muted-foreground">No granted modules.</span>
+                    ) : null}
                   </div>
                 </div>
               );

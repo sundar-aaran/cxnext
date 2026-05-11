@@ -2,11 +2,12 @@ import { BadRequestException, Inject, Injectable } from "@nestjs/common";
 import { AUTH_DOMAIN_EVENT_PUBLISHER, type AuthDomainEventPublisher } from "../services/domain-event-publisher";
 import {
   AUTH_REPOSITORY,
+  type AuthPermissionModuleUpsertParams,
+  type AuthPolicyUpsertParams,
   type AuthRepository,
   type AuthRoleUpsertParams,
   type AuthUserUpsertParams,
 } from "../services/auth.repository";
-import { authPolicyModuleList, buildAuthPermissionKey } from "../../domain/services/rbac-catalog";
 import { AuthRoleAccessUpdatedEvent } from "../../domain/events/auth-role-access-updated.event";
 import { PasswordService } from "../services/password.service";
 import { AuthUserAccessUpdatedEvent } from "../../domain/events/auth-user-access-updated.event";
@@ -166,21 +167,70 @@ export class ListAuthPermissionsUseCase {
   public constructor(@Inject(AUTH_REPOSITORY) private readonly repository: AuthRepository) {}
 
   public execute() {
-    return this.repository.listPermissions();
+    return this.repository.listPermissionModules();
+  }
+}
+
+@Injectable()
+export class CreateAuthPermissionModuleUseCase {
+  public constructor(@Inject(AUTH_REPOSITORY) private readonly repository: AuthRepository) {}
+
+  public execute(params: AuthPermissionModuleUpsertParams) {
+    return this.repository.createPermissionModule(params);
+  }
+}
+
+@Injectable()
+export class UpdateAuthPermissionModuleUseCase {
+  public constructor(@Inject(AUTH_REPOSITORY) private readonly repository: AuthRepository) {}
+
+  public execute(moduleId: string, params: AuthPermissionModuleUpsertParams) {
+    return this.repository.updatePermissionModule(moduleId, params);
+  }
+}
+
+@Injectable()
+export class DeleteAuthPermissionModuleUseCase {
+  public constructor(@Inject(AUTH_REPOSITORY) private readonly repository: AuthRepository) {}
+
+  public execute(moduleId: string) {
+    return this.repository.deletePermissionModule(moduleId);
   }
 }
 
 @Injectable()
 export class ListAuthPoliciesUseCase {
+  public constructor(@Inject(AUTH_REPOSITORY) private readonly repository: AuthRepository) {}
+
   public execute() {
-    return authPolicyModuleList.map((policy) => ({
-      key: policy.key,
-      name: policy.name,
-      boundedContext: policy.boundedContext,
-      actions: policy.actions,
-      description: policy.description,
-      permissionKeys: policy.actions.map((action) => buildAuthPermissionKey(policy.key, action)),
-    }));
+    return this.repository.listPolicies();
+  }
+}
+
+@Injectable()
+export class CreateAuthPolicyUseCase {
+  public constructor(@Inject(AUTH_REPOSITORY) private readonly repository: AuthRepository) {}
+
+  public execute(params: AuthPolicyUpsertParams) {
+    return this.repository.createPolicy(params);
+  }
+}
+
+@Injectable()
+export class UpdateAuthPolicyUseCase {
+  public constructor(@Inject(AUTH_REPOSITORY) private readonly repository: AuthRepository) {}
+
+  public execute(policyId: string, params: AuthPolicyUpsertParams) {
+    return this.repository.updatePolicy(policyId, params);
+  }
+}
+
+@Injectable()
+export class DeleteAuthPolicyUseCase {
+  public constructor(@Inject(AUTH_REPOSITORY) private readonly repository: AuthRepository) {}
+
+  public execute(policyId: string) {
+    return this.repository.deletePolicy(policyId);
   }
 }
 

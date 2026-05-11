@@ -10,6 +10,23 @@
 
 ## v-1.0.72
 
+### [v 1.0.72] 2026-05-11 - Refine Admin And GST Interface Details
+
+- Reduced the Permission module upsert popup height with compact fields and a scrollable policy checklist for smaller screens.
+- Changed User upsert to a single-column form and matched the Active toggle row to the green enabled tone.
+- Split GST Statement totals into full-width outer cards with bordered inner cells.
+- Added sign-based GST total colouring for negative, neutral, and positive values.
+- Corrected GST balance direction to `Opening GST + Purchase GST - Sales GST`.
+- Revalidated the frontend workspace with focused typecheck.
+
+### [v 1.0.72] 2026-05-11 - Refactor Permission And Policy Catalogs
+
+- Refactored Policy into an action master with read, list, create, update, delete, and report actions.
+- Refactored Permissions into module records that map selected policies to generated module-policy permission keys.
+- Added auth policy action and permission module catalog tables with seed data synced from the shared RBAC catalog.
+- Added popup CRUD APIs and Common-list-style UI flows for Policy and Permission module management.
+- Replaced auth manage checks with update policy checks and revalidated shared types, db, server, and frontend typechecks.
+
 ### [v 1.0.72] 2026-05-11 - Simplify Role Master Workflow
 
 - Slimmed seeded system roles to Super Admin, Admin, Manager, Operator, Viewer, Web Client, and Premium Client.

@@ -1,12 +1,20 @@
 import { Injectable, type OnModuleDestroy } from "@nestjs/common";
 import { createDatabaseConnection, loadDatabaseEnv, type DatabaseConnection } from "@cxnext/db";
 import type {
+  AuthPermissionModuleUpsertParams,
+  AuthPolicyUpsertParams,
   AuthRepository,
   AuthRoleUpsertParams,
   AuthSessionParams,
   AuthUserUpsertParams,
 } from "../../application/services/auth.repository";
-import type { AuthPermissionRecord, AuthRoleRecord, AuthUserRecord } from "../../domain/auth-record";
+import type {
+  AuthPermissionModuleRecord,
+  AuthPermissionRecord,
+  AuthPolicyRecord,
+  AuthRoleRecord,
+  AuthUserRecord,
+} from "../../domain/auth-record";
 
 type DynamicDatabase = Record<string, Record<string, unknown>>;
 
@@ -258,6 +266,197 @@ export class KyselyAuthRepository implements AuthRepository, OnModuleDestroy {
     return rows.map(toPermission);
   }
 
+  public async listPermissionModules(): Promise<readonly AuthPermissionModuleRecord[]> {
+    const rows = (await this.db()
+      .selectFrom("auth_permission_modules")
+      .selectAll()
+      .where("is_active", "=", true)
+      .orderBy("module_key", "asc")
+      .execute()) as Array<Record<string, unknown>>;
+
+    return Promise.all(rows.map((row) => this.hydratePermissionModule(row)));
+  }
+
+  public async createPermissionModule(
+    params: AuthPermissionModuleUpsertParams,
+  ): Promise<AuthPermissionModuleRecord> {
+    const now = new Date();
+    const result = await this.db()
+      .insertInto("auth_permission_modules")
+      .values({
+        module_key: normalizeKey(params.key),
+        name: params.name.trim(),
+        bounded_context: normalizeKey(params.boundedContext),
+        description: normalizeNullable(params.description),
+        is_system: false,
+        is_active: params.isActive,
+        created_at: now,
+        updated_at: now,
+      })
+      .executeTakeFirstOrThrow();
+
+    await this.syncModulePermissions(normalizeKey(params.key), params.policyKeys, params.name);
+    const moduleRecord = await this.findPermissionModuleById(String(result.insertId));
+    if (!moduleRecord) throw new Error("Permission module was created but could not be read back.");
+    return moduleRecord;
+  }
+
+  public async updatePermissionModule(
+    moduleId: string,
+    params: AuthPermissionModuleUpsertParams,
+  ): Promise<AuthPermissionModuleRecord | null> {
+    const existing = (await this.db()
+      .selectFrom("auth_permission_modules")
+      .select(["module_key", "is_system"])
+      .where("id", "=", Number(moduleId))
+      .executeTakeFirst()) as { module_key: string; is_system: boolean | number } | undefined;
+
+    if (!existing) return null;
+
+    const moduleKey = Boolean(existing.is_system) ? existing.module_key : normalizeKey(params.key);
+    await this.db()
+      .updateTable("auth_permission_modules")
+      .set({
+        module_key: moduleKey,
+        name: params.name.trim(),
+        bounded_context: normalizeKey(params.boundedContext),
+        description: normalizeNullable(params.description),
+        is_active: params.isActive,
+        updated_at: new Date(),
+      })
+      .where("id", "=", Number(moduleId))
+      .executeTakeFirst();
+
+    if (moduleKey !== existing.module_key) {
+      await this.db()
+        .updateTable("auth_permissions")
+        .set({ module_key: moduleKey, updated_at: new Date() })
+        .where("module_key", "=", existing.module_key)
+        .executeTakeFirst();
+    }
+
+    await this.syncModulePermissions(moduleKey, params.policyKeys, params.name);
+    return this.findPermissionModuleById(moduleId);
+  }
+
+  public async deletePermissionModule(moduleId: string): Promise<boolean> {
+    const existing = (await this.db()
+      .selectFrom("auth_permission_modules")
+      .select(["module_key", "is_system"])
+      .where("id", "=", Number(moduleId))
+      .executeTakeFirst()) as { module_key: string; is_system: boolean | number } | undefined;
+
+    if (!existing || Boolean(existing.is_system)) return false;
+
+    await this.db()
+      .updateTable("auth_permission_modules")
+      .set({ is_active: false, updated_at: new Date() })
+      .where("id", "=", Number(moduleId))
+      .executeTakeFirst();
+    await this.db()
+      .updateTable("auth_permissions")
+      .set({ is_active: false, updated_at: new Date() })
+      .where("module_key", "=", existing.module_key)
+      .executeTakeFirst();
+    return true;
+  }
+
+  public async listPolicies(): Promise<readonly AuthPolicyRecord[]> {
+    const rows = (await this.db()
+      .selectFrom("auth_policy_actions")
+      .selectAll()
+      .where("is_active", "=", true)
+      .orderBy("action_key", "asc")
+      .execute()) as Array<Record<string, unknown>>;
+
+    return rows.map(toPolicy);
+  }
+
+  public async createPolicy(params: AuthPolicyUpsertParams): Promise<AuthPolicyRecord> {
+    const result = await this.db()
+      .insertInto("auth_policy_actions")
+      .values({
+        action_key: normalizeKey(params.key),
+        name: params.name.trim(),
+        description: normalizeNullable(params.description),
+        is_system: false,
+        is_active: params.isActive,
+        created_at: new Date(),
+        updated_at: new Date(),
+      })
+      .executeTakeFirstOrThrow();
+
+    const policy = await this.findPolicyById(String(result.insertId));
+    if (!policy) throw new Error("Policy was created but could not be read back.");
+    return policy;
+  }
+
+  public async updatePolicy(
+    policyId: string,
+    params: AuthPolicyUpsertParams,
+  ): Promise<AuthPolicyRecord | null> {
+    const existing = (await this.db()
+      .selectFrom("auth_policy_actions")
+      .select(["action_key", "is_system"])
+      .where("id", "=", Number(policyId))
+      .executeTakeFirst()) as { action_key: string; is_system: boolean | number } | undefined;
+
+    if (!existing) return null;
+
+    const actionKey = Boolean(existing.is_system) ? existing.action_key : normalizeKey(params.key);
+    await this.db()
+      .updateTable("auth_policy_actions")
+      .set({
+        action_key: actionKey,
+        name: params.name.trim(),
+        description: normalizeNullable(params.description),
+        is_active: params.isActive,
+        updated_at: new Date(),
+      })
+      .where("id", "=", Number(policyId))
+      .executeTakeFirst();
+
+    if (actionKey !== existing.action_key) {
+      await this.db()
+        .updateTable("auth_permissions")
+        .set({ action: actionKey, updated_at: new Date() })
+        .where("action", "=", existing.action_key)
+        .executeTakeFirst();
+    }
+
+    if (!params.isActive) {
+      await this.db()
+        .updateTable("auth_permissions")
+        .set({ is_active: false, updated_at: new Date() })
+        .where("action", "=", actionKey)
+        .executeTakeFirst();
+    }
+
+    return this.findPolicyById(policyId);
+  }
+
+  public async deletePolicy(policyId: string): Promise<boolean> {
+    const existing = (await this.db()
+      .selectFrom("auth_policy_actions")
+      .select(["action_key", "is_system"])
+      .where("id", "=", Number(policyId))
+      .executeTakeFirst()) as { action_key: string; is_system: boolean | number } | undefined;
+
+    if (!existing || Boolean(existing.is_system)) return false;
+
+    await this.db()
+      .updateTable("auth_policy_actions")
+      .set({ is_active: false, updated_at: new Date() })
+      .where("id", "=", Number(policyId))
+      .executeTakeFirst();
+    await this.db()
+      .updateTable("auth_permissions")
+      .set({ is_active: false, updated_at: new Date() })
+      .where("action", "=", existing.action_key)
+      .executeTakeFirst();
+    return true;
+  }
+
   public async findActivePermissionKeys(permissionKeys: readonly string[]): Promise<readonly string[]> {
     if (permissionKeys.length === 0) {
       return [];
@@ -443,6 +642,104 @@ export class KyselyAuthRepository implements AuthRepository, OnModuleDestroy {
     }
   }
 
+  private async hydratePermissionModule(
+    row: Record<string, unknown>,
+  ): Promise<AuthPermissionModuleRecord> {
+    const permissions = (await this.db()
+      .selectFrom("auth_permissions")
+      .select(["permission_key", "action"])
+      .where("module_key", "=", String(row.module_key))
+      .where("is_active", "=", true)
+      .orderBy("action", "asc")
+      .execute()) as Array<{ permission_key: string; action: string }>;
+    const policies = await this.listPolicies();
+    const actionSet = new Set(permissions.map((permission) => permission.action));
+
+    return {
+      id: String(row.id),
+      key: String(row.module_key),
+      name: String(row.name),
+      boundedContext: String(row.bounded_context),
+      description: row.description ? String(row.description) : null,
+      isSystem: Boolean(row.is_system),
+      isActive: Boolean(row.is_active),
+      policies: policies.filter((policy) => actionSet.has(policy.key)),
+      permissionKeys: permissions.map((permission) => permission.permission_key),
+    };
+  }
+
+  private async findPermissionModuleById(moduleId: string) {
+    const row = (await this.db()
+      .selectFrom("auth_permission_modules")
+      .selectAll()
+      .where("id", "=", Number(moduleId))
+      .executeTakeFirst()) as Record<string, unknown> | undefined;
+
+    return row ? this.hydratePermissionModule(row) : null;
+  }
+
+  private async findPolicyById(policyId: string): Promise<AuthPolicyRecord | null> {
+    const row = (await this.db()
+      .selectFrom("auth_policy_actions")
+      .selectAll()
+      .where("id", "=", Number(policyId))
+      .executeTakeFirst()) as Record<string, unknown> | undefined;
+
+    return row ? toPolicy(row) : null;
+  }
+
+  private async syncModulePermissions(
+    moduleKey: string,
+    policyKeys: readonly string[],
+    moduleName: string,
+  ) {
+    const activeKeys = [...new Set(policyKeys.map(normalizeKey).filter(Boolean))];
+
+    await this.db()
+      .updateTable("auth_permissions")
+      .set({ is_active: false, updated_at: new Date() })
+      .where("module_key", "=", moduleKey)
+      .executeTakeFirst();
+
+    for (const actionKey of activeKeys) {
+      const permissionKey = `${moduleKey}.${actionKey}`;
+      const existing = await this.db()
+        .selectFrom("auth_permissions")
+        .select("id")
+        .where("permission_key", "=", permissionKey)
+        .executeTakeFirst();
+
+      if (existing) {
+        await this.db()
+          .updateTable("auth_permissions")
+          .set({
+            name: `${moduleName.trim()} ${actionKey}`,
+            module_key: moduleKey,
+            action: actionKey,
+            description: `Allows ${actionKey} access for ${moduleName.trim()}.`,
+            is_active: true,
+            updated_at: new Date(),
+          })
+          .where("permission_key", "=", permissionKey)
+          .executeTakeFirst();
+      } else {
+        await this.db()
+          .insertInto("auth_permissions")
+          .values({
+            permission_key: permissionKey,
+            name: `${moduleName.trim()} ${actionKey}`,
+            module_key: moduleKey,
+            action: actionKey,
+            description: `Allows ${actionKey} access for ${moduleName.trim()}.`,
+            is_active: true,
+            created_at: new Date(),
+            updated_at: new Date(),
+          })
+          .execute();
+      }
+    }
+  }
+
   private db() {
     return this.connection.db as unknown as import("kysely").Kysely<DynamicDatabase>;
   }
@@ -463,7 +760,22 @@ function toDate(value: Date | string): Date {
   return value instanceof Date ? value : new Date(value);
 }
 
+function toPolicy(row: Record<string, unknown>): AuthPolicyRecord {
+  return {
+    id: String(row.id),
+    key: String(row.action_key),
+    name: String(row.name),
+    description: row.description ? String(row.description) : null,
+    isSystem: Boolean(row.is_system),
+    isActive: Boolean(row.is_active),
+  };
+}
+
 function normalizeRoleKey(value: string) {
+  return normalizeKey(value);
+}
+
+function normalizeKey(value: string) {
   return value
     .trim()
     .toLowerCase()

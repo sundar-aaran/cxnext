@@ -27,12 +27,40 @@ export interface AuthRoleInput {
 }
 
 export interface AuthPolicy {
+  readonly id: string;
+  readonly key: string;
+  readonly name: string;
+  readonly description: string | null;
+  readonly isSystem: boolean;
+  readonly isActive: boolean;
+}
+
+export interface AuthPolicyInput {
+  readonly key: string;
+  readonly name: string;
+  readonly description?: string | null;
+  readonly isActive: boolean;
+}
+
+export interface AuthPermissionModule {
+  readonly id: string;
   readonly key: string;
   readonly name: string;
   readonly boundedContext: string;
-  readonly actions: readonly string[];
-  readonly description: string;
+  readonly description: string | null;
+  readonly isSystem: boolean;
+  readonly isActive: boolean;
+  readonly policies: readonly AuthPolicy[];
   readonly permissionKeys: readonly string[];
+}
+
+export interface AuthPermissionModuleInput {
+  readonly key: string;
+  readonly name: string;
+  readonly boundedContext: string;
+  readonly description?: string | null;
+  readonly isActive: boolean;
+  readonly policyKeys: readonly string[];
 }
 
 export interface AuthGate {

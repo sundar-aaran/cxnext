@@ -7,7 +7,11 @@ import { PasswordService } from "./application/services/password.service";
 import { LoginUseCase } from "./application/use-cases/login.use-case";
 import {
   CreateAuthRoleUseCase,
+  CreateAuthPermissionModuleUseCase,
+  CreateAuthPolicyUseCase,
   CreateAuthUserUseCase,
+  DeleteAuthPermissionModuleUseCase,
+  DeleteAuthPolicyUseCase,
   DeleteAuthRoleUseCase,
   GetAuthUserUseCase,
   ListAuthGatesUseCase,
@@ -15,6 +19,8 @@ import {
   ListAuthPoliciesUseCase,
   ListAuthRolesUseCase,
   ListAuthUsersUseCase,
+  UpdateAuthPermissionModuleUseCase,
+  UpdateAuthPolicyUseCase,
   UpdateAuthRoleUseCase,
   UpdateAuthUserUseCase,
 } from "./application/use-cases/user-admin.use-cases";
@@ -39,7 +45,13 @@ import { AuthGuard } from "./interface/http/auth.guard";
     UpdateAuthRoleUseCase,
     DeleteAuthRoleUseCase,
     ListAuthPermissionsUseCase,
+    CreateAuthPermissionModuleUseCase,
+    UpdateAuthPermissionModuleUseCase,
+    DeleteAuthPermissionModuleUseCase,
     ListAuthPoliciesUseCase,
+    CreateAuthPolicyUseCase,
+    UpdateAuthPolicyUseCase,
+    DeleteAuthPolicyUseCase,
     ListAuthGatesUseCase,
     {
       provide: AUTH_REPOSITORY,

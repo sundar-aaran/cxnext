@@ -13,7 +13,11 @@ import {
 } from "@nestjs/common";
 import {
   CreateAuthRoleUseCase,
+  CreateAuthPermissionModuleUseCase,
+  CreateAuthPolicyUseCase,
   CreateAuthUserUseCase,
+  DeleteAuthPermissionModuleUseCase,
+  DeleteAuthPolicyUseCase,
   DeleteAuthRoleUseCase,
   GetAuthUserUseCase,
   ListAuthGatesUseCase,
@@ -21,6 +25,8 @@ import {
   ListAuthPoliciesUseCase,
   ListAuthRolesUseCase,
   ListAuthUsersUseCase,
+  UpdateAuthPermissionModuleUseCase,
+  UpdateAuthPolicyUseCase,
   UpdateAuthRoleUseCase,
   UpdateAuthUserUseCase,
 } from "../../application/use-cases/user-admin.use-cases";
@@ -31,7 +37,7 @@ import { CurrentAuth, RequirePermissions, type AuthRequestContext } from "./auth
 import { modulePermission } from "./module-permissions";
 import {
   toAuthGateResponse,
-  toAuthPermissionResponse,
+  toAuthPermissionModuleResponse,
   toAuthPolicyResponse,
   toAuthRoleResponse,
   toAuthUserResponse,
@@ -59,6 +65,22 @@ interface RoleUpsertRequest {
   readonly isActive?: unknown;
 }
 
+interface PolicyUpsertRequest {
+  readonly key?: unknown;
+  readonly name?: unknown;
+  readonly description?: unknown;
+  readonly isActive?: unknown;
+}
+
+interface PermissionModuleUpsertRequest {
+  readonly key?: unknown;
+  readonly name?: unknown;
+  readonly boundedContext?: unknown;
+  readonly description?: unknown;
+  readonly isActive?: unknown;
+  readonly policyKeys?: unknown;
+}
+
 @Controller("auth")
 @UseGuards(AuthGuard)
 export class AuthController {
@@ -73,7 +95,13 @@ export class AuthController {
     private readonly updateRoleUseCase: UpdateAuthRoleUseCase,
     private readonly deleteRoleUseCase: DeleteAuthRoleUseCase,
     private readonly listPermissionsUseCase: ListAuthPermissionsUseCase,
+    private readonly createPermissionModuleUseCase: CreateAuthPermissionModuleUseCase,
+    private readonly updatePermissionModuleUseCase: UpdateAuthPermissionModuleUseCase,
+    private readonly deletePermissionModuleUseCase: DeleteAuthPermissionModuleUseCase,
     private readonly listPoliciesUseCase: ListAuthPoliciesUseCase,
+    private readonly createPolicyUseCase: CreateAuthPolicyUseCase,
+    private readonly updatePolicyUseCase: UpdateAuthPolicyUseCase,
+    private readonly deletePolicyUseCase: DeleteAuthPolicyUseCase,
     private readonly listGatesUseCase: ListAuthGatesUseCase,
     @Inject(AUTH_REPOSITORY) private readonly repository: AuthRepository,
   ) {}
@@ -120,14 +148,14 @@ export class AuthController {
   }
 
   @Post("users")
-  @RequirePermissions(modulePermission("auth", "manage"))
+  @RequirePermissions(modulePermission("auth", "update"))
   public async createUser(@Body() body: UserUpsertRequest) {
     const user = await this.createUserUseCase.execute(parseUserRequest(body, true));
     return toAuthUserResponse(user);
   }
 
   @Patch("users/:userId")
-  @RequirePermissions(modulePermission("auth", "manage"))
+  @RequirePermissions(modulePermission("auth", "update"))
   public async updateUser(@Param("userId") userId: string, @Body() body: UserUpsertRequest) {
     const user = await this.updateUserUseCase.execute(userId, parseUserRequest(body, false));
     if (!user) throw new NotFoundException(`User "${userId}" was not found.`);
@@ -142,14 +170,14 @@ export class AuthController {
   }
 
   @Post("roles")
-  @RequirePermissions(modulePermission("auth", "manage"))
+  @RequirePermissions(modulePermission("auth", "update"))
   public async createRole(@Body() body: RoleUpsertRequest) {
     const role = await this.createRoleUseCase.execute(parseRoleRequest(body));
     return toAuthRoleResponse(role);
   }
 
   @Patch("roles/:roleId")
-  @RequirePermissions(modulePermission("auth", "manage"))
+  @RequirePermissions(modulePermission("auth", "update"))
   public async updateRole(@Param("roleId") roleId: string, @Body() body: RoleUpsertRequest) {
     const role = await this.updateRoleUseCase.execute(roleId, parseRoleRequest(body));
     if (!role) throw new NotFoundException(`Role "${roleId}" was not found.`);
@@ -157,7 +185,7 @@ export class AuthController {
   }
 
   @Delete("roles/:roleId")
-  @RequirePermissions(modulePermission("auth", "manage"))
+  @RequirePermissions(modulePermission("auth", "update"))
   public async deleteRole(@Param("roleId") roleId: string) {
     const deleted = await this.deleteRoleUseCase.execute(roleId);
     if (!deleted) throw new NotFoundException(`Role "${roleId}" was not found or cannot be deleted.`);
@@ -168,14 +196,68 @@ export class AuthController {
   @RequirePermissions(modulePermission("auth", "read"))
   public async listPermissions() {
     const permissions = await this.listPermissionsUseCase.execute();
-    return permissions.map(toAuthPermissionResponse);
+    return permissions.map(toAuthPermissionModuleResponse);
+  }
+
+  @Post("permissions")
+  @RequirePermissions(modulePermission("auth", "update"))
+  public async createPermissionModule(@Body() body: PermissionModuleUpsertRequest) {
+    const moduleRecord = await this.createPermissionModuleUseCase.execute(parsePermissionModuleRequest(body));
+    return toAuthPermissionModuleResponse(moduleRecord);
+  }
+
+  @Patch("permissions/:moduleId")
+  @RequirePermissions(modulePermission("auth", "update"))
+  public async updatePermissionModule(
+    @Param("moduleId") moduleId: string,
+    @Body() body: PermissionModuleUpsertRequest,
+  ) {
+    const moduleRecord = await this.updatePermissionModuleUseCase.execute(
+      moduleId,
+      parsePermissionModuleRequest(body),
+    );
+    if (!moduleRecord) throw new NotFoundException(`Permission module "${moduleId}" was not found.`);
+    return toAuthPermissionModuleResponse(moduleRecord);
+  }
+
+  @Delete("permissions/:moduleId")
+  @RequirePermissions(modulePermission("auth", "update"))
+  public async deletePermissionModule(@Param("moduleId") moduleId: string) {
+    const deleted = await this.deletePermissionModuleUseCase.execute(moduleId);
+    if (!deleted) {
+      throw new NotFoundException(`Permission module "${moduleId}" was not found or cannot be deleted.`);
+    }
+    return { deleted: true };
   }
 
   @Get("policies")
   @RequirePermissions(modulePermission("auth", "read"))
-  public listPolicies() {
-    const policies = this.listPoliciesUseCase.execute();
+  public async listPolicies() {
+    const policies = await this.listPoliciesUseCase.execute();
     return policies.map(toAuthPolicyResponse);
+  }
+
+  @Post("policies")
+  @RequirePermissions(modulePermission("auth", "update"))
+  public async createPolicy(@Body() body: PolicyUpsertRequest) {
+    const policy = await this.createPolicyUseCase.execute(parsePolicyRequest(body));
+    return toAuthPolicyResponse(policy);
+  }
+
+  @Patch("policies/:policyId")
+  @RequirePermissions(modulePermission("auth", "update"))
+  public async updatePolicy(@Param("policyId") policyId: string, @Body() body: PolicyUpsertRequest) {
+    const policy = await this.updatePolicyUseCase.execute(policyId, parsePolicyRequest(body));
+    if (!policy) throw new NotFoundException(`Policy "${policyId}" was not found.`);
+    return toAuthPolicyResponse(policy);
+  }
+
+  @Delete("policies/:policyId")
+  @RequirePermissions(modulePermission("auth", "update"))
+  public async deletePolicy(@Param("policyId") policyId: string) {
+    const deleted = await this.deletePolicyUseCase.execute(policyId);
+    if (!deleted) throw new NotFoundException(`Policy "${policyId}" was not found or cannot be deleted.`);
+    return { deleted: true };
   }
 
   @Get("gates")
@@ -223,5 +305,55 @@ function parseRoleRequest(body: RoleUpsertRequest) {
     name,
     description: typeof body.description === "string" ? body.description : null,
     isActive: body.isActive !== false,
+  };
+}
+
+function parsePolicyRequest(body: PolicyUpsertRequest) {
+  const key = typeof body.key === "string" ? body.key : "";
+  const name = typeof body.name === "string" ? body.name : "";
+
+  if (!key.trim()) {
+    throw new BadRequestException("Policy key is required.");
+  }
+
+  if (!name.trim()) {
+    throw new BadRequestException("Policy name is required.");
+  }
+
+  return {
+    key,
+    name,
+    description: typeof body.description === "string" ? body.description : null,
+    isActive: body.isActive !== false,
+  };
+}
+
+function parsePermissionModuleRequest(body: PermissionModuleUpsertRequest) {
+  const key = typeof body.key === "string" ? body.key : "";
+  const name = typeof body.name === "string" ? body.name : "";
+  const boundedContext = typeof body.boundedContext === "string" ? body.boundedContext : "";
+  const policyKeys = Array.isArray(body.policyKeys)
+    ? body.policyKeys.filter((policyKey): policyKey is string => typeof policyKey === "string")
+    : [];
+
+  if (!key.trim()) {
+    throw new BadRequestException("Permission module key is required.");
+  }
+
+  if (!name.trim()) {
+    throw new BadRequestException("Permission module name is required.");
+  }
+
+  if (!boundedContext.trim()) {
+    throw new BadRequestException("Bounded context is required.");
+  }
+
+  return {
+    key,
+    name,
+    boundedContext,
+    description: typeof body.description === "string" ? body.description : null,
+    isActive: body.isActive !== false,
+    policyKeys,
   };
 }

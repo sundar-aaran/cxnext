@@ -1,7 +1,9 @@
 import type {
   AuthGate,
-  AuthPermission,
+  AuthPermissionModule,
+  AuthPermissionModuleInput,
   AuthPolicy,
+  AuthPolicyInput,
   AuthRole,
   AuthRoleInput,
   AuthSession,
@@ -92,13 +94,53 @@ export async function deleteAuthRole(roleId: string) {
 export async function listAuthPermissions() {
   const response = await authFetch(`${apiBaseUrl()}/auth/permissions`);
   if (!response.ok) throw new Error(`Permission list failed with status ${response.status}.`);
-  return (await response.json()) as AuthPermission[];
+  return (await response.json()) as AuthPermissionModule[];
+}
+
+export async function upsertAuthPermissionModule(input: AuthPermissionModuleInput, moduleId?: string) {
+  const response = await authFetch(`${apiBaseUrl()}/auth/permissions${moduleId ? `/${moduleId}` : ""}`, {
+    body: JSON.stringify(input),
+    headers: { "Content-Type": "application/json" },
+    method: moduleId ? "PATCH" : "POST",
+  });
+
+  if (!response.ok) throw new Error(`Permission module save failed with status ${response.status}.`);
+  return (await response.json()) as AuthPermissionModule;
+}
+
+export async function deleteAuthPermissionModule(moduleId: string) {
+  const response = await authFetch(`${apiBaseUrl()}/auth/permissions/${moduleId}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) throw new Error(`Permission module delete failed with status ${response.status}.`);
+  return (await response.json()) as { readonly deleted: boolean };
 }
 
 export async function listAuthPolicies() {
   const response = await authFetch(`${apiBaseUrl()}/auth/policies`);
   if (!response.ok) throw new Error(`Policy list failed with status ${response.status}.`);
   return (await response.json()) as AuthPolicy[];
+}
+
+export async function upsertAuthPolicy(input: AuthPolicyInput, policyId?: string) {
+  const response = await authFetch(`${apiBaseUrl()}/auth/policies${policyId ? `/${policyId}` : ""}`, {
+    body: JSON.stringify(input),
+    headers: { "Content-Type": "application/json" },
+    method: policyId ? "PATCH" : "POST",
+  });
+
+  if (!response.ok) throw new Error(`Policy save failed with status ${response.status}.`);
+  return (await response.json()) as AuthPolicy;
+}
+
+export async function deleteAuthPolicy(policyId: string) {
+  const response = await authFetch(`${apiBaseUrl()}/auth/policies/${policyId}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) throw new Error(`Policy delete failed with status ${response.status}.`);
+  return (await response.json()) as { readonly deleted: boolean };
 }
 
 export async function listAuthGates() {

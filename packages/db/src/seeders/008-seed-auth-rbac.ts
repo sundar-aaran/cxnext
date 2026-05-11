@@ -1,6 +1,6 @@
 import { randomBytes, scryptSync } from "node:crypto";
 import type { Kysely } from "kysely";
-import { authPolicyModuleList, authRoleBlueprints } from "@cxnext/types";
+import { authPolicyActionDefinitions, authPolicyModuleList, authRoleBlueprints } from "@cxnext/types";
 
 import { defineDatabaseSeeder } from "../process/types";
 
@@ -27,7 +27,52 @@ export const seedAuthRbacSeeder = defineDatabaseSeeder({
     const db = asQueryDatabase(database);
     const now = new Date();
 
+    for (const action of authPolicyActionDefinitions) {
+      const existing = await db
+        .selectFrom("auth_policy_actions")
+        .select("id")
+        .where("action_key", "=", action.key)
+        .executeTakeFirst();
+
+      if (!existing) {
+        await db
+          .insertInto("auth_policy_actions")
+          .values({
+            action_key: action.key,
+            name: action.name,
+            description: action.description,
+            is_system: action.isSystem,
+            is_active: true,
+            created_at: now,
+            updated_at: now,
+          })
+          .execute();
+      }
+    }
+
     for (const moduleDefinition of authPolicyModuleList) {
+      const existingModule = await db
+        .selectFrom("auth_permission_modules")
+        .select("id")
+        .where("module_key", "=", moduleDefinition.key)
+        .executeTakeFirst();
+
+      if (!existingModule) {
+        await db
+          .insertInto("auth_permission_modules")
+          .values({
+            module_key: moduleDefinition.key,
+            name: moduleDefinition.name,
+            bounded_context: moduleDefinition.boundedContext,
+            description: moduleDefinition.description,
+            is_system: true,
+            is_active: true,
+            created_at: now,
+            updated_at: now,
+          })
+          .execute();
+      }
+
       for (const action of moduleDefinition.actions) {
         const permissionKey = `${moduleDefinition.key}.${action}`;
         const existing = await db

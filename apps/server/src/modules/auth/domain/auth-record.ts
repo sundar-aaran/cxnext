@@ -18,11 +18,23 @@ export interface AuthRoleRecord {
 }
 
 export interface AuthPolicyRecord {
+  readonly id: string;
+  readonly key: string;
+  readonly name: string;
+  readonly description: string | null;
+  readonly isSystem: boolean;
+  readonly isActive: boolean;
+}
+
+export interface AuthPermissionModuleRecord {
+  readonly id: string;
   readonly key: string;
   readonly name: string;
   readonly boundedContext: string;
-  readonly actions: readonly string[];
-  readonly description: string;
+  readonly description: string | null;
+  readonly isSystem: boolean;
+  readonly isActive: boolean;
+  readonly policies: readonly AuthPolicyRecord[];
   readonly permissionKeys: readonly string[];
 }
 
