@@ -1,41 +1,31 @@
 # Planning
 
-Active reference: `#78`
+Active reference: `#80`
 
 ## Active
 
-- `#78` Fix container update Compose execution
+- `#80` Add settings apps module page
   - Goal:
-    - Make the in-app setup and system update build/restart actions work from the Docker container by ensuring a Compose command is available and consistently resolved.
+    - Add an Odoo-style Settings Apps page where app modules are grouped into full-page sections and each card can be toggled as enabled.
   - Scope:
-    - `.container/Dockerfile` runtime tooling.
-    - `scripts/system-update.mjs` Compose resolution and diagnostics.
-    - `scripts/setup.mjs` Compose build/start/prepare-db commands.
-    - Workspace version/changelog alignment for `1.0.78`.
-    - Local Docker E2E validation.
+    - Settings sidebar/index menu registration.
+    - New `/desk/settings/apps` page.
+    - Grouped frontend-only app module cards with icons, titles, descriptions, and enabled status.
+    - Workspace version and changelog alignment for `1.0.80`.
   - Constraints:
-    - Keep the app compose file path unchanged.
-    - Continue supporting both `docker compose` and `docker-compose`.
-    - Do not change database contents except by non-destructive prepare/status checks.
+    - Keep the new page frontend-only and avoid backend persistence.
+    - Preserve current settings layout patterns and sidebar behavior.
+    - Avoid adding more bulk to the large settings page file.
   - Planned validation:
-    - Build the app image locally through `.container/docker-compose.yml`.
-    - Restart the app container.
-    - Run system update preflight and build commands inside the running container.
-    - Confirm package/changelog version alignment.
+    - Run focused frontend typecheck.
+    - Confirm the new route imports and settings menu labels are wired.
   - Implemented:
-    - Installed Docker Compose v2.29.7 into the app image as both the Docker CLI plugin and `docker-compose` compatibility command.
-    - Updated setup Docker actions to try `docker compose` first and fall back to `docker-compose`.
-    - Added detached helper-container restart handling for setup and system update actions that are run from inside `cxnext-app`.
-    - Updated `.container/docker-compose.yml` to support an explicit `DEPLOY_SOURCE` bind mount override during helper-driven restarts.
-    - Synchronized workspace package manifests and changelog state to `1.0.78`.
+    - Added `/desk/settings/apps` route and `AppsSettingsPage`.
+    - Added Settings > Apps in the settings sidebar and Settings index page.
+    - Built grouped app module sections with icon cards, descriptions, enabled check states, keyboard toggling, and local storage persistence.
+    - Synchronized workspace package manifests and changelog state to `1.0.80`.
   - Validation:
-    - Passed `docker compose -f .container/docker-compose.yml config --quiet`.
-    - Passed local `docker compose -f .container/docker-compose.yml build app`.
-    - Passed local `docker compose -f .container/docker-compose.yml up -d app`.
-    - Confirmed the running container has Docker Compose v2.29.7.
-    - Passed in-container `node scripts/system-update.mjs preflight --json`.
-    - Passed in-container `node scripts/system-update.mjs build --json`.
-    - Passed in-container `node scripts/system-update.mjs restart --json`.
-    - Confirmed helper-driven restart preserved `/deploy/cxnext` as the real host bind mount and `/health` returned HTTP 200.
+    - Passed `pnpm --filter @cxnext/frontend typecheck`.
+    - Confirmed the new route import, settings sidebar item, settings index card, and changelog/version state are present.
   - Residual risk:
-    - The Compose v2 binary URL is pinned to the amd64 Linux release; non-amd64 production hosts would need a matching binary target.
+    - App module enabled state is frontend-local only and does not yet persist to backend settings.

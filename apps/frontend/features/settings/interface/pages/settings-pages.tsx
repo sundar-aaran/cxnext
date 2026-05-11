@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { CheckCircle2, FileKey2, Landmark, ReceiptText, RefreshCcw, Save } from "lucide-react";
+import { CheckCircle2, FileKey2, Grid3X3, Landmark, ReceiptText, RefreshCcw, Save } from "lucide-react";
 import {
   AnimatedTabs,
   Badge,
@@ -57,6 +57,12 @@ export function SettingsIndexPage() {
       title="Settings"
     >
       <div className="grid gap-4 md:grid-cols-2">
+        <SettingsLinkCard
+          description="Enable application modules from a grouped app catalog."
+          href="/desk/settings/apps"
+          icon={<Grid3X3 className="size-5" />}
+          title="Apps"
+        />
         <SettingsLinkCard
           description="Edit grouped runtime .env values for application, frontend, backend, database, and security."
           href="/desk/settings/core"

@@ -12,6 +12,7 @@ import {
   Factory,
   FileKey2,
   Flag,
+  Grid3X3,
   HandCoins,
   KeyRound,
   Landmark,
@@ -186,6 +187,12 @@ const reportMenuLabels: Record<string, string> = {
 
 const settingsNavItems = [
   {
+    id: "settings-apps",
+    label: "Apps",
+    href: "/desk/settings/apps",
+    icon: <Grid3X3 className="h-4 w-4" />,
+  },
+  {
     id: "settings-core",
     label: "Core Settings",
     href: "/desk/settings/core",
@@ -212,6 +219,7 @@ const settingsNavItems = [
 ] as const;
 
 const settingsMenuLabels: Record<string, string> = {
+  apps: "Apps",
   core: "Core Settings",
   "billing-layout": "Sales Settings",
   "duties-taxes": "Duties & Taxes",

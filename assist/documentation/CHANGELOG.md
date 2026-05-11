@@ -2,11 +2,28 @@
 
 ## Version State
 
-- Current package version: `1.0.78`
-- Current release tag: `v-1.0.78`
+- Current package version: `1.0.80`
+- Current release tag: `v-1.0.80`
 - Versioned changelog label format: `v 1.0.<reference>`
 - Version section format: `## v-1.0.<reference>`
 - Entry format: `### [v 1.0.<reference>] YYYY-MM-DD - Title`
+
+## v-1.0.80
+
+### [v 1.0.80] 2026-05-11 - Add Settings Apps Page
+
+- Added a Settings > Apps menu entry and `/desk/settings/apps` route.
+- Added a grouped app module catalog with icon cards, short descriptions, and enabled check states.
+- Added local toggle persistence for the Apps card enabled state.
+- Bumped workspace package manifests to `1.0.80`.
+
+## v-1.0.79
+
+### [v 1.0.79] 2026-05-11 - Limit Dashboard App Switcher
+
+- Limited the dashboard breadcrumb app switcher to Dashboard, Ecommerce, Billing, Stock, Site, Task, Tally, and Crm.
+- Removed hidden app switcher entries for Frappe, Demo, Core, API, CLI, and UI.
+- Bumped workspace package manifests to `1.0.79`.
 
 ## v-1.0.78
 
