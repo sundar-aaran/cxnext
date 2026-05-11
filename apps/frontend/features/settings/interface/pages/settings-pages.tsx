@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { CheckCircle2, FileKey2, Landmark, ReceiptText, Save } from "lucide-react";
+import { CheckCircle2, FileKey2, Landmark, ReceiptText, RefreshCcw, Save } from "lucide-react";
 import {
   AnimatedTabs,
   Badge,
@@ -74,6 +74,12 @@ export function SettingsIndexPage() {
           href="/desk/settings/duties-taxes"
           icon={<Landmark className="size-5" />}
           title="Duties & Taxes"
+        />
+        <SettingsLinkCard
+          description="Run deployment preflight, sync from GitHub, rebuild Docker, and restart the app."
+          href="/desk/settings/system-update"
+          icon={<RefreshCcw className="size-5" />}
+          title="System Update"
         />
       </div>
     </CommonListPageFrame>

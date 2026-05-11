@@ -5,7 +5,8 @@ import { fileURLToPath } from "node:url";
 import { parseEnv } from "node:util";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const envPath = path.join(root, ".env");
+const envRoot = process.env.DEPLOY_DIR ? path.resolve(process.env.DEPLOY_DIR) : root;
+const envPath = path.join(envRoot, ".env");
 const requiredDatabaseKeys = [
   "DB_HOST",
   "DB_PORT",

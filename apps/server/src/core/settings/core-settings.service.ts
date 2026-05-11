@@ -71,6 +71,24 @@ const coreEnvGroups = [
     keys: ["DESKTOP_READY_TIMEOUT_MS", "DEV_READY_TIMEOUT_MS"],
   },
   {
+    id: "deployment",
+    label: "Deployment",
+    description: "GitHub source, Docker deployment, and manual or scheduled system update settings.",
+    keys: [
+      "GIT_URL",
+      "GIT_BRANCH",
+      "DEPLOY_DIR",
+      "SYSTEM_UPDATE_ENABLED",
+      "SYSTEM_UPDATE_AUTO_ENABLED",
+      "SYSTEM_UPDATE_AUTO_CRON",
+      "COMPOSE_PROJECT_NAME",
+      "COMPOSE_FILE",
+      "APP_VERSION",
+      "APP_PUBLIC_PORT",
+      "FRONTEND_PUBLIC_PORT",
+    ],
+  },
+  {
     id: "database",
     label: "Database",
     description: "Primary database driver, host, database, and credentials.",
@@ -356,6 +374,12 @@ function optionsForKey(key: string) {
   }
   if (key === "APP_TYPE") return softwareTypeOptions;
   if (key === "APP_CLIENT") return softwareClientOptions;
+  if (key === "SYSTEM_UPDATE_ENABLED" || key === "SYSTEM_UPDATE_AUTO_ENABLED") {
+    return [
+      { value: "true", label: "Enabled" },
+      { value: "false", label: "Disabled" },
+    ];
+  }
   return undefined;
 }
 
@@ -371,8 +395,15 @@ function describeKey(key: string) {
     APP_TYPE: `Industry code used to shape billing and runtime surfaces. Default is ${SoftwareType.GarmentsEcommerce}.`,
     APP_CLIENT: `Client option code. ${SoftwareClient.FullOption} is Developer Edition.`,
     DB_PASSWORD: "Database password for the selected DB user.",
+    COMPOSE_FILE: "Docker Compose file used by deployment update commands.",
+    DEPLOY_DIR: "Absolute path to the host checkout used by Docker deployment and system update.",
+    GIT_BRANCH: "Git branch used by manual and automated deployment updates.",
+    GIT_URL: "Git repository URL used by the deployment updater.",
     JWT_SECRET: "Signing secret for authentication tokens.",
     AUTH_DEFAULT_ADMIN_PASSWORD: "Seed password used when the auth seeder creates the admin user.",
+    SYSTEM_UPDATE_ENABLED: "Allows authenticated admins to trigger update actions from the app.",
+    SYSTEM_UPDATE_AUTO_ENABLED: "Documents whether host-level automatic update scheduling is enabled.",
+    SYSTEM_UPDATE_AUTO_CRON: "Host cron expression used when automatic updates are configured outside the app.",
   };
 
   return descriptions[key] ?? "Editable runtime environment value.";

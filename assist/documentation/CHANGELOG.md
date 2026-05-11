@@ -2,11 +2,59 @@
 
 ## Version State
 
-- Current package version: `1.0.72`
-- Current release tag: `v-1.0.72`
+- Current package version: `1.0.77`
+- Current release tag: `v-1.0.77`
 - Versioned changelog label format: `v 1.0.<reference>`
 - Version section format: `## v-1.0.<reference>`
 - Entry format: `### [v 1.0.<reference>] YYYY-MM-DD - Title`
+
+## v-1.0.77
+
+### [v 1.0.77] 2026-05-11 - Bump Version For Update Validation
+
+- Bumped workspace package manifests to `1.0.77`.
+- Updated changelog Version State to release tag `v-1.0.77`.
+- Refreshed execution tracking for the update validation batch.
+
+## v-1.0.76
+
+### [v 1.0.76] 2026-05-11 - Add Web Container Setup
+
+- Added setup-mode container boot so the app can start when `.env` is missing.
+- Added setup CLI commands for status, configure, pull, build, start, prepare-db, and deploy.
+- Added public setup API endpoints connected to the CLI for first-run web installation.
+- Added `/setup` frontend workflow with database and deployment configuration plus pull/build/start actions.
+- Updated app-only container usage instructions and revalidated setup CLI, compose config, and focused typechecks.
+
+## v-1.0.75
+
+### [v 1.0.75] 2026-05-11 - Move Container Deployment Files
+
+- Moved the app Dockerfile and Docker Compose file into `.container`.
+- Aligned the app compose network with the existing MariaDB `codexion-network`.
+- Updated MariaDB compose to expose `3307:3306` and create `cxnext_db` for fresh containers.
+- Added `.container/usage.md` with build, start, database create/update/fresh, and system update instructions.
+- Updated deploy scripts and updater CLI for `.container/docker-compose.yml`, then revalidated compose, typechecks, and Docker build.
+
+## v-1.0.74
+
+### [v 1.0.74] 2026-05-11 - Use External MariaDB For Docker Deployment
+
+- Removed the bundled MySQL service and volume from the app Docker Compose file.
+- Configured the app container to connect to an existing MariaDB container on the shared Docker network.
+- Updated deployment environment defaults for `mariadb`, root credentials, and `cxnext_db`.
+- Added deployment documentation for creating or attaching the MariaDB container and creating the database only when missing.
+- Revalidated Docker Compose config plus focused server and frontend typechecks.
+
+## v-1.0.73
+
+### [v 1.0.73] 2026-05-11 - Add Docker Deployment And System Update
+
+- Added Dockerfile, docker-compose, Docker ignore rules, deployment environment samples, and Ubuntu deployment documentation.
+- Added a system update CLI for preflight, status, clone/pull sync, build, restart, and full deploy using `.env` `GIT_URL` and branch settings.
+- Added protected server endpoints to run system update status and manual actions.
+- Added Settings > System Update frontend page and side menu entry with preflight, sync, build, restart, and deploy controls.
+- Added deployment keys to Core Settings and revalidated server/frontend typechecks plus local Docker image build.
 
 ## v-1.0.72
 

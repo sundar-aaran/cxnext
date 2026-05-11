@@ -1,0 +1,13 @@
+.git
+.next
+apps/frontend/.next
+apps/server/dist
+dist
+node_modules
+**/node_modules
+*.log
+.env
+.env.*
+!.env.example
+docker-data
+tmp

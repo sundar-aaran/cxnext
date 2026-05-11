@@ -1,30 +1,29 @@
 # Planning
 
-Active reference: `#72`
+Active reference: `#77`
 
 ## Active
 
-- `#72` Refine admin and GST interface details
+- `#77` Bump workspace version for update validation
   - Goal:
-    - Improve small-screen comfort and visual clarity for admin authorization forms and GST report totals.
+    - Move the workspace from `1.0.76` to `1.0.77` so the deployed app can exercise the system update workflow against a newer repository version.
   - Scope:
-    - Frontend Auth admin user and permission module surfaces.
-    - Frontend GST Statement total summary presentation and balance calculation.
-    - Execution tracking and changelog documentation for the active `1.0.72` reference.
+    - Workspace package manifest versions.
+    - Changelog Version State and new `v-1.0.77` changelog entry.
+    - Execution tracking files for the current batch.
   - Constraints:
-    - Preserve existing API contracts and auth bounded-context behavior.
-    - Keep changes scoped to interface layout, visual treatment, and report calculation direction.
-    - Do not overwrite unrelated dirty worktree changes.
-    - Keep active execution reference aligned to package/changelog version `1.0.72`.
+    - Keep the change limited to release/version metadata.
+    - Preserve the repository lockstep version policy.
+    - Do not modify deployment behavior while preparing this update test.
   - Planned validation:
-    - Run focused frontend typecheck after the UI refinements.
+    - Run the version sync helper.
+    - Search for stale `1.0.76` active version references in package manifests and changelog state.
   - Implemented:
-    - Reduced Permission module popup height with compact inputs, shorter textarea, and independently scrolling policy list.
-    - Converted User upsert to a single-column form and restyled the Active row in the same green enabled tone used elsewhere.
-    - Split GST total summaries into padded full-width outer cards with bordered inner cells.
-    - Added sign-based colours for GST balance/difference values: negative red, neutral gray, and positive green.
-    - Corrected GST balance direction to `Opening GST + Purchase GST - Sales GST`.
+    - Synchronized all 14 workspace package manifests to `1.0.77` with `pnpm version:sync -- --ref 77`.
+    - Updated `assist/documentation/CHANGELOG.md` Version State to `1.0.77` and `v-1.0.77`.
+    - Added the `v-1.0.77` changelog section for the update validation bump.
   - Validation:
-    - `pnpm --filter @cxnext/frontend typecheck`
+    - Confirmed every workspace `package.json` reports version `1.0.77`.
+    - Confirmed no stale active Version State references remain for `1.0.76`.
   - Residual risk:
-    - Visual fit should still be checked in-browser on the smallest target viewport because typecheck cannot verify exact modal comfort.
+    - Full build/typecheck was not run because this batch only changes release metadata.

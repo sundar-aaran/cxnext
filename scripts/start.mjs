@@ -1,10 +1,15 @@
 import { spawn } from "node:child_process";
+import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { loadRootEnv, resolveRuntimeEnv } from "./runtime-env.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const includeDesktop = process.argv.includes("--desktop");
+const envFileExists =
+  existsSync(path.join(root, ".env")) ||
+  (process.env.DEPLOY_DIR ? existsSync(path.join(process.env.DEPLOY_DIR, ".env")) : false);
+const setupMode = process.env.SETUP_MODE === "true" || !envFileExists;
 
 loadRootEnv(root);
 
@@ -95,7 +100,11 @@ function stopChildren(children) {
   }
 }
 
-await runPreflight();
+if (!setupMode) {
+  await runPreflight();
+} else {
+  process.stdout.write("cxnext setup mode: .env is missing, skipping database preflight.\n");
+}
 await releasePorts();
 
 const children = [

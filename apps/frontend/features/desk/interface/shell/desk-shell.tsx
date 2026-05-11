@@ -18,6 +18,7 @@ import {
   LineChart,
   Package,
   ReceiptText,
+  RefreshCcw,
   ScrollText,
   Settings,
   Shield,
@@ -202,12 +203,19 @@ const settingsNavItems = [
     href: "/desk/settings/duties-taxes",
     icon: <Landmark className="h-4 w-4" />,
   },
+  {
+    id: "settings-system-update",
+    label: "System Update",
+    href: "/desk/settings/system-update",
+    icon: <RefreshCcw className="h-4 w-4" />,
+  },
 ] as const;
 
 const settingsMenuLabels: Record<string, string> = {
   core: "Core Settings",
   "billing-layout": "Sales Settings",
   "duties-taxes": "Duties & Taxes",
+  "system-update": "System Update",
   settings: "Settings",
 };
 

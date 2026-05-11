@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, Boxes, Network, ShieldCheck } from "lucide-react";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@cxnext/ui";
+import { SetupRedirect } from "../../features/setup/interface/components/setup-redirect";
 
 const foundations = [
   { title: "Strict modules", detail: "Bounded contexts stay isolated and testable.", icon: Boxes },
@@ -19,6 +20,7 @@ const foundations = [
 export default function HomePage() {
   return (
     <div className="mx-auto max-w-6xl px-5 py-12 md:py-16">
+      <SetupRedirect />
       <section className="grid gap-8 md:grid-cols-[1.2fr_0.8fr] md:items-center">
         <div>
           <p className="text-sm font-medium text-primary">cxnext foundation</p>
