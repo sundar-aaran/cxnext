@@ -116,6 +116,20 @@ function resolveExecutable(commandName) {
   return commandName;
 }
 
+function isRunningInContainer() {
+  return existsSync("/.dockerenv");
+}
+
+function shellQuote(value) {
+  return `'${String(value).replaceAll("'", "'\\''")}'`;
+}
+
+async function currentContainerDeploySource() {
+  if (!isRunningInContainer()) return deployDir;
+  const template = `{{range .Mounts}}{{if eq .Destination "${deployDir}"}}{{.Source}}{{end}}{{end}}`;
+  return (await capture("docker", ["inspect", "cxnext-app", "--format", template])) || deployDir;
+}
+
 async function dockerCompose(args, options = {}) {
   const composeArgs = ["-f", composeFile, ...args];
   const direct = await run("docker", ["compose", ...composeArgs], options);
@@ -215,6 +229,38 @@ async function buildApp() {
 
 async function restartApp() {
   log("Restarting Docker app service");
+  if (isRunningInContainer()) {
+    const deploySource = await currentContainerDeploySource();
+    const helperName = `cxnext-update-helper-${Date.now()}`;
+    const helperImage = `cxnext-app:${env.APP_VERSION || "local"}`;
+    const restartCommand = `sleep 2; docker compose -f ${shellQuote(composeFile)} up -d app`;
+    const completed = await run(
+      "docker",
+      [
+        "run",
+        "-d",
+        "--rm",
+        "--name",
+        helperName,
+        "-v",
+        "/var/run/docker.sock:/var/run/docker.sock",
+        "--volumes-from",
+        "cxnext-app",
+        "-e",
+        `DEPLOY_SOURCE=${deploySource}`,
+        "-w",
+        deployDir,
+        helperImage,
+        "sh",
+        "-lc",
+        restartCommand,
+      ],
+      { cwd: deployDir },
+    );
+    if (completed.code !== 0) fail("Docker compose restart helper failed.", completed.stderr || completed.stdout);
+    return;
+  }
+
   const completed = await dockerCompose(["up", "-d", "app"], { cwd: deployDir });
   if (completed.code !== 0) fail("Docker compose restart failed.", completed.stderr);
 }

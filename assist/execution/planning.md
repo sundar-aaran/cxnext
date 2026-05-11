@@ -1,29 +1,41 @@
 # Planning
 
-Active reference: `#77`
+Active reference: `#78`
 
 ## Active
 
-- `#77` Bump workspace version for update validation
+- `#78` Fix container update Compose execution
   - Goal:
-    - Move the workspace from `1.0.76` to `1.0.77` so the deployed app can exercise the system update workflow against a newer repository version.
+    - Make the in-app setup and system update build/restart actions work from the Docker container by ensuring a Compose command is available and consistently resolved.
   - Scope:
-    - Workspace package manifest versions.
-    - Changelog Version State and new `v-1.0.77` changelog entry.
-    - Execution tracking files for the current batch.
+    - `.container/Dockerfile` runtime tooling.
+    - `scripts/system-update.mjs` Compose resolution and diagnostics.
+    - `scripts/setup.mjs` Compose build/start/prepare-db commands.
+    - Workspace version/changelog alignment for `1.0.78`.
+    - Local Docker E2E validation.
   - Constraints:
-    - Keep the change limited to release/version metadata.
-    - Preserve the repository lockstep version policy.
-    - Do not modify deployment behavior while preparing this update test.
+    - Keep the app compose file path unchanged.
+    - Continue supporting both `docker compose` and `docker-compose`.
+    - Do not change database contents except by non-destructive prepare/status checks.
   - Planned validation:
-    - Run the version sync helper.
-    - Search for stale `1.0.76` active version references in package manifests and changelog state.
+    - Build the app image locally through `.container/docker-compose.yml`.
+    - Restart the app container.
+    - Run system update preflight and build commands inside the running container.
+    - Confirm package/changelog version alignment.
   - Implemented:
-    - Synchronized all 14 workspace package manifests to `1.0.77` with `pnpm version:sync -- --ref 77`.
-    - Updated `assist/documentation/CHANGELOG.md` Version State to `1.0.77` and `v-1.0.77`.
-    - Added the `v-1.0.77` changelog section for the update validation bump.
+    - Installed Docker Compose v2.29.7 into the app image as both the Docker CLI plugin and `docker-compose` compatibility command.
+    - Updated setup Docker actions to try `docker compose` first and fall back to `docker-compose`.
+    - Added detached helper-container restart handling for setup and system update actions that are run from inside `cxnext-app`.
+    - Updated `.container/docker-compose.yml` to support an explicit `DEPLOY_SOURCE` bind mount override during helper-driven restarts.
+    - Synchronized workspace package manifests and changelog state to `1.0.78`.
   - Validation:
-    - Confirmed every workspace `package.json` reports version `1.0.77`.
-    - Confirmed no stale active Version State references remain for `1.0.76`.
+    - Passed `docker compose -f .container/docker-compose.yml config --quiet`.
+    - Passed local `docker compose -f .container/docker-compose.yml build app`.
+    - Passed local `docker compose -f .container/docker-compose.yml up -d app`.
+    - Confirmed the running container has Docker Compose v2.29.7.
+    - Passed in-container `node scripts/system-update.mjs preflight --json`.
+    - Passed in-container `node scripts/system-update.mjs build --json`.
+    - Passed in-container `node scripts/system-update.mjs restart --json`.
+    - Confirmed helper-driven restart preserved `/deploy/cxnext` as the real host bind mount and `/health` returned HTTP 200.
   - Residual risk:
-    - Full build/typecheck was not run because this batch only changes release metadata.
+    - The Compose v2 binary URL is pinned to the amd64 Linux release; non-amd64 production hosts would need a matching binary target.

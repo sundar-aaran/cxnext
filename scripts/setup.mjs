@@ -196,6 +196,69 @@ async function runStep(name, commandName, commandArgs) {
   return completed;
 }
 
+async function capture(commandName, commandArgs, options = {}) {
+  const completed = await run(commandName, commandArgs, options);
+  return completed.code === 0 ? completed.stdout.trim() : "";
+}
+
+async function runComposeStep(name, composeArgs) {
+  const direct = await run("docker", ["compose", "-f", ".container/docker-compose.yml", ...composeArgs]);
+  if (direct.code === 0) return direct;
+
+  const legacy = await run("docker-compose", ["-f", ".container/docker-compose.yml", ...composeArgs]);
+  if (legacy.code !== 0) {
+    fail(`${name} failed.`, legacy.stderr || legacy.stdout || direct.stderr || direct.stdout);
+  }
+  return legacy;
+}
+
+function isRunningInContainer() {
+  return existsSync("/.dockerenv");
+}
+
+function shellQuote(value) {
+  return `'${String(value).replaceAll("'", "'\\''")}'`;
+}
+
+async function currentContainerDeploySource() {
+  if (!isRunningInContainer()) return root;
+  const template = `{{range .Mounts}}{{if eq .Destination "${root}"}}{{.Source}}{{end}}{{end}}`;
+  return (await capture("docker", ["inspect", "cxnext-app", "--format", template])) || root;
+}
+
+async function runDetachedComposeStart() {
+  const env = readCurrentEnv();
+  const deploySource = await currentContainerDeploySource();
+  const helperName = `cxnext-setup-helper-${Date.now()}`;
+  const helperImage = `cxnext-app:${String(env.get("APP_VERSION") || "local")}`;
+  const composePath = String(env.get("COMPOSE_FILE") || ".container/docker-compose.yml");
+  const startCommand = `sleep 2; docker compose -f ${shellQuote(composePath)} up -d app`;
+  const completed = await run(
+    "docker",
+    [
+      "run",
+      "-d",
+      "--rm",
+      "--name",
+      helperName,
+      "-v",
+      "/var/run/docker.sock:/var/run/docker.sock",
+      "--volumes-from",
+      "cxnext-app",
+      "-e",
+      `DEPLOY_SOURCE=${deploySource}`,
+      "-w",
+      root,
+      helperImage,
+      "sh",
+      "-lc",
+      startCommand,
+    ],
+    { cwd: root },
+  );
+  if (completed.code !== 0) fail("Docker start helper failed.", completed.stderr || completed.stdout);
+}
+
 async function pullLatest() {
   const env = readCurrentEnv();
   const gitUrl = String(env.get("GIT_URL") ?? defaults.GIT_URL);
@@ -212,17 +275,22 @@ async function pullLatest() {
 }
 
 async function buildApp() {
-  await runStep("Docker build", "docker", ["compose", "-f", ".container/docker-compose.yml", "build", "app"]);
+  await runComposeStep("Docker build", ["build", "app"]);
   return output("ok", { message: "Application image built." });
 }
 
 async function startApp() {
-  await runStep("Docker start", "docker", ["compose", "-f", ".container/docker-compose.yml", "up", "-d", "app"]);
+  if (isRunningInContainer()) {
+    await runDetachedComposeStart();
+    return output("ok", { message: "Application container restart scheduled." });
+  }
+
+  await runComposeStep("Docker start", ["up", "-d", "app"]);
   return output("ok", { message: "Application container started." });
 }
 
 async function prepareDatabase() {
-  await runStep("Database prepare", "docker", ["compose", "-f", ".container/docker-compose.yml", "exec", "-T", "app", "pnpm", "db:prepare"]);
+  await runComposeStep("Database prepare", ["exec", "-T", "app", "pnpm", "db:prepare"]);
   return output("ok", { message: "Database prepared." });
 }
 

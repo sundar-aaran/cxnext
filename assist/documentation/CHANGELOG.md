@@ -2,11 +2,21 @@
 
 ## Version State
 
-- Current package version: `1.0.77`
-- Current release tag: `v-1.0.77`
+- Current package version: `1.0.78`
+- Current release tag: `v-1.0.78`
 - Versioned changelog label format: `v 1.0.<reference>`
 - Version section format: `## v-1.0.<reference>`
 - Entry format: `### [v 1.0.<reference>] YYYY-MM-DD - Title`
+
+## v-1.0.78
+
+### [v 1.0.78] 2026-05-11 - Fix Container Compose Update Execution
+
+- Installed Docker Compose v2 in the app container image so in-app update builds can run from the deployed container.
+- Updated setup CLI Docker actions to support both `docker compose` and `docker-compose`.
+- Added a detached Docker helper path for in-container restart actions so the app can replace itself without killing the restart command.
+- Updated the app compose bind mount to preserve the real host deploy source during helper-driven restarts.
+- Validated local Docker E2E for compose config, image build, in-container system update preflight, build, restart, preserved bind mounts, and health check.
 
 ## v-1.0.77
 
