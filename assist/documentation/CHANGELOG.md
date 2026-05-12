@@ -10,6 +10,19 @@
 
 ## v-1.0.87
 
+### [v 1.0.87] 2026-05-12 - Fix Public Client API Proxy Path
+
+- Changed client frontend API build URLs to use the same-domain `/api` prefix so login requests do not hit the Next frontend route space.
+- Added Nginx client server-block examples that proxy `/api/` to the backend ports and strip the public prefix before reaching Nest routes.
+- Documented the public browser API base path for client deployments.
+
+### [v 1.0.87] 2026-05-12 - Add Electron Windows Build Script
+
+- Added a root `build:electron` script that builds the required workspace packages, frontend, backend, and desktop app before packaging Electron.
+- Added `scripts/build-electron.mjs` with build-only, package-only, and unpacked directory options for repeatable Windows desktop builds.
+- Added Electron Builder configuration for the desktop workspace with NSIS installer output under `apps/desktop/release`.
+- Pinned `electron-builder` for the desktop package so the packaging command is available from the workspace.
+
 ### [v 1.0.87] 2026-05-12 - Align Client Containers For HTTPS Proxy
 
 - Updated client Docker env files for Codexsun, Cottonknits, Sukraa, and Ganapathi to use HTTPS same-domain public frontend and API URLs behind Nginx.

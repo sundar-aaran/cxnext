@@ -78,6 +78,11 @@ Open:
 
 - Frontend: `https://codexsun.com`
 - API health: `https://codexsun.com/health`
+- Browser API base: `https://codexsun.com/api`
+
+When using Nginx, serve the frontend at `/` and proxy `/api/` to the backend
+port with the `/api` prefix stripped. Example client blocks are available in
+`.container/proxy/nginx-clients.conf`.
 
 Stop:
 

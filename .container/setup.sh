@@ -127,6 +127,7 @@ Client '$CLIENT_NAME' is ready.
 
 Direct frontend: http://127.0.0.1:$FRONTEND_PUBLIC_PORT
 Direct API health: http://127.0.0.1:$APP_PUBLIC_PORT/health
+Public API base: ${NEXT_PUBLIC_API_URL:-}
 
 Compose file: $COMPOSE_FILE
 Container: $APP_CONTAINER_NAME

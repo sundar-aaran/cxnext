@@ -5,6 +5,7 @@ packages:
 allowBuilds:
   "@apollo/protobufjs": true
   "@nestjs/core": true
+  electron-winstaller: true
   esbuild: true
   sharp: true
   unrs-resolver: true

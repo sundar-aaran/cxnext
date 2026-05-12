@@ -160,7 +160,7 @@ const excludedEnvPolicy: readonly CoreEnvPolicyItem[] = [
   {
     key: "NEXT_PUBLIC_API_URL",
     status: "excluded",
-    reason: "Same value as BACKEND_URL; the frontend receives the derived backend URL at startup.",
+    reason: "Public browser API base; client deployments can use a same-domain /api proxy prefix.",
   },
   {
     key: "FRONTEND_TARGET",
