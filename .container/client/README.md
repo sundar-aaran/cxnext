@@ -41,6 +41,12 @@ The setup script:
   - API: `4007`
   - Container: `cxnext-sukraa-app`
   - Database: `sukraa_db`
+- `ganapathi`
+  - Frontend: `3008`
+  - API: `4008`
+  - Container: `cxnext-ganapathi-app`
+  - Database: `ganapathi_db`
+  - Domain: `ganapathi.codexsun.com`
 
 ## Manual codexsun usage
 
@@ -79,4 +85,4 @@ Stop:
 docker compose --env-file .container/client/codexsun/client.env -f .container/client/docker-compose.yml down
 ```
 
-For the other clients, swap `codexsun` for `cottonknits` or `sukraa`.
+For the other clients, swap `codexsun` for `cottonknits`, `sukraa`, or `ganapathi`.
