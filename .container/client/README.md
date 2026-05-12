@@ -28,23 +28,23 @@ The setup script:
 
 - `codexsun`
   - Frontend: `3005`
-  - API: `4005`
-  - Container: `cxnext-codexsun-app`
+  - API: `4021`
+  - Container: `codexsun-app`
   - Database: `codexsun_db`
 - `cottonknits`
   - Frontend: `3006`
-  - API: `4006`
-  - Container: `cxnext-cottonknits-app`
+  - API: `4022`
+  - Container: `cottonknits-app`
   - Database: `cottonknits_db`
 - `sukraa`
   - Frontend: `3007`
-  - API: `4007`
-  - Container: `cxnext-sukraa-app`
+  - API: `4023`
+  - Container: `sukraa-app`
   - Database: `sukraa_db`
 - `ganapathi`
   - Frontend: `3008`
-  - API: `4008`
-  - Container: `cxnext-ganapathi-app`
+  - API: `4024`
+  - Container: `ganapathi-app`
   - Database: `ganapathi_db`
   - Domain: `ganapathi.codexsun.com`
 
@@ -76,8 +76,8 @@ docker compose --env-file .container/client/codexsun/client.env -f .container/cl
 
 Open:
 
-- Frontend: `http://localhost:3005`
-- API health: `http://localhost:4005/health`
+- Frontend: `https://codexsun.com`
+- API health: `https://codexsun.com/health`
 
 Stop:
 

@@ -11,7 +11,7 @@ services:
         FRONTEND_URL: ${FRONTEND_URL}
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
         NEXT_PUBLIC_SETUP_LOOKUP_ENABLED: ${NEXT_PUBLIC_SETUP_LOOKUP_ENABLED:-false}
-    image: cxnext-app:${APP_VERSION:-local}
+    image: cxnext:${APP_VERSION:-v1}
     container_name: ${APP_CONTAINER_NAME:-app}
     restart: unless-stopped
     env_file:

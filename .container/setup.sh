@@ -71,6 +71,12 @@ create_database_if_missing() {
 }
 
 start_client() {
+  legacy_container_name="cxnext-$APP_NAME-app"
+  if [ "$legacy_container_name" != "$APP_CONTAINER_NAME" ] &&
+    docker ps -a --format '{{.Names}}' | grep -qx "$legacy_container_name"; then
+    docker rm -f "$legacy_container_name" >/dev/null
+  fi
+
   compose up -d --build app
 }
 

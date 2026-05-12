@@ -10,6 +10,14 @@
 
 ## v-1.0.87
 
+### [v 1.0.87] 2026-05-12 - Align Client Containers For HTTPS Proxy
+
+- Updated client Docker env files for Codexsun, Cottonknits, Sukraa, and Ganapathi to use HTTPS same-domain public frontend and API URLs behind Nginx.
+- Moved client backend host ports from the `4005-4008` range to `4021-4024` while keeping frontend host ports at `3005-3008`.
+- Trimmed client container names from `cxnext-*-app` to `*-app` and added setup cleanup for legacy prefixed containers.
+- Changed the shared client Docker image tag to `cxnext:v1` through `APP_VERSION=v1`.
+- Refreshed client deployment documentation with the updated port and container naming scheme.
+
 ### [v 1.0.87] 2026-05-12 - Harden Client Docker Setup And Login Recovery
 
 - Reworked client Docker setup to run the selected application client only, removing the Caddy reverse-proxy setup path.
