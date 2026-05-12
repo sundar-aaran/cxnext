@@ -5,12 +5,26 @@ import type {
   CompanyStatusFilter,
 } from "../domain/company";
 import { companyColumnCatalog } from "../domain/company";
-export {
-  getCompany,
+import { readStoredApplicationContext } from "../../auth/infrastructure/session-storage";
+import {
+  getCompany as getCompanyRecord,
   listCompanies,
   softDeleteCompany,
   upsertCompany,
 } from "../infrastructure/company-api";
+
+export {
+  getCompanyRecord as getCompany,
+  listCompanies,
+  softDeleteCompany,
+  upsertCompany,
+};
+
+export async function getActiveCompany(options?: { readonly signal?: AbortSignal }) {
+  const companyId = readStoredApplicationContext()?.company.id;
+  if (!companyId) return null;
+  return getCompanyRecord(Number(companyId), options);
+}
 
 export function formatCompanyDate(value: string | null) {
   if (!value) {

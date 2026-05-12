@@ -7,6 +7,11 @@ import type {
   AllocationRecord,
 } from "../../domain/entry-record";
 
+export interface EntryContextCriteria {
+  readonly companyId: string;
+  readonly accountingYearId: string;
+}
+
 export interface BillingItemInput extends Omit<
   BillingItemRecord,
   "id" | "parentId" | "lineSubtotal" | "lineTotal"
@@ -15,6 +20,9 @@ export interface BillingItemInput extends Omit<
 }
 
 export interface BillingEntryInput {
+  readonly companyId: string;
+  readonly accountingYearId: string;
+  readonly autoDocumentNo?: boolean;
   readonly documentNo?: string | null;
   readonly documentDate?: string | Date | null;
   readonly partyId?: string | null;
@@ -50,6 +58,9 @@ export interface AllocationInput extends Omit<
 }
 
 export interface MoneyEntryInput {
+  readonly companyId: string;
+  readonly accountingYearId: string;
+  readonly autoDocumentNo?: boolean;
   readonly documentNo?: string | null;
   readonly documentDate?: string | Date | null;
   readonly partyId?: string | null;
@@ -72,25 +83,47 @@ export interface MoneyEntryInput {
 }
 
 export interface EntriesRepository {
-  listBilling(kind: BillingEntryKind): Promise<readonly BillingEntryRecord[]>;
-  getBilling(kind: BillingEntryKind, entryId: string): Promise<BillingEntryRecord | null>;
+  listBilling(
+    kind: BillingEntryKind,
+    context: EntryContextCriteria,
+  ): Promise<readonly BillingEntryRecord[]>;
+  getBilling(
+    kind: BillingEntryKind,
+    entryId: string,
+    context: EntryContextCriteria,
+  ): Promise<BillingEntryRecord | null>;
   createBilling(kind: BillingEntryKind, input: BillingEntryInput): Promise<BillingEntryRecord>;
   updateBilling(
     kind: BillingEntryKind,
     entryId: string,
     input: BillingEntryInput,
   ): Promise<BillingEntryRecord | null>;
-  softDeleteBilling(kind: BillingEntryKind, entryId: string): Promise<boolean>;
+  softDeleteBilling(
+    kind: BillingEntryKind,
+    entryId: string,
+    context: EntryContextCriteria,
+  ): Promise<boolean>;
 
-  listMoney(kind: MoneyEntryKind): Promise<readonly MoneyEntryRecord[]>;
-  getMoney(kind: MoneyEntryKind, entryId: string): Promise<MoneyEntryRecord | null>;
+  listMoney(
+    kind: MoneyEntryKind,
+    context: EntryContextCriteria,
+  ): Promise<readonly MoneyEntryRecord[]>;
+  getMoney(
+    kind: MoneyEntryKind,
+    entryId: string,
+    context: EntryContextCriteria,
+  ): Promise<MoneyEntryRecord | null>;
   createMoney(kind: MoneyEntryKind, input: MoneyEntryInput): Promise<MoneyEntryRecord>;
   updateMoney(
     kind: MoneyEntryKind,
     entryId: string,
     input: MoneyEntryInput,
   ): Promise<MoneyEntryRecord | null>;
-  softDeleteMoney(kind: MoneyEntryKind, entryId: string): Promise<boolean>;
+  softDeleteMoney(
+    kind: MoneyEntryKind,
+    entryId: string,
+    context: EntryContextCriteria,
+  ): Promise<boolean>;
 }
 
 export const ENTRIES_REPOSITORY = Symbol("ENTRIES_REPOSITORY");

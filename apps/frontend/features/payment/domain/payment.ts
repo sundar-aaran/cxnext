@@ -39,6 +39,7 @@ export interface PaymentRecord {
 }
 
 export interface PaymentInput {
+  readonly autoDocumentNo?: boolean;
   readonly documentNo: string;
   readonly documentDate: string;
   readonly partyId: string | null;
@@ -111,6 +112,7 @@ export const paymentStatusFilters: readonly MasterListFilterOption[] = [
 export function defaultPaymentInput(): PaymentInput {
   return {
     documentNo: "",
+    autoDocumentNo: true,
     documentDate: new Date().toISOString().slice(0, 10),
     partyId: null,
     partyName: "",

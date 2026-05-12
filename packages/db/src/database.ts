@@ -336,6 +336,8 @@ export interface ProductsTable {
 interface BillingEntryTable {
   readonly id: Generated<number>;
   readonly uuid: string;
+  readonly company_id: number;
+  readonly accounting_year_id: number;
   readonly billing_address: string | null;
   readonly place_of_supply: string | null;
   readonly reference_no: string | null;
@@ -424,6 +426,8 @@ export interface PurchaseItemsTable extends BillingItemTable {
 interface MoneyEntryTable {
   readonly id: Generated<number>;
   readonly uuid: string;
+  readonly company_id: number;
+  readonly accounting_year_id: number;
   readonly party_id: string | null;
   readonly party_name: string;
   readonly party_type: string | null;
@@ -484,6 +488,20 @@ export interface PaymentAllocationsTable extends AllocationTable {
 
 export interface ReceiptAllocationsTable extends AllocationTable {
   readonly receipt_id: number;
+}
+
+export interface DocumentNumberSettingsTable {
+  readonly id: Generated<number>;
+  readonly company_id: number;
+  readonly accounting_year_id: number;
+  readonly entry_kind: string;
+  readonly prefix: string;
+  readonly separator: string;
+  readonly next_number: ColumnType<number, number | string | undefined, number | string>;
+  readonly padding: ColumnType<number, number | string | undefined, number | string>;
+  readonly auto_enabled: ColumnType<boolean, boolean | number | undefined, boolean | number>;
+  readonly created_at: TimestampColumn;
+  readonly updated_at: TimestampColumn;
 }
 
 export interface CommonCountriesTable {
@@ -561,6 +579,7 @@ export interface DatabaseSchema {
   readonly contact_social_links: ContactSocialLinksTable;
   readonly contacts: ContactsTable;
   readonly default_companies: DefaultCompaniesTable;
+  readonly document_number_settings: DocumentNumberSettingsTable;
   readonly common_cities: CommonCitiesTable;
   readonly common_countries: CommonCountriesTable;
   readonly common_districts: CommonDistrictsTable;

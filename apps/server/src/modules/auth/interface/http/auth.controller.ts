@@ -32,6 +32,7 @@ import {
   UpdateAuthUserUseCase,
 } from "../../application/use-cases/user-admin.use-cases";
 import { LoginUseCase } from "../../application/use-cases/login.use-case";
+import { ChangePasswordUseCase } from "../../application/use-cases/change-password.use-case";
 import { AUTH_REPOSITORY, type AuthRepository } from "../../application/services/auth.repository";
 import { AuthGuard } from "./auth.guard";
 import { CurrentAuth, RequirePermissions, type AuthRequestContext } from "./auth-context";
@@ -57,6 +58,11 @@ interface UserUpsertRequest {
   readonly password?: unknown;
   readonly isActive?: unknown;
   readonly roleKeys?: unknown;
+}
+
+interface ChangePasswordRequest {
+  readonly currentPassword?: unknown;
+  readonly nextPassword?: unknown;
 }
 
 interface RoleUpsertRequest {
@@ -87,6 +93,7 @@ interface PermissionModuleUpsertRequest {
 export class AuthController {
   public constructor(
     private readonly loginUseCase: LoginUseCase,
+    private readonly changePasswordUseCase: ChangePasswordUseCase,
     private readonly listUsersUseCase: ListAuthUsersUseCase,
     private readonly getUserUseCase: GetAuthUserUseCase,
     private readonly createUserUseCase: CreateAuthUserUseCase,
@@ -126,6 +133,21 @@ export class AuthController {
     return toAuthUserResponse(auth.user);
   }
 
+  @Patch("me/password")
+  @RequirePermissions(modulePermission("auth", "read"))
+  public async changePassword(
+    @CurrentAuth() auth: AuthRequestContext,
+    @Body() body: ChangePasswordRequest,
+  ) {
+    const currentPassword = typeof body.currentPassword === "string" ? body.currentPassword : "";
+    const nextPassword = typeof body.nextPassword === "string" ? body.nextPassword : "";
+    return this.changePasswordUseCase.execute({
+      userId: auth.user.id,
+      currentPassword,
+      nextPassword,
+    });
+  }
+
   @Post("logout")
   @RequirePermissions(modulePermission("auth", "read"))
   public async logout(@CurrentAuth() auth: AuthRequestContext) {
@@ -145,7 +167,8 @@ export class AuthController {
   public async getUser(@Param("userId") userId: string, @CurrentAuth() auth: AuthRequestContext) {
     const user = await this.getUserUseCase.execute(userId);
     if (!user) throw new NotFoundException(`User "${userId}" was not found.`);
-    if (!canSeeProtectedSuperAdmin(auth, user)) throw new NotFoundException(`User "${userId}" was not found.`);
+    if (!canSeeProtectedSuperAdmin(auth, user))
+      throw new NotFoundException(`User "${userId}" was not found.`);
     return toAuthUserResponse(user);
   }
 
@@ -167,7 +190,8 @@ export class AuthController {
   ) {
     const existing = await this.getUserUseCase.execute(userId);
     if (!existing) throw new NotFoundException(`User "${userId}" was not found.`);
-    if (!canSeeProtectedSuperAdmin(auth, existing)) throw new NotFoundException(`User "${userId}" was not found.`);
+    if (!canSeeProtectedSuperAdmin(auth, existing))
+      throw new NotFoundException(`User "${userId}" was not found.`);
 
     const request = parseUserRequest(body, false);
     assertSuperAdminRequestAllowed(request, existing.email);
@@ -180,12 +204,17 @@ export class AuthController {
   @RequirePermissions(modulePermission("auth", "read"))
   public async listRoles(@CurrentAuth() auth: AuthRequestContext) {
     const roles = await this.listRolesUseCase.execute();
-    return roles.filter((role) => canSeeProtectedSuperAdminRole(auth, role)).map(toAuthRoleResponse);
+    return roles
+      .filter((role) => canSeeProtectedSuperAdminRole(auth, role))
+      .map(toAuthRoleResponse);
   }
 
   @Post("roles")
   @RequirePermissions(modulePermission("auth", "update"))
-  public async createRole(@Body() body: RoleUpsertRequest, @CurrentAuth() auth: AuthRequestContext) {
+  public async createRole(
+    @Body() body: RoleUpsertRequest,
+    @CurrentAuth() auth: AuthRequestContext,
+  ) {
     const request = parseRoleRequest(body);
     assertSuperAdminRoleRequestAllowed(auth, request.key);
     const role = await this.createRoleUseCase.execute(request);
@@ -209,10 +238,14 @@ export class AuthController {
 
   @Delete("roles/:roleId")
   @RequirePermissions(modulePermission("auth", "update"))
-  public async deleteRole(@Param("roleId") roleId: string, @CurrentAuth() auth: AuthRequestContext) {
+  public async deleteRole(
+    @Param("roleId") roleId: string,
+    @CurrentAuth() auth: AuthRequestContext,
+  ) {
     await this.getVisibleRole(roleId, auth);
     const deleted = await this.deleteRoleUseCase.execute(roleId);
-    if (!deleted) throw new NotFoundException(`Role "${roleId}" was not found or cannot be deleted.`);
+    if (!deleted)
+      throw new NotFoundException(`Role "${roleId}" was not found or cannot be deleted.`);
     return { deleted: true };
   }
 
@@ -226,7 +259,9 @@ export class AuthController {
   @Post("permissions")
   @RequirePermissions(modulePermission("auth", "update"))
   public async createPermissionModule(@Body() body: PermissionModuleUpsertRequest) {
-    const moduleRecord = await this.createPermissionModuleUseCase.execute(parsePermissionModuleRequest(body));
+    const moduleRecord = await this.createPermissionModuleUseCase.execute(
+      parsePermissionModuleRequest(body),
+    );
     return toAuthPermissionModuleResponse(moduleRecord);
   }
 
@@ -240,7 +275,8 @@ export class AuthController {
       moduleId,
       parsePermissionModuleRequest(body),
     );
-    if (!moduleRecord) throw new NotFoundException(`Permission module "${moduleId}" was not found.`);
+    if (!moduleRecord)
+      throw new NotFoundException(`Permission module "${moduleId}" was not found.`);
     return toAuthPermissionModuleResponse(moduleRecord);
   }
 
@@ -249,7 +285,9 @@ export class AuthController {
   public async deletePermissionModule(@Param("moduleId") moduleId: string) {
     const deleted = await this.deletePermissionModuleUseCase.execute(moduleId);
     if (!deleted) {
-      throw new NotFoundException(`Permission module "${moduleId}" was not found or cannot be deleted.`);
+      throw new NotFoundException(
+        `Permission module "${moduleId}" was not found or cannot be deleted.`,
+      );
     }
     return { deleted: true };
   }
@@ -270,7 +308,10 @@ export class AuthController {
 
   @Patch("policies/:policyId")
   @RequirePermissions(modulePermission("auth", "update"))
-  public async updatePolicy(@Param("policyId") policyId: string, @Body() body: PolicyUpsertRequest) {
+  public async updatePolicy(
+    @Param("policyId") policyId: string,
+    @Body() body: PolicyUpsertRequest,
+  ) {
     const policy = await this.updatePolicyUseCase.execute(policyId, parsePolicyRequest(body));
     if (!policy) throw new NotFoundException(`Policy "${policyId}" was not found.`);
     return toAuthPolicyResponse(policy);
@@ -280,7 +321,8 @@ export class AuthController {
   @RequirePermissions(modulePermission("auth", "update"))
   public async deletePolicy(@Param("policyId") policyId: string) {
     const deleted = await this.deletePolicyUseCase.execute(policyId);
-    if (!deleted) throw new NotFoundException(`Policy "${policyId}" was not found or cannot be deleted.`);
+    if (!deleted)
+      throw new NotFoundException(`Policy "${policyId}" was not found or cannot be deleted.`);
     return { deleted: true };
   }
 
@@ -292,7 +334,9 @@ export class AuthController {
       .filter((gate) => canSeeProtectedSuperAdmin(auth, gate))
       .map((gate) => ({
         ...toAuthGateResponse(gate),
-        roleKeys: gate.roleKeys.filter((roleKey) => canSeeProtectedSuperAdminRole(auth, { key: roleKey })),
+        roleKeys: gate.roleKeys.filter((roleKey) =>
+          canSeeProtectedSuperAdminRole(auth, { key: roleKey }),
+        ),
       }));
   }
 
@@ -346,10 +390,13 @@ function assertSuperAdminRequestAllowed(
   existingEmail?: string,
 ) {
   const requestedProtectedEmail = request.email.trim().toLowerCase() === protectedSuperAdminEmail;
-  const isExistingProtectedAccount = existingEmail?.trim().toLowerCase() === protectedSuperAdminEmail;
+  const isExistingProtectedAccount =
+    existingEmail?.trim().toLowerCase() === protectedSuperAdminEmail;
 
   if (requestedProtectedEmail && !isExistingProtectedAccount) {
-    throw new ForbiddenException("The protected super admin email cannot be assigned to another user.");
+    throw new ForbiddenException(
+      "The protected super admin email cannot be assigned to another user.",
+    );
   }
 
   if (isExistingProtectedAccount && !requestedProtectedEmail) {
@@ -357,11 +404,15 @@ function assertSuperAdminRequestAllowed(
   }
 
   if (isExistingProtectedAccount && !request.roleKeys.includes("super_admin")) {
-    throw new ForbiddenException("The protected super admin account must keep the super_admin role.");
+    throw new ForbiddenException(
+      "The protected super admin account must keep the super_admin role.",
+    );
   }
 
   if (request.roleKeys.includes("super_admin") && !isExistingProtectedAccount) {
-    throw new ForbiddenException("Only the protected super admin account can use the super_admin role.");
+    throw new ForbiddenException(
+      "Only the protected super admin account can use the super_admin role.",
+    );
   }
 }
 

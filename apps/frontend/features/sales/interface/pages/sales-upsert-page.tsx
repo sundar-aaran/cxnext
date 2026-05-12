@@ -15,20 +15,18 @@ import {
 } from "@cxnext/ui";
 import {
   getSales,
-  listSales,
   listSalesContactLookups,
   listSalesProductLookups,
   prepareSalesInput,
   upsertSales,
 } from "../../application/sales-service";
-import { listCompanies } from "../../../company/application/company-service";
+import { getActiveCompany } from "../../../company/application/company-service";
 import { getCoreEnvSettings } from "../../../settings/infrastructure/core-settings-api";
-import { loadSoftwareSettings } from "../../../settings/application/software-settings-service";
+import { getNextDocumentNumber } from "../../../document-settings/infrastructure/document-settings-api";
 import {
   defaultSalesInput,
   type SalesInput,
   type SalesLookupOption,
-  type SalesRecord,
 } from "../../domain/sales";
 import { SalesVoucherTabs, salesTypeOptions } from "../components/sales-voucher-form";
 
@@ -58,32 +56,33 @@ export function SalesUpsertPage({ salesId }: { readonly salesId?: number }) {
         setProducts([]);
       });
     if (!salesId) {
-      const configuredDocumentNo = nextSalesDocumentNo();
-      void listSales({ signal: controller.signal })
-        .then((records) => {
+      void getNextDocumentNumber("sales", { signal: controller.signal })
+        .then((setting) => {
           if (controller.signal.aborted) return;
-          const documentNo = nextSalesDocumentNo(records);
+          if (!setting.autoEnabled) {
+            setForm((current) => ({ ...current, autoDocumentNo: false }));
+            return;
+          }
           setForm((current) =>
-            current.documentNo === configuredDocumentNo || !current.documentNo.trim()
-              ? { ...current, documentNo }
+            current.autoDocumentNo || !current.documentNo.trim()
+              ? { ...current, autoDocumentNo: true, documentNo: setting.preview }
               : current,
           );
         })
         .catch((error) => {
           if (!isAbortError(error)) {
-            setForm((current) =>
-              current.documentNo.trim() ? current : { ...current, documentNo: configuredDocumentNo },
-            );
+            toast.error("Could not load next invoice number", {
+              description: getErrorMessage(error),
+            });
           }
         });
     }
     void Promise.all([
-      listCompanies({ signal: controller.signal }),
+      getActiveCompany({ signal: controller.signal }),
       getCoreEnvSettings({ signal: controller.signal }).catch(() => null),
     ])
-      .then(([companies, settings]) => {
+      .then(([company, settings]) => {
         if (controller.signal.aborted) return;
-        const company = companies.find((item) => item.isPrimary) ?? companies[0] ?? null;
         setIndustryCode(getAppTypeFromSettings(settings) ?? company?.industryCode ?? null);
         setIndustryName(company?.industryName ?? null);
       })
@@ -105,6 +104,7 @@ export function SalesUpsertPage({ salesId }: { readonly salesId?: number }) {
         setForm({
           ...defaultSalesInput(),
           ...record,
+          autoDocumentNo: false,
           documentDate: record.documentDate.slice(0, 10),
           dueDate: record.dueDate ? record.dueDate.slice(0, 10) : null,
           eInvoiceAckDate: record.eInvoiceAckDate ? record.eInvoiceAckDate.slice(0, 10) : null,
@@ -246,55 +246,18 @@ function SalesDiagnosticBanner({ diagnostic }: { readonly diagnostic: SalesDiagn
 function createSalesVoucherInput(): SalesInput {
   return {
     ...defaultSalesInput(),
-    documentNo: nextSalesDocumentNo(),
     items: [],
     placeOfSupply: salesTypeOptions[0].value,
   };
 }
 
-function nextSalesDocumentNo(records: readonly Pick<SalesRecord, "documentNo">[] = []) {
-  const settings = loadSoftwareSettings().salesDocumentSettings;
-  const prefix = settings.invoicePrefix.trim();
-  const serialStart = settings.invoiceSerialStart.trim() || "1";
-  const startNumber = parseSerialNumber(serialStart) ?? 1;
-  const serialWidth = serialStart.length;
-  const existingSerials = records
-    .map((record) => parseExistingInvoiceSerial(record.documentNo, prefix))
-    .filter((value): value is number => value !== null);
-  const nextSerial = existingSerials.length
-    ? Math.max(startNumber - 1, ...existingSerials) + 1
-    : startNumber;
-
-  return formatSalesDocumentNo(prefix, nextSerial, serialWidth);
-}
-
-function parseExistingInvoiceSerial(documentNo: string, prefix: string) {
-  const trimmedDocumentNo = documentNo.trim();
-  const serialText = prefix
-    ? trimmedDocumentNo.toLowerCase().startsWith(`${prefix.toLowerCase()}-`)
-      ? trimmedDocumentNo.slice(prefix.length + 1)
-      : ""
-    : trimmedDocumentNo;
-
-  return parseSerialNumber(serialText);
-}
-
-function parseSerialNumber(value: string) {
-  return /^\d+$/.test(value) ? Number.parseInt(value, 10) : null;
-}
-
-function formatSalesDocumentNo(prefix: string, serial: number, width: number) {
-  const serialText = String(serial).padStart(width, "0");
-  return [prefix, serialText].filter(Boolean).join("-");
-}
-
-function getAppTypeFromSettings(
-  settings: Awaited<ReturnType<typeof getCoreEnvSettings>> | null,
-) {
-  return settings?.groups
-    .flatMap((group) => group.settings)
-    .find((setting) => setting.key === "APP_TYPE")
-    ?.value.trim() || null;
+function getAppTypeFromSettings(settings: Awaited<ReturnType<typeof getCoreEnvSettings>> | null) {
+  return (
+    settings?.groups
+      .flatMap((group) => group.settings)
+      .find((setting) => setting.key === "APP_TYPE")
+      ?.value.trim() || null
+  );
 }
 
 function isAbortError(error: unknown) {

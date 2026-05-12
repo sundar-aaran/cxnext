@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { DocumentSettingsModule } from "../document-settings/document-settings.module";
 import { CreateBillingEntryUseCase } from "./application/use-cases/create-billing-entry.use-case";
 import { CreateMoneyEntryUseCase } from "./application/use-cases/create-money-entry.use-case";
 import { DeleteBillingEntryUseCase } from "./application/use-cases/delete-billing-entry.use-case";
@@ -15,6 +16,7 @@ import { EntriesResolver } from "./interface/graphql/entries.resolver";
 import { EntriesController } from "./interface/http/entries.controller";
 
 @Module({
+  imports: [DocumentSettingsModule],
   controllers: [EntriesController],
   providers: [
     EntriesRegistryBootstrap,

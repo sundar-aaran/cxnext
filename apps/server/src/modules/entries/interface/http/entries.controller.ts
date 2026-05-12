@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -8,6 +9,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
 } from "@nestjs/common";
 import { RequirePermissions } from "../../../auth/interface/http/auth-context";
 import { entryPermission } from "../../../auth/interface/http/module-permissions";
@@ -24,6 +26,7 @@ import { UpdateBillingEntryUseCase } from "../../application/use-cases/update-bi
 import { UpdateMoneyEntryUseCase } from "../../application/use-cases/update-money-entry.use-case";
 import type {
   BillingEntryInput,
+  EntryContextCriteria,
   MoneyEntryInput,
 } from "../../application/services/entries.repository";
 import { toBillingEntryResponse, toMoneyEntryResponse } from "./entry-response";
@@ -49,26 +52,32 @@ export class EntriesController {
 
   @Get(":kind")
   @RequirePermissions(entryPermission("read"))
-  public async list(@Param("kind") kind: string) {
+  public async list(@Param("kind") kind: string, @Query() query: Record<string, unknown>) {
+    const context = parseContext(query);
     if (isBillingKind(kind)) {
-      return (await this.listBillingUseCase.execute(kind)).map(toBillingEntryResponse);
+      return (await this.listBillingUseCase.execute(kind, context)).map(toBillingEntryResponse);
     }
     if (isMoneyKind(kind)) {
-      return (await this.listMoneyUseCase.execute(kind)).map(toMoneyEntryResponse);
+      return (await this.listMoneyUseCase.execute(kind, context)).map(toMoneyEntryResponse);
     }
     throw new NotFoundException(`Entry kind "${kind}" was not found.`);
   }
 
   @Get(":kind/:entryId")
   @RequirePermissions(entryPermission("read"))
-  public async getById(@Param("kind") kind: string, @Param("entryId") entryId: string) {
+  public async getById(
+    @Param("kind") kind: string,
+    @Param("entryId") entryId: string,
+    @Query() query: Record<string, unknown>,
+  ) {
+    const context = parseContext(query);
     if (isBillingKind(kind)) {
-      const entry = await this.getBillingUseCase.execute(kind, entryId);
+      const entry = await this.getBillingUseCase.execute(kind, entryId, context);
       if (!entry) throw new NotFoundException(`Entry "${entryId}" was not found.`);
       return toBillingEntryResponse(entry);
     }
     if (isMoneyKind(kind)) {
-      const entry = await this.getMoneyUseCase.execute(kind, entryId);
+      const entry = await this.getMoneyUseCase.execute(kind, entryId, context);
       if (!entry) throw new NotFoundException(`Entry "${entryId}" was not found.`);
       return toMoneyEntryResponse(entry);
     }
@@ -81,6 +90,7 @@ export class EntriesController {
     @Param("kind") kind: string,
     @Body() body: BillingEntryInput | MoneyEntryInput,
   ) {
+    parseContext(body as unknown as Record<string, unknown>);
     if (isBillingKind(kind)) {
       return toBillingEntryResponse(
         await this.createBillingUseCase.execute(kind, body as BillingEntryInput),
@@ -101,6 +111,7 @@ export class EntriesController {
     @Param("entryId") entryId: string,
     @Body() body: BillingEntryInput | MoneyEntryInput,
   ) {
+    parseContext(body as unknown as Record<string, unknown>);
     if (isBillingKind(kind)) {
       const entry = await this.updateBillingUseCase.execute(
         kind,
@@ -120,15 +131,39 @@ export class EntriesController {
 
   @Delete(":kind/:entryId")
   @RequirePermissions(entryPermission("delete"))
-  public async softDelete(@Param("kind") kind: string, @Param("entryId") entryId: string) {
+  public async softDelete(
+    @Param("kind") kind: string,
+    @Param("entryId") entryId: string,
+    @Query() query: Record<string, unknown>,
+  ) {
+    const context = parseContext(query);
     const wasDeleted = isBillingKind(kind)
-      ? await this.deleteBillingUseCase.execute(kind, entryId)
+      ? await this.deleteBillingUseCase.execute(kind, entryId, context)
       : isMoneyKind(kind)
-        ? await this.deleteMoneyUseCase.execute(kind, entryId)
+        ? await this.deleteMoneyUseCase.execute(kind, entryId, context)
         : false;
     if (!wasDeleted) throw new NotFoundException(`Entry "${entryId}" was not found.`);
     return { deleted: true };
   }
+}
+
+function parseContext(source: Record<string, unknown>): EntryContextCriteria {
+  const companyId = textValue(source.companyId);
+  const accountingYearId = textValue(source.accountingYearId);
+  if (!companyId || !accountingYearId) {
+    throw new BadRequestException("Company and accounting year context are required.");
+  }
+  return { companyId, accountingYearId };
+}
+
+function textValue(value: unknown) {
+  if (typeof value !== "string" || !value.trim()) {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  const numericValue = Number(trimmed);
+  return Number.isInteger(numericValue) && numericValue > 0 ? trimmed : null;
 }
 
 function isBillingKind(kind: string): kind is BillingEntryKind {

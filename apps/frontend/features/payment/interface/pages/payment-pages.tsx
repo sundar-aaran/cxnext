@@ -26,7 +26,8 @@ import {
   SelectValue,
   buildMasterListShowingLabel,
 } from "@cxnext/ui";
-import { listCompanies } from "../../../company/application/company-service";
+import { getActiveCompany } from "../../../company/application/company-service";
+import { getNextDocumentNumber } from "../../../document-settings/infrastructure/document-settings-api";
 import type { CompanyRecord } from "../../../company/domain/company";
 import { EntryCollaborationPanel } from "../../../entries/interface/components/entry-collaboration-panel";
 import {
@@ -274,8 +275,8 @@ export function PaymentShowPage({
   useEffect(() => void getPayment(paymentId).then(setRecord), [paymentId]);
   useEffect(() => {
     const controller = new AbortController();
-    void listCompanies({ signal: controller.signal })
-      .then((companies) => setCompany(companies.find((item) => item.isPrimary) ?? companies[0] ?? null))
+    void getActiveCompany({ signal: controller.signal })
+      .then(setCompany)
       .catch(() => setCompany(null));
     return () => controller.abort();
   }, []);
@@ -377,9 +378,35 @@ export function PaymentUpsertPage({ paymentId }: { readonly paymentId?: number }
         setForm({
           ...defaultPaymentInput(),
           ...record,
+          autoDocumentNo: false,
           documentDate: record.documentDate.slice(0, 10),
         });
     });
+  }, [paymentId]);
+
+  useEffect(() => {
+    if (paymentId) return;
+    const controller = new AbortController();
+    void getNextDocumentNumber("payment", { signal: controller.signal })
+      .then((setting) => {
+        if (!setting.autoEnabled) {
+          setForm((current) => ({ ...current, autoDocumentNo: false }));
+          return;
+        }
+        setForm((current) =>
+          current.autoDocumentNo || !current.documentNo.trim()
+            ? { ...current, autoDocumentNo: true, documentNo: setting.preview }
+            : current,
+        );
+      })
+      .catch((error) => {
+        if (!isAbortError(error)) {
+          toast.error("Could not load next payment number", {
+            description: getErrorMessage(error),
+          });
+        }
+      });
+    return () => controller.abort();
   }, [paymentId]);
 
   useEffect(() => {
@@ -502,7 +529,13 @@ function PaymentDetailsTab({
       </div>
       <div className="space-y-5">
         <Field label="Payment no">
-          <Input className="h-11 rounded-md" value={form.documentNo} onChange={(event) => setForm({ ...form, documentNo: event.target.value })} />
+          <Input
+            className="h-11 rounded-md"
+            value={form.documentNo}
+            onChange={(event) =>
+              setForm({ ...form, autoDocumentNo: false, documentNo: event.target.value })
+            }
+          />
         </Field>
         <Field label="Payment Date">
           <Input className="h-11 rounded-md text-right" type="date" value={form.documentDate} onChange={(event) => setForm({ ...form, documentDate: event.target.value })} />

@@ -18,9 +18,7 @@ import {
   LogOut,
   Menu,
   MoonStar,
-  Plus,
   ReceiptText,
-  ShieldCheck,
   SlidersHorizontal,
   Sparkles,
   SunMedium,
@@ -65,8 +63,23 @@ export interface DashboardNavGroup {
   readonly subGroups?: readonly DashboardNavGroup[];
 }
 
+export interface DashboardCompanySwitcherOption {
+  readonly id: string;
+  readonly name: string;
+  readonly code?: string | null;
+  readonly subtitle?: string | null;
+  readonly isActive?: boolean;
+}
+
 export interface DashboardShellProps {
   readonly brand: string;
+  readonly brandSubtitle?: string;
+  readonly companySwitcher?: {
+    readonly label?: string;
+    readonly activeCompanyId?: string | null;
+    readonly companies: readonly DashboardCompanySwitcherOption[];
+    readonly onSelectCompany: (companyId: string) => void;
+  };
   readonly workspace: string;
   readonly navItems: readonly DashboardNavItem[];
   readonly navGroups?: readonly DashboardNavGroup[];
@@ -91,30 +104,6 @@ const switchableApps = [
   { id: "task", label: "Task", href: "/desk/cxsun/queue", icon: SlidersHorizontal },
   { id: "tally", label: "Tally", href: "/desk/cxsun/records", icon: Database },
   { id: "crm", label: "Crm", href: "/desk/cxsun", icon: Users },
-] as const;
-
-const teams = [
-  {
-    id: "acme-inc",
-    name: "Acme Inc",
-    plan: "Enterprise",
-    shortcut: "Cmd+1",
-    icon: Building2,
-  },
-  {
-    id: "acme-corp",
-    name: "Acme Corp.",
-    plan: "Growth",
-    shortcut: "Cmd+2",
-    icon: SlidersHorizontal,
-  },
-  {
-    id: "evil-corp",
-    name: "Evil Corp.",
-    plan: "Audit",
-    shortcut: "Cmd+3",
-    icon: ShieldCheck,
-  },
 ] as const;
 
 const notifications = [
@@ -283,6 +272,8 @@ function storeOpenNavGroups(openGroups: Record<string, boolean>) {
 
 export function DashboardShell({
   brand,
+  brandSubtitle = "Company",
+  companySwitcher,
   workspace,
   navItems,
   navGroups,
@@ -329,6 +320,11 @@ export function DashboardShell({
     name: "Sundar",
     email: "sundar@sundar.com",
   };
+  const activeCompany =
+    companySwitcher?.companies.find((company) => company.id === companySwitcher.activeCompanyId) ??
+    null;
+  const companySwitcherTitle = activeCompany?.name ?? brand;
+  const companySwitcherSubtitle = activeCompany?.subtitle ?? brandSubtitle;
 
   function markAllNotificationsRead() {
     setReadNotificationIds(new Set(notifications.map((item) => item.id)));
@@ -436,7 +432,7 @@ export function DashboardShell({
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                aria-label={`Switch team for ${brand}`}
+                aria-label={`Switch company for ${brand}`}
                 className={cn(
                   "group flex min-w-0 cursor-pointer items-center rounded-md outline-none transition-[background-color,gap,padding,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-sidebar-accent focus-visible:ring-1 focus-visible:ring-ring data-[state=open]:bg-sidebar-accent",
                   labelsHidden ? "justify-center p-0" : "w-full gap-3 p-2 text-left",
@@ -452,10 +448,10 @@ export function DashboardShell({
                 </span>
                 <span className={cn("min-w-0 flex-1", sidebarLabelClass(labelsHidden))}>
                   <span className="block truncate text-sm font-semibold text-foreground">
-                    {teams[0].name}
+                    {companySwitcherTitle}
                   </span>
                   <span className="block truncate text-xs text-muted-foreground">
-                    {teams[0].plan}
+                    {companySwitcherSubtitle}
                   </span>
                 </span>
                 <ChevronsUpDown
@@ -475,28 +471,42 @@ export function DashboardShell({
               className="w-60 rounded-lg p-1"
             >
               <DropdownMenuLabel className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
-                Teams
+                {companySwitcher?.label ?? "Companies"}
               </DropdownMenuLabel>
               <DropdownMenuGroup>
-                {teams.map((team) => (
-                  <DropdownMenuItem key={team.id} className="gap-3 rounded-md px-2 py-2">
+                {(companySwitcher?.companies ?? []).map((company) => (
+                  <DropdownMenuItem
+                    key={company.id}
+                    className="gap-3 rounded-md px-2 py-2"
+                    disabled={company.isActive === false}
+                    onSelect={() => {
+                      companySwitcher?.onSelectCompany(company.id);
+                    }}
+                  >
                     <span className="flex size-7 shrink-0 items-center justify-center rounded-md border border-border bg-background text-muted-foreground">
-                      <team.icon className="size-4" />
+                      <Building2 className="size-4" />
                     </span>
-                    <span className="min-w-0 flex-1 truncate font-medium text-foreground">
-                      {team.name}
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-medium text-foreground">
+                        {company.name}
+                      </span>
+                      {company.subtitle ? (
+                        <span className="block truncate text-xs text-muted-foreground">
+                          {company.subtitle}
+                        </span>
+                      ) : null}
                     </span>
-                    <span className="text-xs text-muted-foreground">{team.shortcut}</span>
+                    {company.id === companySwitcher?.activeCompanyId ? (
+                      <Check className="size-4 text-foreground" />
+                    ) : null}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuGroup>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="gap-3 rounded-md px-2 py-2 text-muted-foreground">
-                <span className="flex size-7 shrink-0 items-center justify-center rounded-md border border-border bg-background">
-                  <Plus className="size-4" />
-                </span>
-                <span className="font-medium">Add team</span>
-              </DropdownMenuItem>
+              {companySwitcher && companySwitcher.companies.length === 0 ? (
+                <DropdownMenuItem disabled className="rounded-md px-2 py-2 text-muted-foreground">
+                  No companies available
+                </DropdownMenuItem>
+              ) : null}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -850,28 +860,37 @@ export function DashboardShell({
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
-                  <DropdownMenuItem>
-                    <Sparkles className="size-4" />
-                    <span>Upgrade to Pro</span>
+                  <DropdownMenuItem asChild className="gap-3">
+                    <a href="/desk/upgrade">
+                      <Sparkles className="size-4" />
+                      <span>Upgrade to Pro</span>
+                    </a>
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
-                  <DropdownMenuItem>
-                    <BadgeCheck className="size-4" />
-                    <span>Account</span>
+                  <DropdownMenuItem asChild className="gap-3">
+                    <a href="/desk/account">
+                      <BadgeCheck className="size-4" />
+                      <span>Account</span>
+                    </a>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <CreditCard className="size-4" />
-                    <span>Billing</span>
+                  <DropdownMenuItem asChild className="gap-3">
+                    <a href="/desk/billing">
+                      <CreditCard className="size-4" />
+                      <span>Billing</span>
+                    </a>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Bell className="size-4" />
-                    <span>Notifications</span>
+                  <DropdownMenuItem asChild className="gap-3">
+                    <a href="/desk/notifications">
+                      <Bell className="size-4" />
+                      <span>Notifications</span>
+                    </a>
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
+                  className="gap-3"
                   onSelect={() => {
                     onLogout?.();
                   }}

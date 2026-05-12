@@ -27,7 +27,7 @@ import {
   upsertSales,
 } from "../../application/sales-service";
 import { resolveSalesBillingLayout } from "../../application/sales-billing-layout-service";
-import { listCompanies } from "../../../company/application/company-service";
+import { getActiveCompany } from "../../../company/application/company-service";
 import type { CompanyRecord } from "../../../company/domain/company";
 import { getCoreEnvSettings } from "../../../settings/infrastructure/core-settings-api";
 import { EntryCollaborationPanel } from "../../../entries/interface/components/entry-collaboration-panel";
@@ -289,12 +289,11 @@ export function SalesShowPage({
   useEffect(() => {
     const controller = new AbortController();
     Promise.all([
-      listCompanies({ signal: controller.signal }),
+      getActiveCompany({ signal: controller.signal }),
       getCoreEnvSettings({ signal: controller.signal }).catch(() => null),
     ])
-      .then(([companies, settings]) => {
+      .then(([company, settings]) => {
         if (controller.signal.aborted) return;
-        const company = companies.find((item) => item.isPrimary) ?? companies[0] ?? null;
         setPrintCompany(company);
         setIndustryCode(getAppTypeFromSettings(settings) ?? company?.industryCode ?? null);
         setIndustryName(company?.industryName ?? null);

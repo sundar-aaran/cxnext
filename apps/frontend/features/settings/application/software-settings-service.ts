@@ -5,6 +5,7 @@ import {
 } from "../domain/software-settings";
 
 export const softwareSettingsStorageKey = "cxnext-software-settings";
+export const companySoftwareSettingsStorageKeyPrefix = `${softwareSettingsStorageKey}:company:`;
 
 export function loadSoftwareSettings(): SoftwareSettingsState {
   if (typeof window === "undefined") {
@@ -31,7 +32,37 @@ export function saveSoftwareSettings(state: SoftwareSettingsState) {
 }
 
 export function hasPublishedSoftwareSettings() {
-  return typeof window !== "undefined" && Boolean(window.localStorage.getItem(softwareSettingsStorageKey));
+  return (
+    typeof window !== "undefined" &&
+    Boolean(window.localStorage.getItem(softwareSettingsStorageKey))
+  );
+}
+
+export function loadCompanySoftwareSettings(companyId: string | null | undefined) {
+  if (!companyId) {
+    return defaultSoftwareSettingsState;
+  }
+
+  return loadSoftwareSettingsFromKey(companySoftwareSettingsStorageKey(companyId));
+}
+
+export function saveCompanySoftwareSettings(
+  companyId: string | null | undefined,
+  state: SoftwareSettingsState,
+) {
+  if (!companyId) {
+    return;
+  }
+
+  window.localStorage.setItem(companySoftwareSettingsStorageKey(companyId), JSON.stringify(state));
+}
+
+export function hasPublishedCompanySoftwareSettings(companyId: string | null | undefined) {
+  if (typeof window === "undefined" || !companyId) {
+    return false;
+  }
+
+  return Boolean(window.localStorage.getItem(companySoftwareSettingsStorageKey(companyId)));
 }
 
 export function updateCustomiseSetting(
@@ -147,4 +178,28 @@ function mergeSoftwareSettings(
       enabled: storedFeatures.get(setting.id) ?? setting.enabled,
     })),
   };
+}
+
+function loadSoftwareSettingsFromKey(storageKey: string) {
+  if (typeof window === "undefined") {
+    return defaultSoftwareSettingsState;
+  }
+
+  const storedValue = window.localStorage.getItem(storageKey);
+  if (!storedValue) {
+    return defaultSoftwareSettingsState;
+  }
+
+  try {
+    return mergeSoftwareSettings(
+      defaultSoftwareSettingsState,
+      JSON.parse(storedValue) as Partial<SoftwareSettingsState>,
+    );
+  } catch {
+    return defaultSoftwareSettingsState;
+  }
+}
+
+function companySoftwareSettingsStorageKey(companyId: string) {
+  return `${companySoftwareSettingsStorageKeyPrefix}${companyId}`;
 }

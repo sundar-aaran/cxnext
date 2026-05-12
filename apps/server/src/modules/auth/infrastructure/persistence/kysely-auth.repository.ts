@@ -71,12 +71,25 @@ export class KyselyAuthRepository implements AuthRepository, OnModuleDestroy {
       )
       .executeTakeFirst()) as UserRow | undefined;
 
-    return row ? { ...(await this.hydrateUser(row)), passwordHash: String(row.password_hash) } : null;
+    return row
+      ? { ...(await this.hydrateUser(row)), passwordHash: String(row.password_hash) }
+      : null;
   }
 
   public async findUserById(userId: string): Promise<AuthUserRecord | null> {
     const row = await this.readUserRow(userId);
     return row ? this.hydrateUser(row) : null;
+  }
+
+  public async findUserPasswordById(userId: string) {
+    const row = (await this.db()
+      .selectFrom("auth_users")
+      .select(["password_hash"])
+      .where("id", "=", Number(userId))
+      .where("deleted_at", "is", null)
+      .executeTakeFirst()) as { password_hash: string } | undefined;
+
+    return row ? { passwordHash: row.password_hash } : null;
   }
 
   public async listUsers(): Promise<readonly AuthUserRecord[]> {
@@ -153,6 +166,17 @@ export class KyselyAuthRepository implements AuthRepository, OnModuleDestroy {
     await this.replaceUserRoles(userId, params.roleKeys);
 
     return this.findUserById(userId);
+  }
+
+  public async updateUserPassword(userId: string, passwordHash: string): Promise<boolean> {
+    const result = await this.db()
+      .updateTable("auth_users")
+      .set({ password_hash: passwordHash, updated_at: new Date() })
+      .where("id", "=", Number(userId))
+      .where("deleted_at", "is", null)
+      .executeTakeFirst();
+
+    return Number(result.numUpdatedRows) > 0;
   }
 
   public async listRoles(): Promise<readonly AuthRoleRecord[]> {
@@ -457,7 +481,9 @@ export class KyselyAuthRepository implements AuthRepository, OnModuleDestroy {
     return true;
   }
 
-  public async findActivePermissionKeys(permissionKeys: readonly string[]): Promise<readonly string[]> {
+  public async findActivePermissionKeys(
+    permissionKeys: readonly string[],
+  ): Promise<readonly string[]> {
     if (permissionKeys.length === 0) {
       return [];
     }
@@ -502,7 +528,12 @@ export class KyselyAuthRepository implements AuthRepository, OnModuleDestroy {
       .select(["id", "user_id", "revoked_at", "expires_at"])
       .where("token_id", "=", tokenId)
       .executeTakeFirst()) as
-      | { id: string; user_id: number | bigint; revoked_at: Date | string | null; expires_at: Date | string }
+      | {
+          id: string;
+          user_id: number | bigint;
+          revoked_at: Date | string | null;
+          expires_at: Date | string;
+        }
       | undefined;
 
     return row

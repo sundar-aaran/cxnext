@@ -36,10 +36,11 @@ import {
   SelectValue,
   buildMasterListShowingLabel,
 } from "@cxnext/ui";
-import { listCompanies } from "../../../company/application/company-service";
+import { getActiveCompany } from "../../../company/application/company-service";
 import type { CompanyRecord } from "../../../company/domain/company";
 import { EntryCollaborationPanel } from "../../../entries/interface/components/entry-collaboration-panel";
 import { getCoreEnvSettings } from "../../../settings/infrastructure/core-settings-api";
+import { getNextDocumentNumber } from "../../../document-settings/infrastructure/document-settings-api";
 import { resolveSalesBillingLayout } from "../../../sales/application/sales-billing-layout-service";
 import type { SalesRecord } from "../../../sales/domain/sales";
 import {
@@ -285,12 +286,11 @@ export function PurchaseShowPage({
   useEffect(() => {
     const controller = new AbortController();
     Promise.all([
-      listCompanies({ signal: controller.signal }),
+      getActiveCompany({ signal: controller.signal }),
       getCoreEnvSettings({ signal: controller.signal }).catch(() => null),
     ])
-      .then(([companies, settings]) => {
+      .then(([company, settings]) => {
         if (controller.signal.aborted) return;
-        const company = companies.find((item) => item.isPrimary) ?? companies[0] ?? null;
         setPrintCompany(company);
         setIndustryCode(getAppTypeFromSettings(settings) ?? company?.industryCode ?? null);
         setIndustryName(company?.industryName ?? null);
@@ -463,12 +463,36 @@ export function PurchaseUpsertPage({ purchaseId }: { readonly purchaseId?: numbe
           setForm({
             ...defaultPurchaseInput(),
             ...record,
+            autoDocumentNo: false,
             documentDate: record.documentDate.slice(0, 10),
             supplierInvoiceDate: record.supplierInvoiceDate
               ? record.supplierInvoiceDate.slice(0, 10)
               : null,
           }),
       );
+    if (!purchaseId) {
+      const controller = new AbortController();
+      void getNextDocumentNumber("purchase", { signal: controller.signal })
+        .then((setting) => {
+          if (!setting.autoEnabled) {
+            setForm((current) => ({ ...current, autoDocumentNo: false }));
+            return;
+          }
+          setForm((current) =>
+            current.autoDocumentNo || !current.documentNo.trim()
+              ? { ...current, autoDocumentNo: true, documentNo: setting.preview }
+              : current,
+          );
+        })
+        .catch((error) => {
+          if (!isAbortError(error)) {
+            toast.error("Could not load next purchase number", {
+              description: getErrorMessage(error),
+            });
+          }
+        });
+      return () => controller.abort();
+    }
   }, [purchaseId]);
   async function save(printAfterSave = false) {
     const record = await upsertPurchase(preparePurchaseInput(form), purchaseId);
@@ -653,7 +677,9 @@ function PurchaseDetailsTab({
             <Input
               className="h-11 rounded-md text-left"
               value={form.documentNo}
-              onChange={(event) => setForm({ ...form, documentNo: event.target.value })}
+              onChange={(event) =>
+                setForm({ ...form, autoDocumentNo: false, documentNo: event.target.value })
+              }
             />
           </Field>
           <Field label="Entry date">

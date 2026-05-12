@@ -32,14 +32,18 @@ import rootPackage from "../../../../../../package.json";
 import {
   ApplicationContextRequestError,
   getDefaultApplicationContext,
+  updateDefaultCompany,
 } from "../../../application-context/infrastructure/application-context-api";
 import type { AuthSession } from "../../../auth/domain/auth";
 import { logout } from "../../../auth/infrastructure/auth-api";
 import {
+  authSessionChangedEvent,
   persistStoredApplicationContext,
   readStoredAuthSession,
 } from "../../../auth/infrastructure/session-storage";
 import { commonMenuGroups, commonMenuLabels } from "../../../common/application/common-service";
+import { listCompanies } from "../../../company/application/company-service";
+import type { CompanyRecord } from "../../../company/domain/company";
 import { getDeskPortal } from "../../application/desk-registry";
 
 const organisationNavItems = [
@@ -205,6 +209,12 @@ const settingsNavItems = [
     icon: <ReceiptText className="h-4 w-4" />,
   },
   {
+    id: "settings-document-settings",
+    label: "Document Settings",
+    href: "/desk/settings/document-settings",
+    icon: <ScrollText className="h-4 w-4" />,
+  },
+  {
     id: "settings-duties-taxes",
     label: "Duties & Taxes",
     href: "/desk/settings/duties-taxes",
@@ -222,6 +232,7 @@ const settingsMenuLabels: Record<string, string> = {
   apps: "Apps",
   core: "Core Settings",
   "billing-layout": "Sales Settings",
+  "document-settings": "Document Settings",
   "duties-taxes": "Duties & Taxes",
   "system-update": "System Update",
   settings: "Settings",
@@ -275,6 +286,22 @@ function getWorkspaceLabel(pathname: string, isDeskRoot: boolean, fallbackLabel:
     return adminMenuLabels[moduleKey ?? portalId] ?? "Admin";
   }
 
+  if (root === "desk" && portalId === "account") {
+    return "Account";
+  }
+
+  if (root === "desk" && portalId === "billing") {
+    return "Billing";
+  }
+
+  if (root === "desk" && portalId === "notifications") {
+    return "Notifications";
+  }
+
+  if (root === "desk" && portalId === "upgrade") {
+    return "Upgrade to Pro";
+  }
+
   if (root === "desk" && portalId === "common" && moduleKey) {
     return commonMenuLabels[moduleKey] ?? "Common";
   }
@@ -286,9 +313,14 @@ export function DeskShell({ children }: { readonly children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [session, setSession] = useState<AuthSession | null>(null);
+  const [companies, setCompanies] = useState<readonly CompanyRecord[]>([]);
+  const [isContextLoading, setIsContextLoading] = useState(true);
   const isDeskRoot = pathname === "/desk";
   const activePortal = getDeskPortal(getPortalIdFromPath(pathname));
   const workspaceLabel = getWorkspaceLabel(pathname, isDeskRoot, activePortal.badge);
+  const canSeeSystemMenus = session?.user.roles.some((role) => role.key === "super_admin") ?? false;
+  const canSeeAdminMenus =
+    session?.user.roles.some((role) => role.key === "admin" || role.key === "super_admin") ?? false;
   const navItems = organisationNavItems.map((item) => ({
     ...item,
     active: pathname === item.href || pathname.startsWith(`${item.href}/`),
@@ -320,22 +352,89 @@ export function DeskShell({ children }: { readonly children: ReactNode }) {
       active: pathname === item.href || pathname.startsWith(`${item.href}/`),
     })),
   }));
+  const visibleNavItems = [
+    ...(canSeeSystemMenus ? navItems : []),
+    ...masterItems,
+    ...entriesItems,
+    ...reportItems,
+    ...(canSeeSystemMenus ? settingsItems : []),
+    ...(canSeeAdminMenus ? adminItems : []),
+  ];
+  const visibleNavGroups = [
+    ...(canSeeSystemMenus
+      ? [
+          {
+            id: "organisation",
+            label: "Organisation",
+            icon: <Building2 className="size-4" />,
+            items: navItems,
+          },
+        ]
+      : []),
+    {
+      id: "master",
+      label: "Master",
+      icon: <Contact className="size-4" />,
+      items: masterItems,
+    },
+    {
+      id: "entries",
+      label: "Entries",
+      icon: <ReceiptText className="size-4" />,
+      items: entriesItems,
+    },
+    {
+      id: "reports",
+      label: "Reports",
+      icon: <LineChart className="size-4" />,
+      items: reportItems,
+    },
+    ...(canSeeSystemMenus
+      ? [
+          {
+            id: "settings",
+            label: "Settings",
+            icon: <Settings className="size-4" />,
+            items: settingsItems,
+          },
+        ]
+      : []),
+    ...(canSeeAdminMenus
+      ? [
+          {
+            id: "admin",
+            label: "Admin",
+            icon: <Users className="size-4" />,
+            items: adminItems,
+          },
+        ]
+      : []),
+    {
+      id: "common",
+      label: "Common",
+      icon: <Flag className="size-4" />,
+      subGroups: commonGroups,
+    },
+  ];
 
   useEffect(() => {
     const storedSession = readStoredAuthSession();
     setSession(storedSession);
 
     if (!storedSession || storedSession.context) {
+      setIsContextLoading(false);
       return;
     }
 
     const controller = new AbortController();
+    setIsContextLoading(true);
     getDefaultApplicationContext({ signal: controller.signal })
       .then((context) => {
         const nextSession = persistStoredApplicationContext(context);
         if (nextSession) {
           setSession(nextSession);
         }
+        setIsContextLoading(false);
       })
       .catch((error: unknown) => {
         if (controller.signal.aborted) {
@@ -349,6 +448,7 @@ export function DeskShell({ children }: { readonly children: ReactNode }) {
         }
 
         console.error(error);
+        setIsContextLoading(false);
       });
 
     return () => {
@@ -356,15 +456,97 @@ export function DeskShell({ children }: { readonly children: ReactNode }) {
     };
   }, [pathname, router]);
 
+  useEffect(() => {
+    const storedSession = readStoredAuthSession();
+    if (!storedSession?.context) {
+      setCompanies([]);
+      return;
+    }
+
+    const controller = new AbortController();
+    listCompanies({ signal: controller.signal })
+      .then((nextCompanies) => {
+        setCompanies(nextCompanies);
+      })
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) return;
+        console.error(error);
+      });
+
+    return () => {
+      controller.abort();
+    };
+  }, [session?.context?.company.id]);
+
+  useEffect(() => {
+    function syncSession() {
+      setSession(readStoredAuthSession());
+    }
+
+    window.addEventListener(authSessionChangedEvent, syncSession);
+    window.addEventListener("storage", syncSession);
+    return () => {
+      window.removeEventListener(authSessionChangedEvent, syncSession);
+      window.removeEventListener("storage", syncSession);
+    };
+  }, []);
+
   async function handleLogout() {
     await logout();
     router.push("/login");
     router.refresh();
   }
 
+  async function handleCompanySelect(companyId: string) {
+    if (!session?.context || session.context.company.id === companyId) {
+      return;
+    }
+
+    const company = companies.find((item) => String(item.id) === companyId);
+    if (!company) {
+      return;
+    }
+
+    try {
+      setIsContextLoading(true);
+      const nextContext = await updateDefaultCompany({
+        tenantId: String(company.tenantId),
+        industryId: String(company.industryId),
+        companyId,
+        accountingYearId: session.context.accountingYear.id,
+      });
+      const nextSession = persistStoredApplicationContext(nextContext);
+      if (nextSession) {
+        setSession(nextSession);
+      }
+      router.refresh();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsContextLoading(false);
+    }
+  }
+
   return (
     <DashboardShell
       brand={session?.context?.company.name ?? "CODEXSUN COMME..."}
+      brandSubtitle={session?.context?.accountingYear.name ?? "Default company"}
+      companySwitcher={{
+        activeCompanyId: session?.context?.company.id ?? null,
+        companies: companies.map((company) => ({
+          id: String(company.id),
+          name: company.name,
+          code: company.code,
+          subtitle: company.code
+            ? `${company.code} / ${company.industryName}`
+            : company.industryName,
+          isActive: company.isActive,
+        })),
+        label: "Companies",
+        onSelectCompany: (companyId) => {
+          void handleCompanySelect(companyId);
+        },
+      }}
       currentUser={
         session
           ? {
@@ -374,58 +556,8 @@ export function DeskShell({ children }: { readonly children: ReactNode }) {
           : undefined
       }
       workspace={workspaceLabel}
-      navItems={[
-        ...navItems,
-        ...masterItems,
-        ...entriesItems,
-        ...reportItems,
-        ...settingsItems,
-        ...adminItems,
-      ]}
-      navGroups={[
-        {
-          id: "organisation",
-          label: "Organisation",
-          icon: <Building2 className="size-4" />,
-          items: navItems,
-        },
-        {
-          id: "master",
-          label: "Master",
-          icon: <Contact className="size-4" />,
-          items: masterItems,
-        },
-        {
-          id: "entries",
-          label: "Entries",
-          icon: <ReceiptText className="size-4" />,
-          items: entriesItems,
-        },
-        {
-          id: "reports",
-          label: "Reports",
-          icon: <LineChart className="size-4" />,
-          items: reportItems,
-        },
-        {
-          id: "settings",
-          label: "Settings",
-          icon: <Settings className="size-4" />,
-          items: settingsItems,
-        },
-        {
-          id: "admin",
-          label: "Admin",
-          icon: <Users className="size-4" />,
-          items: adminItems,
-        },
-        {
-          id: "common",
-          label: "Common",
-          icon: <Flag className="size-4" />,
-          subGroups: commonGroups,
-        },
-      ]}
+      navItems={visibleNavItems}
+      navGroups={visibleNavGroups}
       shellTechnicalName={
         isDeskRoot
           ? "shell.application-desk"
@@ -436,7 +568,7 @@ export function DeskShell({ children }: { readonly children: ReactNode }) {
         void handleLogout();
       }}
     >
-      {children}
+      {isContextLoading ? null : children}
     </DashboardShell>
   );
 }

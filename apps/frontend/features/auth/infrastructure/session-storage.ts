@@ -3,6 +3,7 @@ import type { ApplicationContext } from "../../application-context/domain/applic
 
 const authSessionStorageKey = "cxnext.auth.session";
 const authSessionCookieKey = "cxnext-auth";
+export const authSessionChangedEvent = "cxnext.auth.session.changed";
 
 export function readStoredAuthSession(): AuthSession | null {
   if (typeof window === "undefined") return null;
@@ -27,6 +28,7 @@ export function persistStoredAuthSession(session: AuthSession) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(authSessionStorageKey, JSON.stringify(session));
   persistSessionCookie(session.expiresAt);
+  window.dispatchEvent(new Event(authSessionChangedEvent));
 }
 
 export function persistStoredApplicationContext(context: ApplicationContext) {
@@ -42,10 +44,36 @@ export function readStoredApplicationContext() {
   return readStoredAuthSession()?.context ?? null;
 }
 
+export function requireStoredApplicationContext() {
+  const context = readStoredApplicationContext();
+  if (!context) {
+    throw new Error("Default company and accounting year are not loaded.");
+  }
+  return context;
+}
+
+export function withStoredApplicationContextQuery(url: string) {
+  const context = requireStoredApplicationContext();
+  const nextUrl = new URL(url);
+  nextUrl.searchParams.set("companyId", context.company.id);
+  nextUrl.searchParams.set("accountingYearId", context.accountingYear.id);
+  return nextUrl.toString();
+}
+
+export function withStoredApplicationContextPayload<T extends Record<string, unknown>>(input: T) {
+  const context = requireStoredApplicationContext();
+  return {
+    ...input,
+    companyId: context.company.id,
+    accountingYearId: context.accountingYear.id,
+  };
+}
+
 export function clearStoredAuthSession() {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(authSessionStorageKey);
   clearSessionCookie();
+  window.dispatchEvent(new Event(authSessionChangedEvent));
 }
 
 export function getStoredAccessToken() {

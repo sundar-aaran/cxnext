@@ -25,15 +25,11 @@ import {
   Truck,
   Wrench,
 } from "lucide-react";
-import {
-  Badge,
-  Card,
-  CardContent,
-  CommonListPageFrame,
-  cn,
-} from "@cxnext/ui";
+import { Badge, Card, CardContent, CommonListPageFrame, cn } from "@cxnext/ui";
+import { readStoredApplicationContext } from "../../../auth/infrastructure/session-storage";
 
 const storageKey = "cxnext.settings.apps.enabled";
+const companyStorageKeyPrefix = `${storageKey}:company:`;
 
 type AppModule = {
   readonly id: string;
@@ -264,10 +260,21 @@ const defaultEnabledApps = Object.fromEntries(
 
 export function AppsSettingsPage() {
   const [enabledApps, setEnabledApps] = useState<Record<string, boolean>>(defaultEnabledApps);
+  const [activeCompany, setActiveCompany] = useState<{
+    readonly id: string | null;
+    readonly name: string;
+  }>({ id: null, name: "Active company" });
 
   useEffect(() => {
+    const context = readStoredApplicationContext();
+    const companyId = context?.company.id ?? null;
+    setActiveCompany({
+      id: companyId,
+      name: context?.company.name ?? "Active company",
+    });
+
     try {
-      const stored = window.localStorage.getItem(storageKey);
+      const stored = companyId ? window.localStorage.getItem(companyStorageKey(companyId)) : null;
       if (!stored) return;
       setEnabledApps({ ...defaultEnabledApps, ...JSON.parse(stored) });
     } catch {
@@ -276,8 +283,9 @@ export function AppsSettingsPage() {
   }, []);
 
   useEffect(() => {
-    window.localStorage.setItem(storageKey, JSON.stringify(enabledApps));
-  }, [enabledApps]);
+    if (!activeCompany.id) return;
+    window.localStorage.setItem(companyStorageKey(activeCompany.id), JSON.stringify(enabledApps));
+  }, [activeCompany.id, enabledApps]);
 
   const enabledCount = useMemo(
     () => Object.values(enabledApps).filter(Boolean).length,
@@ -291,7 +299,7 @@ export function AppsSettingsPage() {
 
   return (
     <CommonListPageFrame
-      description="Enable the application modules available for this workspace."
+      description={`Enable the application modules available for ${activeCompany.name}.`}
       technicalName="page.settings.apps"
       title="Apps"
     >
@@ -302,7 +310,10 @@ export function AppsSettingsPage() {
             {enabledCount} of {totalCount} modules enabled
           </p>
         </div>
-        <Badge variant="outline" className="rounded-md border-emerald-200 bg-emerald-50 text-emerald-700">
+        <Badge
+          variant="outline"
+          className="rounded-md border-emerald-200 bg-emerald-50 text-emerald-700"
+        >
           Enabled modules
         </Badge>
       </div>
@@ -326,6 +337,10 @@ export function AppsSettingsPage() {
       </div>
     </CommonListPageFrame>
   );
+}
+
+function companyStorageKey(companyId: string) {
+  return `${companyStorageKeyPrefix}${companyId}`;
 }
 
 function AppModuleCard({

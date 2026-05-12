@@ -9,6 +9,10 @@ import { extendSalesIndustryFieldsMigration } from "./008-extend-sales-industry-
 import { createAuthRbacMigration } from "./009-create-auth-rbac";
 import { addSalesEInvoiceFieldsMigration } from "./010-add-sales-einvoice-fields";
 import { createAuthPolicyCatalogMigration } from "./011-create-auth-policy-catalog";
+import { addEntryCompanyContextMigration } from "./012-add-entry-company-context";
+import { enforceEntryContextReferencesMigration } from "./013-enforce-entry-context-references";
+import { createDocumentNumberSettingsMigration } from "./014-create-document-number-settings";
+import { createCompanySettingsMigration } from "./015-create-company-settings";
 import {
   contactsCommonMigrations,
   locationCommonMigrations,
@@ -32,6 +36,10 @@ export const databaseMigrations = [
   createEntriesMigration,
   extendSalesIndustryFieldsMigration,
   addSalesEInvoiceFieldsMigration,
+  addEntryCompanyContextMigration,
+  enforceEntryContextReferencesMigration,
+  createDocumentNumberSettingsMigration,
+  createCompanySettingsMigration,
   createAuthRbacMigration,
   createAuthPolicyCatalogMigration,
 ] as const;
@@ -45,6 +53,10 @@ export { createProductsMigration };
 export { createEntriesMigration };
 export { extendSalesIndustryFieldsMigration };
 export { addSalesEInvoiceFieldsMigration };
+export { addEntryCompanyContextMigration };
+export { enforceEntryContextReferencesMigration };
+export { createDocumentNumberSettingsMigration };
+export { createCompanySettingsMigration };
 export { createAuthRbacMigration };
 export { createAuthPolicyCatalogMigration };
 export {

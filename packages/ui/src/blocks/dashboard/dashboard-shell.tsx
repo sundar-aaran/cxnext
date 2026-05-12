@@ -2,6 +2,7 @@
 
 export { DashboardShell } from "./dashboard-shell-root";
 export type {
+  DashboardCompanySwitcherOption,
   DashboardNavGroup,
   DashboardNavItem,
   DashboardShellProps,

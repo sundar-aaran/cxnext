@@ -1,23 +1,33 @@
 import type { SalesInput, SalesRecord } from "../domain/sales";
 import { getRequiredPublicApiUrl } from "@/lib/runtime-env";
-import { authFetch } from "../../auth/infrastructure/auth-api";
+import {
+  authFetch,
+  withStoredApplicationContextPayload,
+  withStoredApplicationContextQuery,
+} from "../../auth/infrastructure/auth-api";
 
 export async function listSales(options?: { readonly signal?: AbortSignal }) {
-  const response = await authFetch(`${apiBaseUrl()}/entries/sales`, {
-    cache: "no-store",
-    headers: { Accept: "application/json" },
-    signal: options?.signal,
-  });
+  const response = await authFetch(
+    withStoredApplicationContextQuery(`${apiBaseUrl()}/entries/sales`),
+    {
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+      signal: options?.signal,
+    },
+  );
   if (!response.ok) throw new Error(`Sales list failed with status ${response.status}.`);
   return ((await response.json()) as Array<Omit<SalesRecord, "id"> & { id: string }>).map(toRecord);
 }
 
 export async function getSales(id: number, options?: { readonly signal?: AbortSignal }) {
-  const response = await authFetch(`${apiBaseUrl()}/entries/sales/${id}`, {
-    cache: "no-store",
-    headers: { Accept: "application/json" },
-    signal: options?.signal,
-  });
+  const response = await authFetch(
+    withStoredApplicationContextQuery(`${apiBaseUrl()}/entries/sales/${id}`),
+    {
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+      signal: options?.signal,
+    },
+  );
   if (response.status === 404) return null;
   if (!response.ok) throw new Error(await readSalesApiError(response, "Sales detail"));
   return toRecord((await response.json()) as Omit<SalesRecord, "id"> & { id: string });
@@ -25,7 +35,7 @@ export async function getSales(id: number, options?: { readonly signal?: AbortSi
 
 export async function upsertSales(input: SalesInput, id?: number) {
   const response = await authFetch(`${apiBaseUrl()}/entries/sales${id ? `/${id}` : ""}`, {
-    body: JSON.stringify(input),
+    body: JSON.stringify(withStoredApplicationContextPayload({ ...input })),
     cache: "no-store",
     headers: { Accept: "application/json", "Content-Type": "application/json" },
     method: id ? "PATCH" : "POST",
@@ -35,11 +45,14 @@ export async function upsertSales(input: SalesInput, id?: number) {
 }
 
 export async function deleteSales(id: number) {
-  const response = await authFetch(`${apiBaseUrl()}/entries/sales/${id}`, {
-    cache: "no-store",
-    headers: { Accept: "application/json" },
-    method: "DELETE",
-  });
+  const response = await authFetch(
+    withStoredApplicationContextQuery(`${apiBaseUrl()}/entries/sales/${id}`),
+    {
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+      method: "DELETE",
+    },
+  );
   if (!response.ok) throw new Error(await readSalesApiError(response, "Sales delete"));
 }
 

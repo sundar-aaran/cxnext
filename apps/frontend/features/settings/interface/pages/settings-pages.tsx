@@ -4,7 +4,16 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { CheckCircle2, FileKey2, Grid3X3, Landmark, ReceiptText, RefreshCcw, Save } from "lucide-react";
+import {
+  CheckCircle2,
+  FileKey2,
+  Grid3X3,
+  Landmark,
+  ReceiptText,
+  RefreshCcw,
+  Save,
+  ScrollText,
+} from "lucide-react";
 import {
   AnimatedTabs,
   Badge,
@@ -20,19 +29,17 @@ import {
   useGlobalLoader,
 } from "@cxnext/ui";
 import {
-  hasPublishedSoftwareSettings,
-  loadSoftwareSettings,
-  saveSoftwareSettings,
+  hasPublishedCompanySoftwareSettings,
+  loadCompanySoftwareSettings,
+  saveCompanySoftwareSettings,
   updateCustomiseSetting,
   updateDutiesTaxSetting,
   updateFeatureSetting,
   updateSalesBillingLayoutSetting,
-  updateSalesDocumentSetting,
 } from "../../application/software-settings-service";
 import {
   defaultSoftwareSettingsState,
   type DutiesTaxSettings,
-  type SalesDocumentSettings,
   type SoftwareSettingsState,
   type SoftwareToggleSetting,
 } from "../../domain/software-settings";
@@ -46,6 +53,7 @@ import {
   type CoreEnvSetting,
   type CoreEnvSettingOption,
 } from "../../infrastructure/core-settings-api";
+import { readStoredApplicationContext } from "../../../auth/infrastructure/session-storage";
 import { listIndustries } from "../../../industry/application/industry-service";
 import { formatMoney } from "../../../sales/application/sales-service";
 
@@ -74,6 +82,12 @@ export function SettingsIndexPage() {
           href="/desk/settings/billing-layout"
           icon={<ReceiptText className="size-5" />}
           title="Sales Settings"
+        />
+        <SettingsLinkCard
+          description="Configure automatic numbering for sales, purchase, payment, and receipt vouchers."
+          href="/desk/settings/document-settings"
+          icon={<ScrollText className="size-5" />}
+          title="Document Settings"
         />
         <SettingsLinkCard
           description="Maintain duties, taxes, and opening GST balances for reports."
@@ -207,11 +221,11 @@ export function CoreSettingsPage() {
 }
 
 export function CustomiseSettingsPage() {
-  const [state, setState] = useSettingsState();
+  const [state, setState, context] = useSettingsState();
 
   return (
     <CommonListPageFrame
-      description="Scaffold industry-specific and client-specific application configuration."
+      description={`Scaffold industry-specific and client-specific application configuration for ${context.companyName}.`}
       technicalName="page.settings.customise"
       title="Customise"
     >
@@ -241,17 +255,25 @@ export function CustomiseSettingsPage() {
 }
 
 export function SalesBillingLayoutSettingsPage() {
-  const [publishedState, setPublishedState] =
-    useState<SoftwareSettingsState>(defaultSoftwareSettingsState);
+  const [activeCompanyId, setActiveCompanyId] = useState<string | null>(null);
+  const [activeCompanyName, setActiveCompanyName] = useState<string>("Active company");
+  const [publishedState, setPublishedState] = useState<SoftwareSettingsState>(
+    defaultSoftwareSettingsState,
+  );
   const [draftState, setDraftState] = useState<SoftwareSettingsState>(defaultSoftwareSettingsState);
   const hasUnpublishedChanges = !areSoftwareSettingsEqual(publishedState, draftState);
 
   useEffect(() => {
-    const loadedSettings = loadSoftwareSettings();
+    const context = readStoredApplicationContext();
+    const companyId = context?.company.id ?? null;
+    setActiveCompanyId(companyId);
+    setActiveCompanyName(context?.company.name ?? "Active company");
+
+    const loadedSettings = loadCompanySoftwareSettings(companyId);
     setPublishedState(loadedSettings);
     setDraftState(loadedSettings);
 
-    if (hasPublishedSoftwareSettings()) {
+    if (hasPublishedCompanySoftwareSettings(companyId)) {
       return;
     }
 
@@ -270,10 +292,10 @@ export function SalesBillingLayoutSettingsPage() {
   }, []);
 
   function publishLive() {
-    saveSoftwareSettings(draftState);
+    saveCompanySoftwareSettings(activeCompanyId, draftState);
     setPublishedState(draftState);
-      toast.success("Sales billing layout published", {
-      description: "Sales entry and print screens now use the published sales settings.",
+    toast.success("Sales settings published", {
+      description: `${activeCompanyName} now uses these sales settings.`,
     });
   }
 
@@ -282,14 +304,14 @@ export function SalesBillingLayoutSettingsPage() {
       action={
         <Button
           className="rounded-xl"
-          disabled={!hasUnpublishedChanges}
+          disabled={!activeCompanyId || !hasUnpublishedChanges}
           onClick={publishLive}
         >
           <Save className="size-4" />
           Publish live
         </Button>
       }
-      description="Configure sales layout, document numbering, customisation, and feature switches."
+      description={`Configure sales layout, customisation, and feature switches for ${activeCompanyName}. Document numbering is managed from Document Settings.`}
       technicalName="page.settings.billing-layout"
       title="Sales Settings"
     >
@@ -303,7 +325,8 @@ export function SalesBillingLayoutSettingsPage() {
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base">Sales Layout</CardTitle>
                   <CardDescription>
-                    Toggle fields as a draft, then publish live to update sales entry and print screens.
+                    Toggle fields as a draft, then publish live to update sales entry and print
+                    screens.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-3">
@@ -318,40 +341,6 @@ export function SalesBillingLayoutSettingsPage() {
                       }
                     />
                   ))}
-                </CardContent>
-              </Card>
-            ),
-          },
-          {
-            value: "document",
-            label: "Docu settings",
-            content: (
-              <Card className="rounded-md border-border/70">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">Document Settings</CardTitle>
-                  <CardDescription>
-                    Set the sales invoice prefix and starting serial used for new invoices.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="grid gap-4 md:grid-cols-2">
-                  <SalesDocumentSettingField
-                    label="Invoice prefix"
-                    value={draftState.salesDocumentSettings.invoicePrefix}
-                    onChange={(value) =>
-                      setDraftState((current) =>
-                        updateSalesDocumentSetting(current, "invoicePrefix", value),
-                      )
-                    }
-                  />
-                  <SalesDocumentSettingField
-                    label="Invoice serial start"
-                    value={draftState.salesDocumentSettings.invoiceSerialStart}
-                    onChange={(value) =>
-                      setDraftState((current) =>
-                        updateSalesDocumentSetting(current, "invoiceSerialStart", value),
-                      )
-                    }
-                  />
                 </CardContent>
               </Card>
             ),
@@ -422,13 +411,13 @@ function areSettingsEqual(
 function areSoftwareSettingsEqual(left: SoftwareSettingsState, right: SoftwareSettingsState) {
   return (
     areSettingsEqual(left.salesBillingLayout, right.salesBillingLayout) &&
-    areDocumentSettingsEqual(left.salesDocumentSettings, right.salesDocumentSettings) &&
     areDutiesTaxSettingsEqual(left.dutiesTaxSettings, right.dutiesTaxSettings) &&
     areSettingsEqual(left.features, right.features) &&
     left.customiseGroups.length === right.customiseGroups.length &&
-    left.customiseGroups.every((group, index) =>
-      group.id === right.customiseGroups[index]?.id &&
-      areSettingsEqual(group.settings, right.customiseGroups[index]?.settings ?? []),
+    left.customiseGroups.every(
+      (group, index) =>
+        group.id === right.customiseGroups[index]?.id &&
+        areSettingsEqual(group.settings, right.customiseGroups[index]?.settings ?? []),
     )
   );
 }
@@ -439,13 +428,6 @@ function areDutiesTaxSettingsEqual(left: DutiesTaxSettings, right: DutiesTaxSett
     left.openingGstCgst === right.openingGstCgst &&
     left.openingGstIgst === right.openingGstIgst &&
     left.openingGstSgst === right.openingGstSgst
-  );
-}
-
-function areDocumentSettingsEqual(left: SalesDocumentSettings, right: SalesDocumentSettings) {
-  return (
-    left.invoicePrefix === right.invoicePrefix &&
-    left.invoiceSerialStart === right.invoiceSerialStart
   );
 }
 
@@ -463,27 +445,6 @@ function salesBillingLayoutDefaultsForIndustry(appType: string | undefined) {
     if (setting.id === "sales-use-eway") return { ...setting, enabled: true };
     return setting;
   });
-}
-
-function SalesDocumentSettingField({
-  label,
-  onChange,
-  value,
-}: {
-  readonly label: string;
-  readonly onChange: (value: string) => void;
-  readonly value: string;
-}) {
-  return (
-    <label className="grid gap-2 rounded-md border border-border/70 bg-background px-3 py-3">
-      <span className="text-sm font-medium text-foreground">{label}</span>
-      <input
-        className="h-10 rounded-md border border-input bg-background px-3 text-sm outline-none transition-colors focus:border-foreground/40"
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-      />
-    </label>
-  );
 }
 
 function CoreSettingsGroupForm({
@@ -530,9 +491,8 @@ function CoreEnvField({
   readonly onChange: (value: string) => void;
 }) {
   const isBoolean = value === "true" || value === "false";
-  const options = setting.key === "APP_TYPE" && industryOptions.length > 0
-    ? industryOptions
-    : setting.options;
+  const options =
+    setting.key === "APP_TYPE" && industryOptions.length > 0 ? industryOptions : setting.options;
 
   return (
     <label className="grid gap-2 rounded-md border border-border/70 bg-background px-3 py-3">
@@ -556,7 +516,9 @@ function CoreEnvField({
         </select>
       ) : isBoolean ? (
         <span className="flex items-center justify-between gap-4">
-          <span className="text-sm text-muted-foreground">{value === "true" ? "Enabled" : "Disabled"}</span>
+          <span className="text-sm text-muted-foreground">
+            {value === "true" ? "Enabled" : "Disabled"}
+          </span>
           <Switch
             checked={value === "true"}
             aria-label={setting.label}
@@ -573,8 +535,7 @@ function CoreEnvField({
       )}
       {options?.length ? (
         <span className="text-xs leading-5 text-muted-foreground">
-          {options.find((option) => option.value === value)?.description ??
-            setting.description}
+          {options.find((option) => option.value === value)?.description ?? setting.description}
         </span>
       ) : null}
       {!options?.length ? (
@@ -589,7 +550,9 @@ function EnvReference({ raw }: { readonly raw: string }) {
     <Card className="rounded-md border-border/70">
       <CardHeader className="pb-3">
         <CardTitle className="text-base">.env Reference</CardTitle>
-        <CardDescription>Current root .env content after comments and grouping are preserved.</CardDescription>
+        <CardDescription>
+          Current root .env content after comments and grouping are preserved.
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <textarea
@@ -661,7 +624,8 @@ function EnvPolicySection({
                   variant="outline"
                   className={cn(
                     "rounded-md text-[11px] capitalize",
-                    item.status === "managed" && "border-emerald-200 bg-emerald-50 text-emerald-700",
+                    item.status === "managed" &&
+                      "border-emerald-200 bg-emerald-50 text-emerald-700",
                     item.status === "excluded" && "border-rose-200 bg-rose-50 text-rose-700",
                     item.status === "unmanaged" && "border-amber-200 bg-amber-50 text-amber-700",
                   )}
@@ -679,7 +643,7 @@ function EnvPolicySection({
 }
 
 export function FeatureSettingsPage() {
-  const [state, setState] = useSettingsState();
+  const [state, setState, context] = useSettingsState();
   const enabledCount = useMemo(
     () => state.features.filter((feature) => feature.enabled).length,
     [state.features],
@@ -694,7 +658,7 @@ export function FeatureSettingsPage() {
       <div className="rounded-md border border-border/70 bg-card px-4 py-3 text-sm text-muted-foreground shadow-sm">
         <span className="font-medium text-foreground">{enabledCount}</span> of{" "}
         <span className="font-medium text-foreground">{state.features.length}</span> features
-        enabled for this scaffold.
+        enabled for {context.companyName}.
       </div>
       <div className="grid gap-3">
         {state.features.map((feature) => (
@@ -712,18 +676,22 @@ export function FeatureSettingsPage() {
 }
 
 export function DutiesTaxesSettingsPage() {
-  const [state, setState] = useSettingsState();
+  const [state, setState, context] = useSettingsState();
   const openingGstTotal = totalOpeningGst(state.dutiesTaxSettings);
 
   return (
     <CommonListPageFrame
       action={
-        <Button className="rounded-xl" onClick={() => saveSoftwareSettings(state)}>
+        <Button
+          className="rounded-xl"
+          disabled={!context.companyId}
+          onClick={() => saveCompanySoftwareSettings(context.companyId, state)}
+        >
           <Save className="size-4" />
           Save
         </Button>
       }
-      description="Set opening GST balances used by GST Statement reports."
+      description={`Set opening GST balances used by GST Statement reports for ${context.companyName}.`}
       technicalName="page.settings.duties-taxes"
       title="Duties & Taxes"
     >
@@ -817,18 +785,28 @@ function totalOpeningGst(settings: DutiesTaxSettings) {
 function useSettingsState() {
   const [state, setState] = useState<SoftwareSettingsState>(defaultSoftwareSettingsState);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [context, setContext] = useState({
+    companyId: null as string | null,
+    companyName: "Active company",
+  });
 
   useEffect(() => {
-    setState(loadSoftwareSettings());
+    const applicationContext = readStoredApplicationContext();
+    const companyId = applicationContext?.company.id ?? null;
+    setContext({
+      companyId,
+      companyName: applicationContext?.company.name ?? "Active company",
+    });
+    setState(loadCompanySoftwareSettings(companyId));
     setIsLoaded(true);
   }, []);
 
   useEffect(() => {
     if (!isLoaded) return;
-    saveSoftwareSettings(state);
-  }, [isLoaded, state]);
+    saveCompanySoftwareSettings(context.companyId, state);
+  }, [context.companyId, isLoaded, state]);
 
-  return [state, setState] as const;
+  return [state, setState, context] as const;
 }
 
 function SettingsLinkCard({
@@ -918,7 +896,9 @@ function normalizeAppTypeToIndustry(
   industryOptions: readonly CoreEnvSettingOption[],
 ) {
   if (!value) return industryOptions[0]?.value ?? "";
-  const exact = industryOptions.find((option) => option.value.toLowerCase() === value.toLowerCase());
+  const exact = industryOptions.find(
+    (option) => option.value.toLowerCase() === value.toLowerCase(),
+  );
   if (exact) return exact.value;
 
   const normalizedValue = normalizeIndustryText(value);
@@ -928,12 +908,19 @@ function normalizeAppTypeToIndustry(
   if (labelMatched) return labelMatched.value;
 
   const industryKind = normalizeIndustryKind(value);
-  const matched = industryOptions.find((option) => normalizeIndustryKind(option.value) === industryKind);
+  const matched = industryOptions.find(
+    (option) => normalizeIndustryKind(option.value) === industryKind,
+  );
   return matched?.value ?? value;
 }
 
 function normalizeIndustryText(value: string | undefined) {
-  return value?.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim() ?? "";
+  return (
+    value
+      ?.toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim() ?? ""
+  );
 }
 
 function normalizeIndustryKind(value: string | undefined) {

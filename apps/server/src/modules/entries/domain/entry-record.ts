@@ -36,6 +36,8 @@ export interface BillingEntryRecord {
   readonly id: string;
   readonly uuid: string;
   readonly kind: BillingEntryKind;
+  readonly companyId: string;
+  readonly accountingYearId: string;
   readonly documentNo: string;
   readonly documentDate: Date;
   readonly partyId: string | null;
@@ -91,6 +93,8 @@ export interface MoneyEntryRecord {
   readonly id: string;
   readonly uuid: string;
   readonly kind: MoneyEntryKind;
+  readonly companyId: string;
+  readonly accountingYearId: string;
   readonly documentNo: string;
   readonly documentDate: Date;
   readonly partyId: string | null;

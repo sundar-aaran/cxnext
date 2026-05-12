@@ -300,7 +300,9 @@ function DetailsTab({
             <Input
               className="h-11 rounded-md text-left"
               value={form.documentNo}
-              onChange={(event) => setForm({ ...form, documentNo: event.target.value })}
+              onChange={(event) =>
+                setForm({ ...form, autoDocumentNo: false, documentNo: event.target.value })
+              }
             />
           </Field>
           <Field label="Date">

@@ -10,12 +10,13 @@ import { listReceipts } from "../../../receipt/application/receipt-service";
 import type { ReceiptRecord } from "../../../receipt/domain/receipt";
 import { listPayments } from "../../../payment/application/payment-service";
 import type { PaymentRecord } from "../../../payment/domain/payment";
-import { listCompanies } from "../../../company/application/company-service";
+import { getActiveCompany } from "../../../company/application/company-service";
 import type { CompanyRecord } from "../../../company/domain/company";
 import { listContacts } from "../../../contact/application/contact-list.service";
 import type { ContactRecord } from "../../../contact/domain/contact";
 import { listCommonRecords, type CommonRecord } from "../../../common/application/common-service";
-import { loadSoftwareSettings } from "../../../settings/application/software-settings-service";
+import { readStoredApplicationContext } from "../../../auth/infrastructure/session-storage";
+import { loadCompanySoftwareSettings } from "../../../settings/application/software-settings-service";
 import {
   defaultSoftwareSettingsState,
   type DutiesTaxSettings,
@@ -133,7 +134,8 @@ export function GstStatementReportPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    setDutiesTaxSettings(loadSoftwareSettings().dutiesTaxSettings);
+    const companyId = readStoredApplicationContext()?.company.id ?? null;
+    setDutiesTaxSettings(loadCompanySoftwareSettings(companyId).dutiesTaxSettings);
     void Promise.all([
       listSales({ signal: controller.signal }).catch(() => []),
       listPurchase({ signal: controller.signal }).catch(() => []),
@@ -176,10 +178,7 @@ export function GstStatementReportPage() {
     () => buildOpeningGstTotals(sales, purchases, filters, dutiesTaxSettings),
     [dutiesTaxSettings, filters, purchases, sales],
   );
-  const yearSalesTotals = useMemo(
-    () => buildYearGstTotals(sales, filters),
-    [filters, sales],
-  );
+  const yearSalesTotals = useMemo(() => buildYearGstTotals(sales, filters), [filters, sales]);
   const yearPurchaseTotals = useMemo(
     () => buildYearGstTotals(purchases, filters),
     [filters, purchases],
@@ -325,10 +324,10 @@ function useReportCompany() {
 
   useEffect(() => {
     const controller = new AbortController();
-    void listCompanies({ signal: controller.signal })
-      .then((companies) => {
+    void getActiveCompany({ signal: controller.signal })
+      .then((company) => {
         if (controller.signal.aborted) return;
-        setCompany(companies.find((item) => item.isPrimary) ?? companies[0] ?? null);
+        setCompany(company);
       })
       .catch(() => {
         if (!controller.signal.aborted) {
@@ -555,7 +554,10 @@ function buildYearGstTotals(
 }
 
 function aggregateGstRecords(records: readonly (PurchaseRecord | SalesRecord)[]) {
-  return records.reduce((total, record) => addGstTotals(total, gstTotals(record)), emptyGstTotals());
+  return records.reduce(
+    (total, record) => addGstTotals(total, gstTotals(record)),
+    emptyGstTotals(),
+  );
 }
 
 function gstRowTotals(rows: readonly GstRow[]): GstTotals {

@@ -1,7 +1,8 @@
 import {
-  hasPublishedSoftwareSettings,
-  loadSoftwareSettings,
+  hasPublishedCompanySoftwareSettings,
+  loadCompanySoftwareSettings,
 } from "../../settings/application/software-settings-service";
+import { readStoredApplicationContext } from "../../auth/infrastructure/session-storage";
 import { getSalesIndustryKind, type SalesIndustryKind } from "../domain/sales";
 
 export interface SalesBillingLayout {
@@ -14,8 +15,9 @@ export interface SalesBillingLayout {
 }
 
 export function resolveSalesBillingLayout(industryValue: string | null | undefined) {
-  if (hasPublishedSoftwareSettings()) {
-    return salesLayoutFromSettings(loadSoftwareSettings().salesBillingLayout);
+  const companyId = readStoredApplicationContext()?.company.id ?? null;
+  if (hasPublishedCompanySoftwareSettings(companyId)) {
+    return salesLayoutFromSettings(loadCompanySoftwareSettings(companyId).salesBillingLayout);
   }
 
   return salesLayoutFromIndustry(getSalesIndustryKind(industryValue));

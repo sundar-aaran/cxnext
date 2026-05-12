@@ -2,11 +2,23 @@
 
 ## Version State
 
-- Current package version: `1.0.81`
-- Current release tag: `v-1.0.81`
+- Current package version: `1.0.82`
+- Current release tag: `v-1.0.82`
 - Versioned changelog label format: `v 1.0.<reference>`
 - Version section format: `## v-1.0.<reference>`
 - Entry format: `### [v 1.0.<reference>] YYYY-MM-DD - Title`
+
+## v-1.0.82
+
+### [v 1.0.82] 2026-05-12 - Isolate Company Context And Profile Settings
+
+- Enforced default company and accounting-year context loading after login before entry persistence.
+- Scoped Sales, Purchase, Receipt, and Payment persistence to strict company and accounting-year identifiers.
+- Added entry database migrations and seed cleanup for company/accounting-year references.
+- Isolated Sales Settings, Duties & Taxes, Apps, Customise, and Features settings per company.
+- Refactored the sidebar team switcher into an on-demand company switcher and tightened admin-only menu visibility.
+- Added user menu scaffold pages for Upgrade to Pro, Account, Billing, and Notifications, including profile password-change support.
+- Bumped workspace package manifests to `1.0.82`.
 
 ## v-1.0.81
 

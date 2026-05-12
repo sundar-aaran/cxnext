@@ -1,6 +1,10 @@
 import { Inject, Injectable } from "@nestjs/common";
 import type { BillingEntryKind } from "../../domain/entry-record";
-import { ENTRIES_REPOSITORY, type EntriesRepository } from "../services/entries.repository";
+import {
+  ENTRIES_REPOSITORY,
+  type EntriesRepository,
+  type EntryContextCriteria,
+} from "../services/entries.repository";
 
 @Injectable()
 export class ListBillingEntriesUseCase {
@@ -9,7 +13,7 @@ export class ListBillingEntriesUseCase {
     private readonly entriesRepository: EntriesRepository,
   ) {}
 
-  public execute(kind: BillingEntryKind) {
-    return this.entriesRepository.listBilling(kind);
+  public execute(kind: BillingEntryKind, context: EntryContextCriteria) {
+    return this.entriesRepository.listBilling(kind, context);
   }
 }

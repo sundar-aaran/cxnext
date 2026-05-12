@@ -5,7 +5,11 @@ import {
   ENTRIES_DOMAIN_EVENT_PUBLISHER,
   type EntriesDomainEventPublisher,
 } from "../services/domain-event-publisher";
-import { ENTRIES_REPOSITORY, type EntriesRepository } from "../services/entries.repository";
+import {
+  ENTRIES_REPOSITORY,
+  type EntriesRepository,
+  type EntryContextCriteria,
+} from "../services/entries.repository";
 
 @Injectable()
 export class DeleteBillingEntryUseCase {
@@ -16,8 +20,8 @@ export class DeleteBillingEntryUseCase {
     private readonly eventPublisher: EntriesDomainEventPublisher,
   ) {}
 
-  public async execute(kind: BillingEntryKind, entryId: string) {
-    const wasDeleted = await this.entriesRepository.softDeleteBilling(kind, entryId);
+  public async execute(kind: BillingEntryKind, entryId: string, context: EntryContextCriteria) {
+    const wasDeleted = await this.entriesRepository.softDeleteBilling(kind, entryId, context);
     if (wasDeleted)
       await this.eventPublisher.publishAll([EntryAggregate.deletedEvent(kind, entryId)]);
     return wasDeleted;

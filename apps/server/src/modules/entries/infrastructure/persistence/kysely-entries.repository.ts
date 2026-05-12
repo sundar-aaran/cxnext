@@ -13,6 +13,7 @@ import type {
 import type {
   BillingEntryInput,
   EntriesRepository,
+  EntryContextCriteria,
   MoneyEntryInput,
 } from "../../application/services/entries.repository";
 import {
@@ -35,11 +36,16 @@ export class KyselyEntriesRepository implements EntriesRepository, OnModuleDestr
     await this.connection.destroy();
   }
 
-  public async listBilling(kind: BillingEntryKind): Promise<readonly BillingEntryRecord[]> {
+  public async listBilling(
+    kind: BillingEntryKind,
+    context: EntryContextCriteria,
+  ): Promise<readonly BillingEntryRecord[]> {
     const table = billingTable(kind);
     const rows = await this.db()
       .selectFrom(table)
       .selectAll()
+      .where("company_id", "=", Number(context.companyId))
+      .where("accounting_year_id", "=", Number(context.accountingYearId))
       .where("deleted_at", "is", null)
       .orderBy(kind === "sales" ? "invoice_date" : "bill_date", "desc")
       .execute();
@@ -49,6 +55,7 @@ export class KyselyEntriesRepository implements EntriesRepository, OnModuleDestr
   public async getBilling(
     kind: BillingEntryKind,
     entryId: string,
+    context: EntryContextCriteria,
   ): Promise<BillingEntryRecord | null> {
     const numericId = Number(entryId);
     if (!Number.isInteger(numericId)) return null;
@@ -56,6 +63,8 @@ export class KyselyEntriesRepository implements EntriesRepository, OnModuleDestr
       .selectFrom(billingTable(kind))
       .selectAll()
       .where("id", "=", numericId)
+      .where("company_id", "=", Number(context.companyId))
+      .where("accounting_year_id", "=", Number(context.accountingYearId))
       .where("deleted_at", "is", null)
       .executeTakeFirst();
     return row ? this.toBillingRecord(kind, row) : null;
@@ -73,7 +82,10 @@ export class KyselyEntriesRepository implements EntriesRepository, OnModuleDestr
       .executeTakeFirstOrThrow();
     const entryId = Number(result.insertId);
     await this.replaceBillingItems(kind, entryId, normalized.items, now);
-    const entry = await this.getBilling(kind, String(entryId));
+    const entry = await this.getBilling(kind, String(entryId), {
+      companyId: normalized.companyId,
+      accountingYearId: normalized.accountingYearId,
+    });
     if (!entry) throw new Error("Billing entry was created but could not be read back.");
     return entry;
   }
@@ -87,45 +99,68 @@ export class KyselyEntriesRepository implements EntriesRepository, OnModuleDestr
     if (!Number.isInteger(numericId)) return null;
     const normalized = normalizeBillingInput(kind, input);
     const now = new Date();
-    await this.db()
+    const result = await this.db()
       .updateTable(billingTable(kind))
       .set(toBillingUpdateRow(kind, normalized, now))
       .where("id", "=", numericId)
+      .where("company_id", "=", Number(normalized.companyId))
+      .where("accounting_year_id", "=", Number(normalized.accountingYearId))
       .where("deleted_at", "is", null)
       .executeTakeFirst();
+    if (Number(result.numUpdatedRows) === 0) return null;
     await this.replaceBillingItems(kind, numericId, normalized.items, now);
-    return this.getBilling(kind, entryId);
+    return this.getBilling(kind, entryId, {
+      companyId: normalized.companyId,
+      accountingYearId: normalized.accountingYearId,
+    });
   }
 
-  public async softDeleteBilling(kind: BillingEntryKind, entryId: string): Promise<boolean> {
+  public async softDeleteBilling(
+    kind: BillingEntryKind,
+    entryId: string,
+    context: EntryContextCriteria,
+  ): Promise<boolean> {
     const numericId = Number(entryId);
     if (!Number.isInteger(numericId)) return false;
     const result = await this.db()
       .updateTable(billingTable(kind))
       .set({ deleted_at: new Date(), updated_at: new Date() })
       .where("id", "=", numericId)
+      .where("company_id", "=", Number(context.companyId))
+      .where("accounting_year_id", "=", Number(context.accountingYearId))
       .where("deleted_at", "is", null)
       .executeTakeFirst();
     return Number(result.numUpdatedRows) > 0;
   }
 
-  public async listMoney(kind: MoneyEntryKind): Promise<readonly MoneyEntryRecord[]> {
+  public async listMoney(
+    kind: MoneyEntryKind,
+    context: EntryContextCriteria,
+  ): Promise<readonly MoneyEntryRecord[]> {
     const rows = await this.db()
       .selectFrom(moneyTable(kind))
       .selectAll()
+      .where("company_id", "=", Number(context.companyId))
+      .where("accounting_year_id", "=", Number(context.accountingYearId))
       .where("deleted_at", "is", null)
       .orderBy(kind === "payment" ? "payment_date" : "receipt_date", "desc")
       .execute();
     return Promise.all(rows.map((row) => this.toMoneyRecord(kind, row)));
   }
 
-  public async getMoney(kind: MoneyEntryKind, entryId: string): Promise<MoneyEntryRecord | null> {
+  public async getMoney(
+    kind: MoneyEntryKind,
+    entryId: string,
+    context: EntryContextCriteria,
+  ): Promise<MoneyEntryRecord | null> {
     const numericId = Number(entryId);
     if (!Number.isInteger(numericId)) return null;
     const row = await this.db()
       .selectFrom(moneyTable(kind))
       .selectAll()
       .where("id", "=", numericId)
+      .where("company_id", "=", Number(context.companyId))
+      .where("accounting_year_id", "=", Number(context.accountingYearId))
       .where("deleted_at", "is", null)
       .executeTakeFirst();
     return row ? this.toMoneyRecord(kind, row) : null;
@@ -143,7 +178,10 @@ export class KyselyEntriesRepository implements EntriesRepository, OnModuleDestr
       .executeTakeFirstOrThrow();
     const entryId = Number(result.insertId);
     await this.replaceAllocations(kind, entryId, normalized.allocations, now);
-    const entry = await this.getMoney(kind, String(entryId));
+    const entry = await this.getMoney(kind, String(entryId), {
+      companyId: normalized.companyId,
+      accountingYearId: normalized.accountingYearId,
+    });
     if (!entry) throw new Error("Money entry was created but could not be read back.");
     return entry;
   }
@@ -157,23 +195,35 @@ export class KyselyEntriesRepository implements EntriesRepository, OnModuleDestr
     if (!Number.isInteger(numericId)) return null;
     const normalized = normalizeMoneyInput(kind, input);
     const now = new Date();
-    await this.db()
+    const result = await this.db()
       .updateTable(moneyTable(kind))
       .set(toMoneyUpdateRow(kind, normalized, now))
       .where("id", "=", numericId)
+      .where("company_id", "=", Number(normalized.companyId))
+      .where("accounting_year_id", "=", Number(normalized.accountingYearId))
       .where("deleted_at", "is", null)
       .executeTakeFirst();
+    if (Number(result.numUpdatedRows) === 0) return null;
     await this.replaceAllocations(kind, numericId, normalized.allocations, now);
-    return this.getMoney(kind, entryId);
+    return this.getMoney(kind, entryId, {
+      companyId: normalized.companyId,
+      accountingYearId: normalized.accountingYearId,
+    });
   }
 
-  public async softDeleteMoney(kind: MoneyEntryKind, entryId: string): Promise<boolean> {
+  public async softDeleteMoney(
+    kind: MoneyEntryKind,
+    entryId: string,
+    context: EntryContextCriteria,
+  ): Promise<boolean> {
     const numericId = Number(entryId);
     if (!Number.isInteger(numericId)) return false;
     const result = await this.db()
       .updateTable(moneyTable(kind))
       .set({ deleted_at: new Date(), updated_at: new Date() })
       .where("id", "=", numericId)
+      .where("company_id", "=", Number(context.companyId))
+      .where("accounting_year_id", "=", Number(context.accountingYearId))
       .where("deleted_at", "is", null)
       .executeTakeFirst();
     return Number(result.numUpdatedRows) > 0;
@@ -224,6 +274,8 @@ export class KyselyEntriesRepository implements EntriesRepository, OnModuleDestr
       id: String(entryId),
       uuid: String(row.uuid),
       kind,
+      companyId: String(row.company_id),
+      accountingYearId: String(row.accounting_year_id),
       documentNo: String(kind === "sales" ? row.invoice_no : row.bill_no),
       documentDate: toDate(kind === "sales" ? row.invoice_date : row.bill_date),
       partyId: stringOrNull(kind === "sales" ? row.customer_id : row.supplier_id),
@@ -277,6 +329,8 @@ export class KyselyEntriesRepository implements EntriesRepository, OnModuleDestr
       id: String(entryId),
       uuid: String(row.uuid),
       kind,
+      companyId: String(row.company_id),
+      accountingYearId: String(row.accounting_year_id),
       documentNo: String(kind === "payment" ? row.payment_no : row.receipt_no),
       documentDate: toDate(kind === "payment" ? row.payment_date : row.receipt_date),
       partyId: stringOrNull(row.party_id),
@@ -336,6 +390,8 @@ function toBillingRow(
 ) {
   const common = {
     uuid,
+    company_id: Number(input.companyId),
+    accounting_year_id: Number(input.accountingYearId),
     billing_address: input.billingAddress,
     place_of_supply: input.placeOfSupply,
     reference_no: input.referenceNo,
@@ -389,12 +445,10 @@ function toBillingUpdateRow(
   input: ReturnType<typeof normalizeBillingInput>,
   timestamp: Date,
 ) {
-  const {
-    uuid: _uuid,
-    created_at: _createdAt,
-    deleted_at: _deletedAt,
-    ...row
-  } = toBillingRow(kind, input, timestamp, "unused");
+  const row = toBillingRow(kind, input, timestamp, "unused");
+  delete (row as Record<string, unknown>).uuid;
+  delete (row as Record<string, unknown>).created_at;
+  delete (row as Record<string, unknown>).deleted_at;
   return row;
 }
 
@@ -444,6 +498,8 @@ function toMoneyRow(
 ) {
   const common = {
     uuid,
+    company_id: Number(input.companyId),
+    accounting_year_id: Number(input.accountingYearId),
     party_id: input.partyId,
     party_name: input.partyName,
     party_type: input.partyType,
@@ -486,12 +542,10 @@ function toMoneyUpdateRow(
   input: ReturnType<typeof normalizeMoneyInput>,
   timestamp: Date,
 ) {
-  const {
-    uuid: _uuid,
-    created_at: _createdAt,
-    deleted_at: _deletedAt,
-    ...row
-  } = toMoneyRow(kind, input, timestamp, "unused");
+  const row = toMoneyRow(kind, input, timestamp, "unused");
+  delete (row as Record<string, unknown>).uuid;
+  delete (row as Record<string, unknown>).created_at;
+  delete (row as Record<string, unknown>).deleted_at;
   return row;
 }
 

@@ -17,7 +17,12 @@ export function normalizeBillingInput(kind: BillingEntryKind, input: BillingEntr
   const grandTotal = taxableTotal + taxTotal + roundOff;
 
   return {
-    documentNo: textOrGenerated(input.documentNo, prefixForBilling(kind)),
+    companyId: requiredIdentifier(input.companyId, "Company context is required."),
+    accountingYearId: requiredIdentifier(
+      input.accountingYearId,
+      "Accounting year context is required.",
+    ),
+    documentNo: requiredText(input.documentNo, "Document number is required."),
     documentDate: dateOrNow(input.documentDate),
     partyId: emptyAsNull(input.partyId),
     partyName: requiredText(input.partyName, "Party name is required."),
@@ -64,7 +69,12 @@ export function normalizeMoneyInput(kind: MoneyEntryKind, input: MoneyEntryInput
   const allocatedAmount = allocations.reduce((sum, item) => sum + item.allocatedAmount, 0);
 
   return {
-    documentNo: textOrGenerated(input.documentNo, prefixForMoney(kind)),
+    companyId: requiredIdentifier(input.companyId, "Company context is required."),
+    accountingYearId: requiredIdentifier(
+      input.accountingYearId,
+      "Accounting year context is required.",
+    ),
+    documentNo: requiredText(input.documentNo, "Document number is required."),
     documentDate: dateOrNow(input.documentDate),
     partyId: emptyAsNull(input.partyId),
     partyName: requiredText(input.partyName, "Party name is required."),
@@ -148,22 +158,17 @@ function normalizeAllocation(item: Partial<AllocationInput>, index: number) {
   };
 }
 
-function prefixForBilling(kind: BillingEntryKind) {
-  return kind === "sales" ? "SAL" : "PUR";
-}
-
-function prefixForMoney(kind: MoneyEntryKind) {
-  return kind === "payment" ? "PAY" : "REC";
-}
-
-function textOrGenerated(value: string | null | undefined, prefix: string) {
-  const trimmed = value?.trim().toUpperCase() ?? "";
-  return trimmed || `${prefix}-${Date.now()}`;
-}
-
 function requiredText(value: string | null | undefined, message: string) {
   const trimmed = value?.trim() ?? "";
   if (!trimmed) throw new Error(message);
+  return trimmed;
+}
+
+function requiredIdentifier(value: string | null | undefined, message: string) {
+  const trimmed = value?.trim() ?? "";
+  if (!trimmed || !Number.isInteger(Number(trimmed)) || Number(trimmed) <= 0) {
+    throw new Error(message);
+  }
   return trimmed;
 }
 

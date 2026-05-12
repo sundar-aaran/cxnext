@@ -38,6 +38,8 @@ async function createBillingTable(
     .ifNotExists()
     .addColumn("id", "bigint", (column) => column.primaryKey().autoIncrement())
     .addColumn("uuid", "varchar(80)", (column) => column.notNull())
+    .addColumn("company_id", "bigint", (column) => column.notNull())
+    .addColumn("accounting_year_id", "bigint", (column) => column.notNull())
     .addColumn(documentNoColumn, "varchar(80)", (column) => column.notNull())
     .addColumn(documentDateColumn, "datetime", (column) => column.notNull())
     .addColumn(`${partyPrefix}_id`, "varchar(120)")
@@ -81,10 +83,10 @@ async function createBillingTable(
 
   await builder.execute();
   await db.schema
-    .createIndex(`uq_${table}_document_no`)
+    .createIndex(`uq_${table}_document_context`)
     .ifNotExists()
     .on(table)
-    .column(documentNoColumn)
+    .columns(["company_id", "accounting_year_id", documentNoColumn])
     .unique()
     .execute();
 }
@@ -145,6 +147,8 @@ async function createMoneyTable(
     .ifNotExists()
     .addColumn("id", "bigint", (column) => column.primaryKey().autoIncrement())
     .addColumn("uuid", "varchar(80)", (column) => column.notNull())
+    .addColumn("company_id", "bigint", (column) => column.notNull())
+    .addColumn("accounting_year_id", "bigint", (column) => column.notNull())
     .addColumn(documentNoColumn, "varchar(80)", (column) => column.notNull())
     .addColumn(documentDateColumn, "datetime", (column) => column.notNull())
     .addColumn("party_id", "varchar(120)")
@@ -173,6 +177,14 @@ async function createMoneyTable(
       column.notNull().defaultTo(sql`CURRENT_TIMESTAMP`),
     )
     .addColumn("deleted_at", "datetime")
+    .execute();
+
+  await db.schema
+    .createIndex(`uq_${table}_document_context`)
+    .ifNotExists()
+    .on(table)
+    .columns(["company_id", "accounting_year_id", documentNoColumn])
+    .unique()
     .execute();
 }
 

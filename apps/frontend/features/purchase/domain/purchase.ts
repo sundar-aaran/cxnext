@@ -51,6 +51,7 @@ export interface PurchaseRecord {
 }
 
 export interface PurchaseInput {
+  readonly autoDocumentNo?: boolean;
   readonly documentNo: string;
   readonly documentDate: string;
   readonly partyName: string;
@@ -149,6 +150,7 @@ export function defaultPurchaseItem(): PurchaseItemInput {
 export function defaultPurchaseInput(): PurchaseInput {
   return {
     documentNo: "",
+    autoDocumentNo: true,
     documentDate: new Date().toISOString().slice(0, 10),
     partyName: "",
     partyId: null,

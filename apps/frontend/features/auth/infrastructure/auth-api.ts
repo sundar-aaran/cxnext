@@ -13,6 +13,11 @@ import type {
 import { getRequiredPublicApiUrl } from "@/lib/runtime-env";
 import { clearStoredAuthSession, getStoredAccessToken } from "./session-storage";
 
+export {
+  withStoredApplicationContextPayload,
+  withStoredApplicationContextQuery,
+} from "./session-storage";
+
 export async function login(input: { readonly login: string; readonly password: string }) {
   const response = await fetch(`${apiBaseUrl()}/auth/login`, {
     body: JSON.stringify(input),
@@ -65,6 +70,25 @@ export async function logout() {
   }
 }
 
+export async function changeOwnPassword(input: {
+  readonly currentPassword: string;
+  readonly nextPassword: string;
+}) {
+  const response = await authFetch(`${apiBaseUrl()}/auth/me/password`, {
+    body: JSON.stringify(input),
+    headers: { "Content-Type": "application/json" },
+    method: "PATCH",
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      await readApiErrorMessage(response, `Password change failed with status ${response.status}.`),
+    );
+  }
+
+  return (await response.json()) as { readonly changed: boolean };
+}
+
 export async function listAuthRoles() {
   const response = await authFetch(`${apiBaseUrl()}/auth/roles`);
   if (!response.ok) throw new Error(`Role list failed with status ${response.status}.`);
@@ -97,14 +121,21 @@ export async function listAuthPermissions() {
   return (await response.json()) as AuthPermissionModule[];
 }
 
-export async function upsertAuthPermissionModule(input: AuthPermissionModuleInput, moduleId?: string) {
-  const response = await authFetch(`${apiBaseUrl()}/auth/permissions${moduleId ? `/${moduleId}` : ""}`, {
-    body: JSON.stringify(input),
-    headers: { "Content-Type": "application/json" },
-    method: moduleId ? "PATCH" : "POST",
-  });
+export async function upsertAuthPermissionModule(
+  input: AuthPermissionModuleInput,
+  moduleId?: string,
+) {
+  const response = await authFetch(
+    `${apiBaseUrl()}/auth/permissions${moduleId ? `/${moduleId}` : ""}`,
+    {
+      body: JSON.stringify(input),
+      headers: { "Content-Type": "application/json" },
+      method: moduleId ? "PATCH" : "POST",
+    },
+  );
 
-  if (!response.ok) throw new Error(`Permission module save failed with status ${response.status}.`);
+  if (!response.ok)
+    throw new Error(`Permission module save failed with status ${response.status}.`);
   return (await response.json()) as AuthPermissionModule;
 }
 
@@ -113,7 +144,8 @@ export async function deleteAuthPermissionModule(moduleId: string) {
     method: "DELETE",
   });
 
-  if (!response.ok) throw new Error(`Permission module delete failed with status ${response.status}.`);
+  if (!response.ok)
+    throw new Error(`Permission module delete failed with status ${response.status}.`);
   return (await response.json()) as { readonly deleted: boolean };
 }
 
@@ -124,11 +156,14 @@ export async function listAuthPolicies() {
 }
 
 export async function upsertAuthPolicy(input: AuthPolicyInput, policyId?: string) {
-  const response = await authFetch(`${apiBaseUrl()}/auth/policies${policyId ? `/${policyId}` : ""}`, {
-    body: JSON.stringify(input),
-    headers: { "Content-Type": "application/json" },
-    method: policyId ? "PATCH" : "POST",
-  });
+  const response = await authFetch(
+    `${apiBaseUrl()}/auth/policies${policyId ? `/${policyId}` : ""}`,
+    {
+      body: JSON.stringify(input),
+      headers: { "Content-Type": "application/json" },
+      method: policyId ? "PATCH" : "POST",
+    },
+  );
 
   if (!response.ok) throw new Error(`Policy save failed with status ${response.status}.`);
   return (await response.json()) as AuthPolicy;

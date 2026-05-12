@@ -26,7 +26,8 @@ import {
   SelectValue,
   buildMasterListShowingLabel,
 } from "@cxnext/ui";
-import { listCompanies } from "../../../company/application/company-service";
+import { getActiveCompany } from "../../../company/application/company-service";
+import { getNextDocumentNumber } from "../../../document-settings/infrastructure/document-settings-api";
 import type { CompanyRecord } from "../../../company/domain/company";
 import { EntryCollaborationPanel } from "../../../entries/interface/components/entry-collaboration-panel";
 import {
@@ -267,8 +268,8 @@ export function ReceiptShowPage({
   useEffect(() => void getReceipt(receiptId).then(setRecord), [receiptId]);
   useEffect(() => {
     const controller = new AbortController();
-    void listCompanies({ signal: controller.signal })
-      .then((companies) => setCompany(companies.find((item) => item.isPrimary) ?? companies[0] ?? null))
+    void getActiveCompany({ signal: controller.signal })
+      .then(setCompany)
       .catch(() => setCompany(null));
     return () => controller.abort();
   }, []);
@@ -369,9 +370,35 @@ export function ReceiptUpsertPage({ receiptId }: { readonly receiptId?: number }
         setForm({
           ...defaultReceiptInput(),
           ...record,
+          autoDocumentNo: false,
           documentDate: record.documentDate.slice(0, 10),
         });
     });
+  }, [receiptId]);
+
+  useEffect(() => {
+    if (receiptId) return;
+    const controller = new AbortController();
+    void getNextDocumentNumber("receipt", { signal: controller.signal })
+      .then((setting) => {
+        if (!setting.autoEnabled) {
+          setForm((current) => ({ ...current, autoDocumentNo: false }));
+          return;
+        }
+        setForm((current) =>
+          current.autoDocumentNo || !current.documentNo.trim()
+            ? { ...current, autoDocumentNo: true, documentNo: setting.preview }
+            : current,
+        );
+      })
+      .catch((error) => {
+        if (!isAbortError(error)) {
+          toast.error("Could not load next receipt number", {
+            description: getErrorMessage(error),
+          });
+        }
+      });
+    return () => controller.abort();
   }, [receiptId]);
 
   async function save(printAfterSave = false) {
@@ -471,7 +498,13 @@ function ReceiptDetailsTab({
       </div>
       <div className="space-y-5">
         <Field label="Receipt no">
-          <Input className="h-11 rounded-md" value={form.documentNo} onChange={(event) => setForm({ ...form, documentNo: event.target.value })} />
+          <Input
+            className="h-11 rounded-md"
+            value={form.documentNo}
+            onChange={(event) =>
+              setForm({ ...form, autoDocumentNo: false, documentNo: event.target.value })
+            }
+          />
         </Field>
         <Field label="Date">
           <Input className="h-11 rounded-md text-right" type="date" value={form.documentDate} onChange={(event) => setForm({ ...form, documentDate: event.target.value })} />
@@ -761,4 +794,8 @@ const tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", 
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Please try again.";
+}
+
+function isAbortError(error: unknown) {
+  return error instanceof DOMException && error.name === "AbortError";
 }

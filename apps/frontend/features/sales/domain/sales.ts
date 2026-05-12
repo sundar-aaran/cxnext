@@ -73,6 +73,7 @@ export interface SalesRecord {
 }
 
 export interface SalesInput {
+  readonly autoDocumentNo?: boolean;
   readonly documentNo: string;
   readonly documentDate: string;
   readonly partyId: string | null;
@@ -162,6 +163,7 @@ export const salesStatusOptions = [
 export function defaultSalesInput(): SalesInput {
   return {
     documentNo: "",
+    autoDocumentNo: true,
     documentDate: new Date().toISOString().slice(0, 10),
     partyId: null,
     partyName: "",

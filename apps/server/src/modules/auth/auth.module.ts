@@ -4,6 +4,7 @@ import { AUTH_DOMAIN_EVENT_PUBLISHER } from "./application/services/domain-event
 import { AUTH_REPOSITORY } from "./application/services/auth.repository";
 import { JwtService } from "./application/services/jwt.service";
 import { PasswordService } from "./application/services/password.service";
+import { ChangePasswordUseCase } from "./application/use-cases/change-password.use-case";
 import { LoginUseCase } from "./application/use-cases/login.use-case";
 import {
   CreateAuthRoleUseCase,
@@ -36,6 +37,7 @@ import { AuthGuard } from "./interface/http/auth.guard";
     JwtService,
     PasswordService,
     LoginUseCase,
+    ChangePasswordUseCase,
     ListAuthUsersUseCase,
     GetAuthUserUseCase,
     CreateAuthUserUseCase,
