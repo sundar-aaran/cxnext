@@ -156,3 +156,8 @@ For this to work, the app container mounts:
 - `../.env:/app/.env`
 
 Keep `SYSTEM_UPDATE_ENABLED=true` only for trusted admin deployments.
+
+
+./.container/setup.sh codexsun
+
+chmod +x ./.container/setup.sh
