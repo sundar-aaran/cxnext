@@ -2,11 +2,10 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useForm } from "@tanstack/react-form";
 import { z } from "zod";
 import { ArrowRight } from "lucide-react";
 import { Button, Input, Label } from "@cxnext/ui";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { getDefaultApplicationContext } from "../../features/application-context/infrastructure/application-context-api";
 import { login } from "../../features/auth/infrastructure/auth-api";
 import { persistStoredAuthSession } from "../../features/auth/infrastructure/session-storage";
@@ -18,48 +17,76 @@ interface AuthFormProps {
 export function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [values, setValues] = useState({
+    login: "",
+    name: "",
+    password: "",
+  });
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const isRegister = mode === "register";
   const isReset = mode === "reset";
   const passwordSchema = isReset
     ? z.string().optional()
     : z.string().min(8, "Use at least 8 characters");
-  const formSchema = z.object({
-    login: z.string().min(2, "Enter username or email"),
-    name: isRegister ? z.string().min(2, "Enter your name") : z.string().optional(),
-    password: passwordSchema,
-  });
-  const form = useForm({
-    defaultValues: {
-      login: "",
-      name: "",
-      password: "",
-    },
-    onSubmit: async ({ value }) => {
-      setSubmitError(null);
-      const result = formSchema.safeParse(value);
-      if (!result.success) return;
+  const formSchema = useMemo(
+    () =>
+      z.object({
+        login: z.string().min(2, "Enter username or email"),
+        name: isRegister ? z.string().min(2, "Enter your name") : z.string().optional(),
+        password: passwordSchema,
+      }),
+    [isRegister, passwordSchema],
+  );
 
-      if (mode === "login") {
-        try {
-          const session = await login({
-            login: result.data.login,
-            password: result.data.password ?? "",
-          });
-          persistStoredAuthSession(session);
-          try {
-            const context = await getDefaultApplicationContext();
-            persistStoredAuthSession({ ...session, context });
-          } catch {
-            persistStoredAuthSession(session);
-          }
-          router.push(searchParams.get("next") ?? "/desk");
-        } catch (error) {
-          setSubmitError(error instanceof Error ? error.message : "Could not sign in.");
-        }
+  function updateField(key: keyof typeof values, value: string) {
+    setValues((current) => ({ ...current, [key]: value }));
+    setFieldErrors((current) => {
+      const next = { ...current };
+      delete next[key];
+      return next;
+    });
+    setSubmitError(null);
+  }
+
+  async function handleSubmit() {
+    if (isSubmitting) return;
+
+    setSubmitError(null);
+    const result = formSchema.safeParse(values);
+
+    if (!result.success) {
+      setFieldErrors(
+        Object.fromEntries(
+          result.error.issues.map((issue) => [String(issue.path[0] ?? "form"), issue.message]),
+        ),
+      );
+      return;
+    }
+
+    if (mode !== "login") return;
+
+    setIsSubmitting(true);
+    try {
+      const session = await login({
+        login: result.data.login,
+        password: result.data.password ?? "",
+      });
+      persistStoredAuthSession(session);
+      try {
+        const context = await getDefaultApplicationContext();
+        persistStoredAuthSession({ ...session, context });
+      } catch {
+        persistStoredAuthSession(session);
       }
-    },
-  });
+      router.push(searchParams.get("next") ?? "/desk");
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "Could not sign in.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   return (
     <form
@@ -67,121 +94,69 @@ export function AuthForm({ mode }: AuthFormProps) {
       onSubmit={(event) => {
         event.preventDefault();
         event.stopPropagation();
-        void form.handleSubmit();
+        void handleSubmit();
       }}
     >
       {isRegister ? (
-        <form.Field
+        <AuthField
+          autoComplete="name"
+          error={fieldErrors.name}
+          label="Name"
           name="name"
-          validators={{
-            onChange: ({ value }) => {
-              const result = z.string().min(2, "Enter your name").safeParse(value);
-              return result.success ? undefined : result.error.issues[0]?.message;
-            },
-          }}
-        >
-          {(field) => (
-            <div className="space-y-2">
-              <Label htmlFor={field.name} className="text-sm font-medium text-foreground">
-                Name
-              </Label>
-              <Input
-                id={field.name}
-                name={field.name}
-                value={field.state.value}
-                placeholder="Your name"
-                autoComplete="name"
-                className="h-11 rounded-xl border-border/80 bg-background/95 shadow-none"
-                onBlur={field.handleBlur}
-                onChange={(event) => field.handleChange(event.target.value)}
-              />
-              {field.state.meta.errors[0] ? (
-                <p className="text-xs text-destructive">{String(field.state.meta.errors[0])}</p>
-              ) : null}
-            </div>
-          )}
-        </form.Field>
+          placeholder="Your name"
+          value={values.name}
+          onChange={(value) => updateField("name", value)}
+        />
       ) : null}
-      <form.Field
+      <AuthField
+        autoComplete="username"
+        error={fieldErrors.login}
+        label="Username or email"
         name="login"
-        validators={{
-          onChange: ({ value }) => {
-            const result = z.string().min(2, "Enter username or email").safeParse(value);
-            return result.success ? undefined : result.error.issues[0]?.message;
-          },
-        }}
-      >
-        {(field) => (
-          <div className="space-y-2">
-            <Label htmlFor={field.name} className="text-sm font-medium text-foreground">
-              Username or email
+        placeholder="admin or you@company.com"
+        value={values.login}
+        onChange={(value) => updateField("login", value)}
+      />
+      {!isReset ? (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-3">
+            <Label htmlFor="password" className="text-sm font-medium text-foreground">
+              Password
             </Label>
-            <Input
-              id={field.name}
-              name={field.name}
-              value={field.state.value}
-              placeholder="admin or you@company.com"
-              autoComplete="username"
-              className="h-11 rounded-xl border-border/80 bg-background/95 shadow-none"
-              onBlur={field.handleBlur}
-              onChange={(event) => field.handleChange(event.target.value)}
-            />
-            {field.state.meta.errors[0] ? (
-              <p className="text-xs text-destructive">{String(field.state.meta.errors[0])}</p>
+            {mode === "login" ? (
+              <Link
+                href="/password-reset"
+                className="text-sm font-medium text-foreground underline underline-offset-4"
+              >
+                Forgot password?
+              </Link>
             ) : null}
           </div>
-        )}
-      </form.Field>
-      {!isReset ? (
-        <form.Field
-          name="password"
-          validators={{
-            onChange: ({ value }) => {
-              const result = z.string().min(8, "Use at least 8 characters").safeParse(value);
-              return result.success ? undefined : result.error.issues[0]?.message;
-            },
-          }}
-        >
-          {(field) => (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between gap-3">
-                <Label htmlFor={field.name} className="text-sm font-medium text-foreground">
-                  Password
-                </Label>
-                {mode === "login" ? (
-                  <Link
-                    href="/password-reset"
-                    className="text-sm font-medium text-foreground underline underline-offset-4"
-                  >
-                    Forgot password?
-                  </Link>
-                ) : null}
-              </div>
-              <Input
-                id={field.name}
-                name={field.name}
-                type="password"
-                value={field.state.value}
-                placeholder="Enter password"
-                autoComplete={isRegister ? "new-password" : "current-password"}
-                className="h-11 rounded-xl border-border/80 bg-background/95 shadow-none"
-                onBlur={field.handleBlur}
-                onChange={(event) => field.handleChange(event.target.value)}
-              />
-              {field.state.meta.errors[0] ? (
-                <p className="text-xs text-destructive">{String(field.state.meta.errors[0])}</p>
-              ) : null}
-            </div>
-          )}
-        </form.Field>
+          <AuthFieldInput
+            autoComplete={isRegister ? "new-password" : "current-password"}
+            name="password"
+            placeholder="Enter password"
+            type="password"
+            value={values.password}
+            onChange={(value) => updateField("password", value)}
+          />
+          {fieldErrors.password ? (
+            <p className="text-xs text-destructive">{fieldErrors.password}</p>
+          ) : null}
+        </div>
       ) : null}
       {submitError ? (
         <div className="rounded-2xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
           {submitError}
         </div>
       ) : null}
-      <Button type="submit" size="lg" className="mt-2 h-11 w-full gap-2 rounded-xl">
-        {isReset ? "Send reset link" : isRegister ? "Create account" : "Login"}
+      <Button
+        type="submit"
+        size="lg"
+        className="mt-2 h-11 w-full gap-2 rounded-xl"
+        disabled={isSubmitting}
+      >
+        {isSubmitting ? "Checking..." : isReset ? "Send reset link" : isRegister ? "Create account" : "Login"}
         <ArrowRight className="size-4" />
       </Button>
       <div className="flex flex-wrap justify-between gap-3 text-sm text-muted-foreground">
@@ -196,5 +171,68 @@ export function AuthForm({ mode }: AuthFormProps) {
         </Link>
       </div>
     </form>
+  );
+}
+
+function AuthField({
+  autoComplete,
+  error,
+  label,
+  name,
+  onChange,
+  placeholder,
+  value,
+}: {
+  readonly autoComplete: string;
+  readonly error?: string;
+  readonly label: string;
+  readonly name: "login" | "name";
+  readonly onChange: (value: string) => void;
+  readonly placeholder: string;
+  readonly value: string;
+}) {
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={name} className="text-sm font-medium text-foreground">
+        {label}
+      </Label>
+      <AuthFieldInput
+        autoComplete={autoComplete}
+        name={name}
+        placeholder={placeholder}
+        value={value}
+        onChange={onChange}
+      />
+      {error ? <p className="text-xs text-destructive">{error}</p> : null}
+    </div>
+  );
+}
+
+function AuthFieldInput({
+  autoComplete,
+  name,
+  onChange,
+  placeholder,
+  type = "text",
+  value,
+}: {
+  readonly autoComplete: string;
+  readonly name: string;
+  readonly onChange: (value: string) => void;
+  readonly placeholder: string;
+  readonly type?: string;
+  readonly value: string;
+}) {
+  return (
+    <Input
+      id={name}
+      name={name}
+      type={type}
+      value={value}
+      placeholder={placeholder}
+      autoComplete={autoComplete}
+      className="h-11 rounded-xl border-border/80 bg-background/95 shadow-none"
+      onChange={(event) => onChange(event.target.value)}
+    />
   );
 }

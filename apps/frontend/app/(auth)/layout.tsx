@@ -1,13 +1,13 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
+import { BrandLogo } from "../../components/branding/brand-logo";
 
 export default function AuthLayout({ children }: { readonly children: ReactNode }) {
   return (
     <main className="grid min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(15,23,42,0.08),_transparent_30%),linear-gradient(180deg,rgba(248,250,252,1)_0%,rgba(241,245,249,0.9)_100%)] px-5 py-8">
       <div className="mx-auto flex w-full max-w-5xl flex-col">
-        <Link href="/" className="mb-8 text-sm font-semibold tracking-[0.2em] text-foreground/80 uppercase">
-          cxnext
-        </Link>
+        <div className="mb-8">
+          <BrandLogo href="/" imageClassName="h-10" />
+        </div>
         <div className="grid flex-1 items-center gap-8 md:grid-cols-[0.9fr_1.1fr]">
           <section className="space-y-5">
             <p className="text-sm font-medium uppercase tracking-[0.2em] text-foreground/60">

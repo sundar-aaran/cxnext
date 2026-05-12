@@ -2,11 +2,30 @@
 
 ## Version State
 
-- Current package version: `1.0.86`
-- Current release tag: `v-1.0.86`
+- Current package version: `1.0.87`
+- Current release tag: `v-1.0.87`
 - Versioned changelog label format: `v 1.0.<reference>`
 - Version section format: `## v-1.0.<reference>`
 - Entry format: `### [v 1.0.<reference>] YYYY-MM-DD - Title`
+
+## v-1.0.87
+
+### [v 1.0.87] 2026-05-12 - Harden Client Docker Setup And Login Recovery
+
+- Reworked client Docker setup to run the selected application client only, removing the Caddy reverse-proxy setup path.
+- Added client-specific build-time frontend API configuration so Docker builds bake the correct public API URL.
+- Fixed local Docker CORS for `localhost` and `127.0.0.1` frontend origins on the same client port.
+- Added optional smoke testing for frontend, backend, and database health with `.env` switches and System Update/Setup actions.
+- Reworked the login form state so a failed password attempt does not block backspace, retyping, or retrying without refresh.
+
+### [v 1.0.87] 2026-05-12 - Add Media Manager And Brand Storage
+
+- Added `storage/public` and `storage/private` with a frontend storage link bootstrap that exposes `/storage` like a Laravel-style public storage mount.
+- Added backend media endpoints for listing, uploading, deleting, and authenticated private downloads.
+- Added Settings > Media Manager with public/private tabs, folder targeting, upload, copy URL, and delete actions.
+- Added shared `logo.svg`, `logo-dark.svg`, and `favicon.svg` assets and wired them into metadata, desk shell branding, public pages, auth pages, and default company logo URLs.
+- Added invoice and report print fallback branding that uses the shared logo asset when no company-specific logo URL is set.
+- Bumped workspace package manifests to `1.0.87`.
 
 ## v-1.0.86
 

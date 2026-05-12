@@ -130,7 +130,7 @@ export function SystemUpdateSettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">
-          {(["sync", "build", "restart"] as const).map((action) => (
+          {(["sync", "build", "restart", "smoke"] as const).map((action) => (
             <Button
               key={action}
               className="rounded-xl capitalize"

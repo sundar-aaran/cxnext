@@ -1,6 +1,6 @@
 {
   "name": "cxnext",
-  "version": "1.0.86",
+  "version": "1.0.87",
   "private": true,
   "packageManager": "pnpm@11.0.9+sha512.34ce82e6780233cf9cad8685029a8f81d2e06196c5a9bad98879f7424940c6817c4e4524fb7d38b8553ceed48b9758b8ebaf1abd3600c232c4c8cf7366086f38",
   "scripts": {
@@ -30,6 +30,7 @@
     "system:update": "node scripts/system-update.mjs deploy",
     "system:update:preflight": "node scripts/system-update.mjs preflight",
     "system:update:sync": "node scripts/system-update.mjs sync",
+    "smoke:test": "node scripts/smoke-test.mjs",
     "setup:status": "node scripts/setup.mjs status",
     "setup:configure": "node scripts/setup.mjs configure",
     "setup:deploy": "node scripts/setup.mjs deploy",

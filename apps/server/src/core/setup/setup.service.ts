@@ -3,7 +3,7 @@ import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import path from "node:path";
 
-export type SetupAction = "build" | "deploy" | "prepare-db" | "pull" | "start" | "status";
+export type SetupAction = "build" | "deploy" | "prepare-db" | "pull" | "smoke" | "start" | "status";
 
 export interface SetupConfigureInput {
   readonly appHost?: string;

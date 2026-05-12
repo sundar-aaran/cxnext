@@ -5,8 +5,10 @@ import path from "node:path";
 import { clearTimeout, setTimeout } from "node:timers";
 import { parseEnv } from "node:util";
 import { resolveRuntimeEnv } from "../../../scripts/runtime-env.mjs";
+import { ensureStorageLinks } from "../../../scripts/storage-link.mjs";
 
 loadEnvFromRoot();
+ensureStorageLinks();
 const runtimeEnv = resolveRuntimeEnv();
 Object.assign(process.env, runtimeEnv);
 

@@ -39,3 +39,6 @@ Thumbs.db
 # Local scratch workspace
 temp/
 /temp/
+
+# Generated frontend storage links
+apps/frontend/public/storage/

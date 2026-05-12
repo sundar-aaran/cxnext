@@ -16,6 +16,7 @@ import {
   HandCoins,
   KeyRound,
   Landmark,
+  LibraryBig,
   LineChart,
   Package,
   ReceiptText,
@@ -197,6 +198,12 @@ const settingsNavItems = [
     icon: <Grid3X3 className="h-4 w-4" />,
   },
   {
+    id: "settings-media",
+    label: "Media Manager",
+    href: "/desk/settings/media",
+    icon: <LibraryBig className="h-4 w-4" />,
+  },
+  {
     id: "settings-core",
     label: "Core Settings",
     href: "/desk/settings/core",
@@ -230,6 +237,7 @@ const settingsNavItems = [
 
 const settingsMenuLabels: Record<string, string> = {
   apps: "Apps",
+  media: "Media Manager",
   core: "Core Settings",
   "billing-layout": "Sales Settings",
   "document-settings": "Document Settings",
@@ -585,6 +593,8 @@ export function DeskShell({ children }: { readonly children: ReactNode }) {
   return (
     <DashboardShell
       brand={session?.context?.company.name ?? "CODEXSUN COMME..."}
+      brandLogoSrc="/storage/logo/logo.svg"
+      brandLogoDarkSrc="/storage/logo/logo-dark.svg"
       brandSubtitle={session?.context?.accountingYear.name ?? "Default company"}
       companySwitcher={{
         activeCompanyId: session?.context?.company.id ?? null,

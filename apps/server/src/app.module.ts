@@ -15,6 +15,7 @@ import { ContactsModule } from "./modules/contacts/contacts.module";
 import { EntriesModule } from "./modules/entries/entries.module";
 import { DocumentSettingsModule } from "./modules/document-settings/document-settings.module";
 import { IndustriesModule } from "./modules/industries/industries.module";
+import { MediaModule } from "./modules/media/media.module";
 import { ProductsModule } from "./modules/products/products.module";
 import { TenantsModule } from "./modules/tenants/tenants.module";
 
@@ -40,6 +41,7 @@ import { TenantsModule } from "./modules/tenants/tenants.module";
     EntriesModule,
     EventsModule,
     IndustriesModule,
+    MediaModule,
     ProductsModule,
     TenantsModule,
     GraphqlFoundationModule,

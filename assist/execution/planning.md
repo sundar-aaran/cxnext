@@ -1,34 +1,42 @@
 # Planning
 
-Active reference: `#86`
+Active reference: `#87`
 
 ## Active
 
-- `#86` Billing workspace side menu
+- `#87` Media manager, storage, and branding assets
   - Goal:
-    - Create a dedicated Billing workspace and show a Billing-focused side menu when the breadcrumb/app switch is on Billing.
+    - Add a frontend media manager, Laravel-style storage structure, and branded light/dark logo assets wired through the application.
   - Scope:
-    - Desk registry/app switcher.
-    - Billing workspace page.
-    - Desk shell sidebar grouping for Billing vs Application/other pages.
+    - Repository storage folder bootstrap and frontend public linking.
+    - Backend media HTTP endpoints for listing, uploading, deleting, and private downloads.
+    - Settings route/page for media management.
+    - Public logo, logo-dark, and favicon assets.
+    - Branding updates for app shell, public pages, auth pages, and invoice fallback usage.
     - Release tracking/version alignment.
   - Constraints:
-    - Billing sidebar order must be Overview, Entries, Reports, Master, Common.
-    - Entries must connect Sales, Purchase, Receipt, and Payment.
-    - Reports, Master, and Common must connect existing billing-related pages.
-    - Existing Application desk/admin organisation menus should remain available outside Billing.
+    - Storage must contain `public` and `private` folders.
+    - Frontend should expose public media through a storage link/copy flow similar to Laravel.
+    - Dark theme needs a distinct `logo-dark.svg`.
+    - Existing company logo URL fields should remain compatible.
   - Planned validation:
-    - Run focused frontend typecheck.
+    - Run focused frontend and server typechecks.
   - Implemented:
-    - Added Billing to the desk registry and app switcher.
-    - Added a Billing overview workspace page with entry, report, and master shortcuts.
-    - Replaced the old `/desk/billing` account scaffold route with the Billing workspace.
-    - Added Billing route detection so Sales, Purchase, Receipt, Payment, Reports, Contact, Product, and Common pages show the Billing side menu.
-    - Added a Billing-focused sidebar ordered as Overview, Entries, Reports, Master, and Common.
-    - Kept organisation, settings, admin, and other application menus on the Application desk side menu outside Billing.
+    - Reviewed current Next.js public asset setup, desk settings navigation, dashboard branding, and company logo fields.
+    - Confirmed there was no existing storage link bootstrap, media manager UI, or backend upload/static-serving module.
+    - Confirmed invoice and report print flows already support company logo URLs, which can be pointed at managed media assets.
+    - Added `storage/public` and `storage/private` plus a frontend storage-link bootstrap for `/storage` and `/logo`.
+    - Added authenticated backend media endpoints for list, upload, delete, and private file download.
+    - Added Settings > Media Manager with public/private tabs, uploads, URL copy, and delete actions.
+    - Added default logo, dark logo, and favicon assets and wired them into app metadata, desk shell branding, public pages, auth pages, and company defaults.
+    - Added invoice and report print fallbacks to the new shared logo asset.
+    - Reworked company logo editing to use a popup uploader that stores files into `storage/public/logo`.
+    - Normalized company logo values to the shared `/storage/logo/<file>` path while the form shows only the file name.
+    - Added overwrite protection for media uploads so replacing an existing logo requires an explicit second confirmation.
   - Validation:
+    - `pnpm --filter @cxnext/server typecheck` passed.
     - `pnpm --filter @cxnext/frontend typecheck` passed.
     - `pnpm --filter @cxnext/ui typecheck` passed.
   - Residual risk:
-    - Runtime browser walkthrough was not run in this pass.
-    - `packages/ui/src/blocks/dashboard/dashboard-shell-root.tsx` was already above the repository file-size guideline before this change; this pass kept the shell change narrowly scoped.
+    - Final runtime browser walkthrough is still pending.
+    - Dashboard shell branding changes should stay narrowly scoped because the shared shell file is already large.

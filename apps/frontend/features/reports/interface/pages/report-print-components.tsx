@@ -259,23 +259,9 @@ function CompanyLogo({
   readonly company: CompanyRecord | null;
   readonly companyName: string;
 }) {
-  const logoUrl = company?.logos.find((logo) => logo.isActive)?.logoUrl.trim();
-  if (logoUrl) {
-    return <img src={logoUrl} alt={companyName} className="max-h-[20mm] max-w-[24mm] object-contain" />;
-  }
-
-  const initials = companyName
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("");
-
-  return initials ? (
-    <div className="inline-flex size-[18mm] items-center justify-center rounded-sm bg-muted text-[14px] font-bold">
-      {initials}
-    </div>
-  ) : null;
+  const logoUrl =
+    company?.logos.find((logo) => logo.isActive)?.logoUrl.trim() || "/storage/logo/logo.svg";
+  return <img src={logoUrl} alt={companyName || "cxnext"} className="max-h-[20mm] max-w-[24mm] object-contain" />;
 }
 
 function GstBalanceCard({

@@ -3,7 +3,7 @@ import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import path from "node:path";
 
-type SystemUpdateAction = "build" | "deploy" | "preflight" | "restart" | "status" | "sync";
+type SystemUpdateAction = "build" | "deploy" | "preflight" | "restart" | "smoke" | "status" | "sync";
 
 @Injectable()
 export class SystemUpdateService {
@@ -27,6 +27,10 @@ export class SystemUpdateService {
 
   public restart() {
     return this.runWritableAction("restart", 180_000);
+  }
+
+  public smoke() {
+    return this.runWritableAction("smoke", 180_000);
   }
 
   public deploy() {

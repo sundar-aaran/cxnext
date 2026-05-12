@@ -9,6 +9,7 @@ import {
   FileKey2,
   Grid3X3,
   Landmark,
+  LibraryBig,
   ReceiptText,
   RefreshCcw,
   Save,
@@ -62,6 +63,12 @@ export function SettingsIndexPage() {
           href="/desk/settings/apps"
           icon={<Grid3X3 className="size-5" />}
           title="Apps"
+        />
+        <SettingsLinkCard
+          description="Upload and manage public or private storage assets, including logo files."
+          href="/desk/settings/media"
+          icon={<LibraryBig className="size-5" />}
+          title="Media Manager"
         />
         <SettingsLinkCard
           description="Edit grouped runtime .env values for application, frontend, backend, database, and security."

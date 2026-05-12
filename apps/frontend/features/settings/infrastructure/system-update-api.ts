@@ -1,7 +1,7 @@
 import { getRequiredPublicApiUrl } from "@/lib/runtime-env";
 import { authFetch } from "../../auth/infrastructure/auth-api";
 
-export type SystemUpdateAction = "build" | "deploy" | "preflight" | "restart" | "sync";
+export type SystemUpdateAction = "build" | "deploy" | "preflight" | "restart" | "smoke" | "sync";
 
 export interface SystemUpdateResponse {
   readonly action?: string;

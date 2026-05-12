@@ -81,8 +81,11 @@ const coreEnvGroups = [
       "SYSTEM_UPDATE_ENABLED",
       "SYSTEM_UPDATE_AUTO_ENABLED",
       "SYSTEM_UPDATE_AUTO_CRON",
+      "SMOKE_TEST_ENABLED",
+      "SMOKE_TEST_TIMEOUT_MS",
       "COMPOSE_PROJECT_NAME",
       "COMPOSE_FILE",
+      "APP_CONTAINER_NAME",
       "APP_VERSION",
       "APP_PUBLIC_PORT",
       "FRONTEND_PUBLIC_PORT",
@@ -374,7 +377,7 @@ function optionsForKey(key: string) {
   }
   if (key === "APP_TYPE") return softwareTypeOptions;
   if (key === "APP_CLIENT") return softwareClientOptions;
-  if (key === "SYSTEM_UPDATE_ENABLED" || key === "SYSTEM_UPDATE_AUTO_ENABLED") {
+  if (key === "SYSTEM_UPDATE_ENABLED" || key === "SYSTEM_UPDATE_AUTO_ENABLED" || key === "SMOKE_TEST_ENABLED") {
     return [
       { value: "true", label: "Enabled" },
       { value: "false", label: "Disabled" },
@@ -396,6 +399,7 @@ function describeKey(key: string) {
     APP_CLIENT: `Client option code. ${SoftwareClient.FullOption} is Developer Edition.`,
     DB_PASSWORD: "Database password for the selected DB user.",
     COMPOSE_FILE: "Docker Compose file used by deployment update commands.",
+    APP_CONTAINER_NAME: "Docker container name used by in-app restart and update helper commands.",
     DEPLOY_DIR: "Absolute path to the host checkout used by Docker deployment and system update.",
     GIT_BRANCH: "Git branch used by manual and automated deployment updates.",
     GIT_URL: "Git repository URL used by the deployment updater.",
@@ -404,6 +408,8 @@ function describeKey(key: string) {
     SYSTEM_UPDATE_ENABLED: "Allows authenticated admins to trigger update actions from the app.",
     SYSTEM_UPDATE_AUTO_ENABLED: "Documents whether host-level automatic update scheduling is enabled.",
     SYSTEM_UPDATE_AUTO_CRON: "Host cron expression used when automatic updates are configured outside the app.",
+    SMOKE_TEST_ENABLED: "Runs frontend, backend, and database smoke checks during startup and after deployment restart.",
+    SMOKE_TEST_TIMEOUT_MS: "Maximum time the smoke test waits for frontend, backend, and database readiness.",
   };
 
   return descriptions[key] ?? "Editable runtime environment value.";

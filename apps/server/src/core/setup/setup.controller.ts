@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, Post } from "@nestjs/common";
 import { SetupService, type SetupAction, type SetupConfigureInput } from "./setup.service";
 
-const setupActions = new Set<SetupAction>(["build", "deploy", "prepare-db", "pull", "start", "status"]);
+const setupActions = new Set<SetupAction>(["build", "deploy", "prepare-db", "pull", "smoke", "start", "status"]);
 
 @Controller("setup")
 export class SetupController {

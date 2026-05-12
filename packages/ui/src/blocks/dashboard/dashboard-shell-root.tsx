@@ -67,6 +67,8 @@ export interface DashboardCompanySwitcherOption {
 
 export interface DashboardShellProps {
   readonly brand: string;
+  readonly brandLogoDarkSrc?: string;
+  readonly brandLogoSrc?: string;
   readonly brandSubtitle?: string;
   readonly companySwitcher?: {
     readonly label?: string;
@@ -266,6 +268,8 @@ function storeOpenNavGroups(openGroups: Record<string, boolean>) {
 
 export function DashboardShell({
   brand,
+  brandLogoDarkSrc,
+  brandLogoSrc,
   brandSubtitle = "Company",
   companySwitcher,
   workspace,
@@ -439,11 +443,24 @@ export function DashboardShell({
               >
                 <span
                   className={cn(
-                    "flex shrink-0 items-center justify-center rounded-md bg-foreground text-background shadow-sm transition-[width,height,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-105",
+                    "flex shrink-0 items-center justify-center overflow-hidden rounded-md bg-foreground text-background shadow-sm transition-[width,height,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-105",
                     labelsHidden ? "size-9" : "size-10",
                   )}
                 >
-                  <Building2 className="size-5" />
+                  {brandLogoSrc ? (
+                    <picture className="flex size-full items-center justify-center bg-background">
+                      {brandLogoDarkSrc ? (
+                        <source media="(prefers-color-scheme: dark)" srcSet={brandLogoDarkSrc} />
+                      ) : null}
+                      <img
+                        src={brandLogoSrc}
+                        alt={brand}
+                        className="h-full w-full object-contain p-1.5"
+                      />
+                    </picture>
+                  ) : (
+                    <Building2 className="size-5" />
+                  )}
                 </span>
                 <span className={cn("min-w-0 flex-1", sidebarLabelClass(labelsHidden))}>
                   <span className="block truncate text-sm font-semibold text-foreground">

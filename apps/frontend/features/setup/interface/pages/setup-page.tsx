@@ -168,6 +168,10 @@ export function SetupPage() {
               <Play className="size-4" />
               Start
             </Button>
+            <Button variant="outline" onClick={() => void runAction("smoke")} disabled={Boolean(running)}>
+              <CheckCircle2 className="size-4" />
+              Smoke Test
+            </Button>
             <Button onClick={() => void runAction("deploy")} disabled={Boolean(running)}>
               <RefreshCcw className="size-4" />
               Pull, Build & Start

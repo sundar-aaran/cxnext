@@ -1,6 +1,6 @@
 import { getRequiredPublicApiUrl } from "@/lib/runtime-env";
 
-export type SetupAction = "build" | "deploy" | "prepare-db" | "pull" | "start" | "status";
+export type SetupAction = "build" | "deploy" | "prepare-db" | "pull" | "smoke" | "start" | "status";
 
 export interface SetupConfigureInput {
   readonly appHost: string;

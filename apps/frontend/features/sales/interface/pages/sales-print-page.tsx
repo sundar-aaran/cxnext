@@ -592,23 +592,11 @@ function CompanyLogo({
   readonly company: CompanyRecord | null;
   readonly companyName: string;
 }) {
-  const logoUrl = company?.logos.find((logo) => logo.isActive)?.logoUrl.trim();
-  if (logoUrl) {
-    return <img src={logoUrl} alt={companyName} className="mx-auto max-h-[105px] max-w-[120px] object-contain" />;
-  }
-
-  const initials = companyName
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("");
-
-  return initials ? (
-    <div className="inline-flex size-[100px] items-center justify-center rounded-full border-2 border-black text-[32px] font-bold">
-      {initials}
-    </div>
-  ) : null;
+  const logoUrl =
+    company?.logos.find((logo) => logo.isActive)?.logoUrl.trim() || "/storage/logo/logo.svg";
+  return (
+    <img src={logoUrl} alt={companyName || "cxnext"} className="mx-auto max-h-[105px] max-w-[120px] object-contain" />
+  );
 }
 
 function EInvoiceQrData({

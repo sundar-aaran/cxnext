@@ -48,7 +48,10 @@ const defaults = {
   GIT_BRANCH: "main",
   DEPLOY_DIR: root,
   COMPOSE_FILE: ".container/docker-compose.yml",
+  APP_CONTAINER_NAME: "cxnext-app",
   SYSTEM_UPDATE_ENABLED: "true",
+  SMOKE_TEST_ENABLED: "false",
+  SMOKE_TEST_TIMEOUT_MS: "60000",
 };
 
 function output(status, data = {}) {
@@ -202,10 +205,11 @@ async function capture(commandName, commandArgs, options = {}) {
 }
 
 async function runComposeStep(name, composeArgs) {
-  const direct = await run("docker", ["compose", "-f", ".container/docker-compose.yml", ...composeArgs]);
+  const composeFile = String(readCurrentEnv().get("COMPOSE_FILE") || ".container/docker-compose.yml");
+  const direct = await run("docker", ["compose", "-f", composeFile, ...composeArgs]);
   if (direct.code === 0) return direct;
 
-  const legacy = await run("docker-compose", ["-f", ".container/docker-compose.yml", ...composeArgs]);
+  const legacy = await run("docker-compose", ["-f", composeFile, ...composeArgs]);
   if (legacy.code !== 0) {
     fail(`${name} failed.`, legacy.stderr || legacy.stdout || direct.stderr || direct.stdout);
   }
@@ -223,7 +227,8 @@ function shellQuote(value) {
 async function currentContainerDeploySource() {
   if (!isRunningInContainer()) return root;
   const template = `{{range .Mounts}}{{if eq .Destination "${root}"}}{{.Source}}{{end}}{{end}}`;
-  return (await capture("docker", ["inspect", "cxnext-app", "--format", template])) || root;
+  const appContainerName = String(readCurrentEnv().get("APP_CONTAINER_NAME") || "cxnext-app");
+  return (await capture("docker", ["inspect", appContainerName, "--format", template])) || root;
 }
 
 async function runDetachedComposeStart() {
@@ -232,7 +237,11 @@ async function runDetachedComposeStart() {
   const helperName = `cxnext-setup-helper-${Date.now()}`;
   const helperImage = `cxnext-app:${String(env.get("APP_VERSION") || "local")}`;
   const composePath = String(env.get("COMPOSE_FILE") || ".container/docker-compose.yml");
-  const startCommand = `sleep 2; docker compose -f ${shellQuote(composePath)} up -d app`;
+  const appContainerName = String(env.get("APP_CONTAINER_NAME") || "cxnext-app");
+  const smokeCommand = isEnabled(env.get("SMOKE_TEST_ENABLED"))
+    ? `; docker compose -f ${shellQuote(composePath)} exec -T app pnpm smoke:test`
+    : "";
+  const startCommand = `sleep 2; docker compose -f ${shellQuote(composePath)} up -d app${smokeCommand}`;
   const completed = await run(
     "docker",
     [
@@ -244,7 +253,7 @@ async function runDetachedComposeStart() {
       "-v",
       "/var/run/docker.sock:/var/run/docker.sock",
       "--volumes-from",
-      "cxnext-app",
+      appContainerName,
       "-e",
       `DEPLOY_SOURCE=${deploySource}`,
       "-w",
@@ -294,6 +303,15 @@ async function prepareDatabase() {
   return output("ok", { message: "Database prepared." });
 }
 
+function isEnabled(value) {
+  return ["1", "true", "yes", "on"].includes(String(value ?? "").trim().toLowerCase());
+}
+
+async function smokeTest() {
+  await runComposeStep("Smoke test", ["exec", "-T", "app", "pnpm", "smoke:test"]);
+  return output("ok", { message: "Smoke test passed." });
+}
+
 switch (command) {
   case "status":
     output("ok", { setup: setupStatus() });
@@ -309,15 +327,24 @@ switch (command) {
     break;
   case "start":
     await startApp();
+    if (isEnabled(readCurrentEnv().get("SMOKE_TEST_ENABLED")) && !isRunningInContainer()) {
+      await smokeTest();
+    }
     break;
   case "prepare-db":
     await prepareDatabase();
+    break;
+  case "smoke":
+    await smokeTest();
     break;
   case "deploy":
     suppressStepOutput = true;
     await pullLatest();
     await buildApp();
     await startApp();
+    if (isEnabled(readCurrentEnv().get("SMOKE_TEST_ENABLED")) && !isRunningInContainer()) {
+      await smokeTest();
+    }
     suppressStepOutput = false;
     output("ok", { message: "Application deployed." });
     break;

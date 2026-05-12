@@ -9,7 +9,7 @@ ENV APP_HOST=0.0.0.0 \
   FRONTEND_HTTP_PORT=3000 \
   PORT=4000
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends ca-certificates curl git docker.io \
+  && apt-get install -y --no-install-recommends ca-certificates curl nano git docker.io \
   && mkdir -p /usr/local/lib/docker/cli-plugins \
   && curl -fsSL https://github.com/docker/compose/releases/download/v2.29.7/docker-compose-linux-x86_64 -o /usr/local/lib/docker/cli-plugins/docker-compose \
   && chmod +x /usr/local/lib/docker/cli-plugins/docker-compose \
@@ -36,8 +36,22 @@ RUN pnpm install --frozen-lockfile
 
 FROM deps AS builder
 COPY . .
+ARG BACKEND_HEALTH_URL
+ARG BACKEND_URL
+ARG FRONTEND_URL
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_SETUP_LOOKUP_ENABLED
+ENV BACKEND_HEALTH_URL=${BACKEND_HEALTH_URL} \
+  BACKEND_URL=${BACKEND_URL} \
+  FRONTEND_URL=${FRONTEND_URL} \
+  NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL} \
+  NEXT_PUBLIC_SETUP_LOOKUP_ENABLED=${NEXT_PUBLIC_SETUP_LOOKUP_ENABLED}
 RUN pnpm --filter @cxnext/types build \
+  && pnpm --filter @cxnext/config build \
+  && pnpm --filter @cxnext/core build \
   && pnpm --filter @cxnext/db build \
+  && pnpm --filter @cxnext/event build \
+  && pnpm --filter @cxnext/utils build \
   && pnpm --filter @cxnext/server build \
   && pnpm --filter @cxnext/frontend build
 

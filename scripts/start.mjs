@@ -100,6 +100,34 @@ function stopChildren(children) {
   }
 }
 
+function isEnabled(value) {
+  return ["1", "true", "yes", "on"].includes(String(value ?? "").trim().toLowerCase());
+}
+
+async function runStartupSmoke(children) {
+  if (!isEnabled(runtimeEnv.SMOKE_TEST_ENABLED)) {
+    return;
+  }
+
+  process.stdout.write("cxnext startup smoke test enabled.\n");
+  const smokeScript = path.join(root, "scripts", "smoke-test.mjs");
+  const child = spawn(process.execPath, [smokeScript], {
+    cwd: root,
+    stdio: "inherit",
+    windowsHide: true,
+    env: runtimeEnv,
+  });
+
+  const code = await new Promise((resolve) => {
+    child.once("exit", resolve);
+  });
+
+  if (code !== 0) {
+    stopChildren(children);
+    process.exit(Number(code ?? 1));
+  }
+}
+
 if (!setupMode) {
   await runPreflight();
 } else {
@@ -118,3 +146,5 @@ if (includeDesktop) {
 
 process.once("SIGINT", () => stopChildren(children));
 process.once("SIGTERM", () => stopChildren(children));
+
+await runStartupSmoke(children);

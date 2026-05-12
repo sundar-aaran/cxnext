@@ -5,6 +5,23 @@ import { FastifyAdapter, type NestFastifyApplication } from "@nestjs/platform-fa
 import { loadBaseEnv } from "@cxnext/config";
 import { AppModule } from "./app.module";
 
+function corsOrigins(frontendUrl: string): string[] {
+  const origins = new Set([frontendUrl]);
+
+  try {
+    const url = new URL(frontendUrl);
+
+    if (url.hostname === "localhost" || url.hostname === "127.0.0.1") {
+      url.hostname = url.hostname === "localhost" ? "127.0.0.1" : "localhost";
+      origins.add(url.toString().replace(/\/$/, ""));
+    }
+  } catch {
+    // loadBaseEnv already validates this value; keep the original origin if parsing ever changes.
+  }
+
+  return [...origins];
+}
+
 async function bootstrap(): Promise<void> {
   const env = loadBaseEnv();
   const app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter(), {
@@ -14,7 +31,7 @@ async function bootstrap(): Promise<void> {
 
   app.enableCors({
     methods: ["GET", "HEAD", "POST", "PATCH", "DELETE", "OPTIONS"],
-    origin: env.FRONTEND_URL,
+    origin: corsOrigins(env.FRONTEND_URL),
   });
   app.enableShutdownHooks();
 

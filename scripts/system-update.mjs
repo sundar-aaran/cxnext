@@ -25,6 +25,7 @@ const deployDir = path.resolve(env.DEPLOY_DIR || scriptRoot);
 const gitUrl = env.GIT_URL || defaultGitUrl;
 const gitBranch = env.GIT_BRANCH || "main";
 const composeFile = env.COMPOSE_FILE || ".container/docker-compose.yml";
+const appContainerName = env.APP_CONTAINER_NAME || "cxnext-app";
 
 function log(message) {
   if (!jsonMode) console.log(message);
@@ -127,7 +128,7 @@ function shellQuote(value) {
 async function currentContainerDeploySource() {
   if (!isRunningInContainer()) return deployDir;
   const template = `{{range .Mounts}}{{if eq .Destination "${deployDir}"}}{{.Source}}{{end}}{{end}}`;
-  return (await capture("docker", ["inspect", "cxnext-app", "--format", template])) || deployDir;
+  return (await capture("docker", ["inspect", appContainerName, "--format", template])) || deployDir;
 }
 
 async function dockerCompose(args, options = {}) {
@@ -233,7 +234,10 @@ async function restartApp() {
     const deploySource = await currentContainerDeploySource();
     const helperName = `cxnext-update-helper-${Date.now()}`;
     const helperImage = `cxnext-app:${env.APP_VERSION || "local"}`;
-    const restartCommand = `sleep 2; docker compose -f ${shellQuote(composeFile)} up -d app`;
+    const smokeCommand = isEnabled(env.SMOKE_TEST_ENABLED)
+      ? `; docker compose -f ${shellQuote(composeFile)} exec -T app pnpm smoke:test`
+      : "";
+    const restartCommand = `sleep 2; docker compose -f ${shellQuote(composeFile)} up -d app${smokeCommand}`;
     const completed = await run(
       "docker",
       [
@@ -245,7 +249,7 @@ async function restartApp() {
         "-v",
         "/var/run/docker.sock:/var/run/docker.sock",
         "--volumes-from",
-        "cxnext-app",
+        appContainerName,
         "-e",
         `DEPLOY_SOURCE=${deploySource}`,
         "-w",
@@ -263,6 +267,16 @@ async function restartApp() {
 
   const completed = await dockerCompose(["up", "-d", "app"], { cwd: deployDir });
   if (completed.code !== 0) fail("Docker compose restart failed.", completed.stderr);
+}
+
+function isEnabled(value) {
+  return ["1", "true", "yes", "on"].includes(String(value ?? "").trim().toLowerCase());
+}
+
+async function smokeTest() {
+  log("Running smoke test");
+  const completed = await dockerCompose(["exec", "-T", "app", "pnpm", "smoke:test"], { cwd: deployDir });
+  if (completed.code !== 0) fail("Smoke test failed.", completed.stderr || completed.stdout);
 }
 
 switch (command) {
@@ -284,6 +298,11 @@ switch (command) {
     break;
   case "restart":
     await restartApp();
+    if (isEnabled(env.SMOKE_TEST_ENABLED) && !isRunningInContainer()) await smokeTest();
+    result("ok", { git: await gitStatus() });
+    break;
+  case "smoke":
+    await smokeTest();
     result("ok", { git: await gitStatus() });
     break;
   case "deploy": {
@@ -292,6 +311,7 @@ switch (command) {
     await syncSource();
     await buildApp();
     await restartApp();
+    if (isEnabled(env.SMOKE_TEST_ENABLED) && !isRunningInContainer()) await smokeTest();
     result("ok", { git: await gitStatus() });
     break;
   }

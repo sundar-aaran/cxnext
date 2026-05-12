@@ -8,9 +8,11 @@ import { z } from "zod";
 import { toast } from "sonner";
 import {
   ArrowLeft,
+  AlertTriangle,
   Check,
   ChevronDown,
   Eye,
+  ImagePlus,
   MoreHorizontal,
   Pencil,
   Plus,
@@ -43,6 +45,7 @@ import {
   buildMasterListShowingLabel,
   useGlobalLoader,
 } from "@cxnext/ui";
+import { readStoredApplicationContext } from "../../../auth/infrastructure/session-storage";
 import { listIndustries } from "../../../industry/application/industry-service";
 import type { IndustryRecord } from "../../../industry/domain/industry";
 import { listTenants } from "../../../tenant/application/tenant-service";
@@ -58,6 +61,12 @@ import {
   softDeleteCompany,
   upsertCompany,
 } from "../../application/company-service";
+import type { MediaItemRecord } from "../../../settings/infrastructure/media-manager-api";
+import {
+  deleteMedia as deleteMediaFile,
+  listMedia,
+  uploadMedia as uploadMediaFile,
+} from "../../../settings/infrastructure/media-manager-api";
 import {
   companyStatusFilters,
   defaultCompanyColumnVisibility,
@@ -92,6 +101,21 @@ const companyLogoVariants = [
   { type: "favicon", label: "Favicon" },
   { type: "letter-head", label: "Letter Head" },
 ] as const;
+
+const companyLogoBasePath = "/storage/logo";
+const defaultCompanyLogoFileNames: Record<(typeof companyLogoVariants)[number]["type"], string> = {
+  logo: "logo.svg",
+  "logo-dark": "logo-dark.svg",
+  favicon: "favicon.svg",
+  "letter-head": "logo.svg",
+};
+
+const defaultCompanyLogoUrls: Record<(typeof companyLogoVariants)[number]["type"], string> = {
+  logo: `${companyLogoBasePath}/logo.svg`,
+  "logo-dark": `${companyLogoBasePath}/logo-dark.svg`,
+  favicon: `${companyLogoBasePath}/favicon.svg`,
+  "letter-head": `${companyLogoBasePath}/logo.svg`,
+};
 
 const msmeCategoryOptions: readonly ThemedSelectOption[] = [
   { value: "micro", label: "Micro" },
@@ -579,11 +603,17 @@ export function CompanyUpsertPage({
   const [addressTypes, setAddressTypes] = useState<readonly CommonRecord[]>([]);
   const [isLoaded, setIsLoaded] = useState(!isEdit);
   const [message, setMessage] = useState<string | null>(null);
+  const [logoUploadDialog, setLogoUploadDialog] = useState<{
+    readonly currentFileName: string;
+    readonly variantType: (typeof companyLogoVariants)[number]["type"];
+  } | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const form = useForm({
     defaultValues: defaultCompanyFormValues(existingCompany),
     onSubmit: async ({ value }) => {
-      const normalizedValue = normalizeCompanyAddressTypes(value, addressTypes);
+      const normalizedValue = normalizeCompanyLogos(
+        normalizeCompanyAddressTypes(value, addressTypes),
+      );
       const parsedValue = companySchema.safeParse(normalizedValue);
       if (!parsedValue.success) {
         const nextValidationErrors = buildCompanyValidationErrors(parsedValue.error.issues);
@@ -1071,20 +1101,47 @@ export function CompanyUpsertPage({
                           <div className="grid gap-x-6 gap-y-5 md:grid-cols-2">
                             {companyLogoVariants.map((variant) => (
                               <FieldShell key={variant.type} label={variant.label} error={null}>
-                                <Input
-                                  className="h-11 rounded-xl"
-                                  value={getLogoVariantUrl(field.state.value, variant.type)}
-                                  placeholder={`https://example.com/${variant.type}.png`}
-                                  onChange={(event) =>
-                                    field.handleChange(
-                                      updateLogoVariantUrl(
-                                        field.state.value,
-                                        variant.type,
-                                        event.target.value,
-                                      ),
-                                    )
-                                  }
-                                />
+                                <div className="space-y-3">
+                                  <div className="flex items-center gap-2">
+                                    <Input
+                                      className="h-11 rounded-xl"
+                                      value={getLogoVariantFileName(field.state.value, variant.type)}
+                                      placeholder={defaultCompanyLogoFileNames[variant.type]}
+                                      onChange={(event) =>
+                                        field.handleChange(
+                                          updateLogoVariantFileName(
+                                            field.state.value,
+                                            variant.type,
+                                            event.target.value,
+                                          ),
+                                        )
+                                      }
+                                    />
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      className="h-11 rounded-xl px-3"
+                                      onClick={() =>
+                                        setLogoUploadDialog({
+                                          currentFileName: getLogoVariantFileName(
+                                            field.state.value,
+                                            variant.type,
+                                          ),
+                                          variantType: variant.type,
+                                        })
+                                      }
+                                    >
+                                      <ImagePlus className="size-4" />
+                                      Upload
+                                    </Button>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground">
+                                    Stored in `{companyLogoBasePath}` as{" "}
+                                    {getLogoVariantFileName(field.state.value, variant.type) ||
+                                      defaultCompanyLogoFileNames[variant.type]}
+                                    .
+                                  </p>
+                                </div>
                               </FieldShell>
                             ))}
                           </div>
@@ -1352,6 +1409,24 @@ export function CompanyUpsertPage({
           </form>
         </MasterListUpsertCard>
       </MasterListUpsertLayout>
+      {logoUploadDialog ? (
+        <CompanyLogoUploadDialog
+          currentFileName={logoUploadDialog.currentFileName}
+          variantType={logoUploadDialog.variantType}
+          onClose={() => setLogoUploadDialog(null)}
+          onUploaded={(record) => {
+            form.setFieldValue(
+              "logos",
+              updateLogoVariantUrl(
+                form.getFieldValue("logos"),
+                logoUploadDialog.variantType,
+                record.publicUrl ?? buildLogoStoragePath(record.fileName),
+              ),
+            );
+            setLogoUploadDialog(null);
+          }}
+        />
+      ) : null}
     </MasterListPageFrame>
   );
 }
@@ -1845,6 +1920,199 @@ function updateCollectionItem<T extends object>(
   );
 }
 
+function CompanyLogoUploadDialog({
+  currentFileName,
+  onClose,
+  onUploaded,
+  variantType,
+}: {
+  readonly currentFileName: string;
+  readonly onClose: () => void;
+  readonly onUploaded: (record: MediaItemRecord) => void;
+  readonly variantType: (typeof companyLogoVariants)[number]["type"];
+}) {
+  const [targetFileName, setTargetFileName] = useState(currentFileName || defaultLogoFileName(variantType));
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [existingFileNames, setExistingFileNames] = useState<readonly string[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [overwriteReady, setOverwriteReady] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const activeCompanyId = readStoredApplicationContext()?.company.id ?? null;
+  const normalizedCurrentFileName = trimLogoStoragePath(currentFileName);
+
+  useEffect(() => {
+    if (!activeCompanyId) {
+      setExistingFileNames([]);
+      return;
+    }
+
+    const controller = new AbortController();
+    void listMedia({
+      companyId: activeCompanyId,
+      folder: "logo",
+      signal: controller.signal,
+      visibility: "public",
+    })
+      .then((items) => setExistingFileNames(items.map((item) => item.fileName.toLowerCase())))
+      .catch(() => setExistingFileNames([]));
+
+    return () => controller.abort();
+  }, [activeCompanyId]);
+
+  async function submit(forceOverwrite = false) {
+    if (!activeCompanyId) {
+      setError("Active company context is required before uploading.");
+      return;
+    }
+
+    if (!selectedFile) {
+      setError("Choose a file to upload.");
+      return;
+    }
+
+    if (!isSupportedImageFile(selectedFile)) {
+      setError("Choose an image file such as SVG, PNG, JPG, WEBP, GIF, BMP, AVIF, ICO, or TIFF.");
+      return;
+    }
+
+    const nextFileName = trimLogoStoragePath(targetFileName) || defaultLogoFileName(variantType);
+    const normalizedNextFileName = nextFileName.toLowerCase();
+    const hasExistingTargetFile = existingFileNames.includes(normalizedNextFileName);
+    const isReplacingAssignedLogo =
+      Boolean(normalizedCurrentFileName) &&
+      normalizedCurrentFileName.toLowerCase() !== normalizedNextFileName;
+
+    if (!forceOverwrite && (hasExistingTargetFile || isReplacingAssignedLogo)) {
+      setOverwriteReady(true);
+      setError(
+        hasExistingTargetFile
+          ? `File ${nextFileName} already exists in ${companyLogoBasePath}. Upload again to overwrite it.`
+          : `This will replace the current ${variantType} file ${normalizedCurrentFileName} with ${nextFileName}. Upload again to confirm.`,
+      );
+      return;
+    }
+
+    setIsUploading(true);
+    setError(null);
+
+    try {
+      const renamedFile = new File([selectedFile], nextFileName, { type: selectedFile.type });
+      const uploaded = await uploadMediaFile({
+        companyId: activeCompanyId,
+        file: renamedFile,
+        folder: "logo",
+        overwrite: forceOverwrite,
+        visibility: "public",
+      });
+      if (
+        isReplacingAssignedLogo &&
+        shouldDeletePriorLogoFile(normalizedCurrentFileName, variantType)
+      ) {
+        await deleteMediaFile({
+          companyId: activeCompanyId,
+          path: `logo/${normalizedCurrentFileName}`,
+          visibility: "public",
+        }).catch(() => undefined);
+      }
+      toast.success("Logo uploaded", {
+        description: `${uploaded.fileName} is available in ${companyLogoBasePath}.`,
+      });
+      onUploaded(uploaded);
+    } catch (uploadError) {
+      const message = getErrorMessage(uploadError);
+      if (message.includes("same name already exists") && !forceOverwrite) {
+        setOverwriteReady(true);
+        setError(`File ${nextFileName} already exists in ${companyLogoBasePath}. Upload again to overwrite it.`);
+      } else {
+        setError(message);
+      }
+    } finally {
+      setIsUploading(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-background/55 p-2 backdrop-blur-sm sm:p-4">
+      <div className="w-[min(680px,calc(100vw-1rem))] rounded-2xl border border-border/70 bg-card p-5 shadow-2xl sm:w-[min(720px,calc(100vw-2rem))]">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">Upload {variantType}</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Files are stored in `{companyLogoBasePath}` and linked back into this company record.
+            </p>
+          </div>
+          <Button type="button" variant="ghost" size="icon" className="size-8 rounded-full" onClick={onClose}>
+            <X className="size-4" />
+          </Button>
+        </div>
+        <div className="mt-5 grid gap-4">
+          <FieldShell label="Stored file name" error={null}>
+            <Input
+              className="h-11 rounded-xl"
+              value={targetFileName}
+              onChange={(event) => {
+                setTargetFileName(trimLogoStoragePath(event.target.value));
+                setOverwriteReady(false);
+                setError(null);
+              }}
+            />
+          </FieldShell>
+          <FieldShell label="Choose file" error={null}>
+            <Input
+              className="h-11 rounded-xl px-3 py-2"
+              accept="image/*,.svg,.ico,.avif,.bmp,.tif,.tiff"
+              type="file"
+              onChange={(event) => {
+                const nextFile = event.target.files?.[0] ?? null;
+                setSelectedFile(nextFile);
+                if (nextFile) {
+                  setTargetFileName((current) =>
+                    syncLogoFileNameExtension(
+                      trimLogoStoragePath(current) || defaultLogoFileName(variantType),
+                      nextFile.name,
+                    ),
+                  );
+                }
+                setOverwriteReady(false);
+                setError(null);
+              }}
+            />
+          </FieldShell>
+          <div className="rounded-xl border border-border/70 bg-muted/15 px-4 py-3 text-sm text-muted-foreground">
+            Final path: <span className="font-medium text-foreground">{buildLogoStoragePath(targetFileName || defaultLogoFileName(variantType))}</span>
+          </div>
+          {error ? (
+            <div
+              className={
+                overwriteReady
+                  ? "flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+                  : "rounded-xl border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+              }
+            >
+              {overwriteReady ? <AlertTriangle className="mt-0.5 size-4 shrink-0" /> : null}
+              <span>{error}</span>
+            </div>
+          ) : null}
+        </div>
+        <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-border/70 pt-4">
+          <Button
+            type="button"
+            className="rounded-xl"
+            disabled={!selectedFile || isUploading}
+            onClick={() => void submit(overwriteReady)}
+          >
+            <ImagePlus className="size-4" />
+            {overwriteReady ? "Overwrite file" : "Upload file"}
+          </Button>
+          <Button type="button" variant="outline" className="rounded-xl" onClick={onClose}>
+            Cancel
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function getLogoVariantUrl(
   logos: readonly CompanyUpsertInput["logos"][number][],
   logoType: string,
@@ -1853,6 +2121,13 @@ function getLogoVariantUrl(
     logos.find((logo) => normalizeLogoType(logo.logoType) === normalizeLogoType(logoType))
       ?.logoUrl ?? ""
   );
+}
+
+function getLogoVariantFileName(
+  logos: readonly CompanyUpsertInput["logos"][number][],
+  logoType: string,
+) {
+  return trimLogoStoragePath(getLogoVariantUrl(logos, logoType));
 }
 
 function updateLogoVariantUrl(
@@ -1871,8 +2146,93 @@ function updateLogoVariantUrl(
   );
 }
 
+function updateLogoVariantFileName(
+  logos: readonly CompanyUpsertInput["logos"][number][],
+  logoType: string,
+  fileName: string,
+) {
+  return updateLogoVariantUrl(logos, logoType, canonicalLogoUrl(fileName, logoType));
+}
+
+function canonicalLogoUrl(fileName: string, logoType: string) {
+  const trimmedFileName = trimLogoStoragePath(fileName);
+  if (!trimmedFileName) {
+    return buildLogoStoragePath(defaultLogoFileName(logoType));
+  }
+  return buildLogoStoragePath(trimmedFileName);
+}
+
+function buildLogoStoragePath(fileName: string) {
+  return `${companyLogoBasePath}/${trimLogoStoragePath(fileName)}`;
+}
+
+function trimLogoStoragePath(value: string | null | undefined) {
+  const trimmedValue = value?.trim() ?? "";
+  if (!trimmedValue) return "";
+  return trimmedValue
+    .replace(/^https?:\/\/[^/]+/i, "")
+    .replace(/^\/?storage\/logo\//i, "")
+    .replace(/^\/+/, "");
+}
+
+function defaultLogoFileName(logoType: string) {
+  const normalizedType = normalizeLogoType(logoType) as keyof typeof defaultCompanyLogoFileNames;
+  return defaultCompanyLogoFileNames[normalizedType] ?? "logo.svg";
+}
+
+function shouldDeletePriorLogoFile(fileName: string, logoType: string) {
+  const trimmedFileName = trimLogoStoragePath(fileName).toLowerCase();
+  return trimmedFileName.length > 0 && trimmedFileName !== defaultLogoFileName(logoType).toLowerCase();
+}
+
+function syncLogoFileNameExtension(currentFileName: string, uploadedFileName: string) {
+  const normalizedCurrent = trimLogoStoragePath(currentFileName) || "logo";
+  const uploadedExtension = pathExtension(uploadedFileName);
+  if (!uploadedExtension) {
+    return normalizedCurrent;
+  }
+
+  const currentBaseName = normalizedCurrent.replace(/\.[^.]+$/g, "");
+  return `${currentBaseName}${uploadedExtension}`;
+}
+
+function pathExtension(fileName: string) {
+  const match = /\.[^.]+$/.exec(fileName.trim());
+  return match?.[0].toLowerCase() ?? "";
+}
+
+function isSupportedImageFile(file: File) {
+  if (file.type.startsWith("image/")) {
+    return true;
+  }
+
+  return [
+    ".avif",
+    ".bmp",
+    ".gif",
+    ".ico",
+    ".jpeg",
+    ".jpg",
+    ".png",
+    ".svg",
+    ".tif",
+    ".tiff",
+    ".webp",
+  ].includes(pathExtension(file.name));
+}
+
 function normalizeLogoType(value: string) {
   return value.trim().toLowerCase().replace(/\s+/g, "-");
+}
+
+function normalizeCompanyLogos(value: CompanyUpsertInput): CompanyUpsertInput {
+  return {
+    ...value,
+    logos: value.logos.map((logo) => ({
+      ...logo,
+      logoUrl: canonicalLogoUrl(logo.logoUrl, logo.logoType),
+    })),
+  };
 }
 
 const companyValidationFieldLabels: Record<string, string> = {
@@ -2049,7 +2409,7 @@ function defaultCompanyFormValues(
       logoUrl:
         company?.logos.find(
           (logo) => normalizeLogoType(logo.logoType) === normalizeLogoType(variant.type),
-        )?.logoUrl ?? "",
+        )?.logoUrl ?? defaultCompanyLogoUrls[variant.type],
       isActive:
         company?.logos.find(
           (logo) => normalizeLogoType(logo.logoType) === normalizeLogoType(variant.type),

@@ -3,6 +3,7 @@
 apps/frontend/.next
 apps/server/dist
 dist
+**/dist
 node_modules
 **/node_modules
 *.log
@@ -11,3 +12,5 @@ node_modules
 !.env.example
 docker-data
 tmp
+apps/frontend/public/storage
+apps/frontend/public/logo

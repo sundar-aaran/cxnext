@@ -36,6 +36,11 @@ export class SystemUpdateController {
     return this.systemUpdateService.restart();
   }
 
+  @Post("smoke")
+  public smoke() {
+    return this.systemUpdateService.smoke();
+  }
+
   @Post("deploy")
   public deploy() {
     return this.systemUpdateService.deploy();
