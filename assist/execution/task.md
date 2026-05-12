@@ -1,17 +1,18 @@
 # Task
 
-Active reference: `#83`
+Active reference: `#86`
 
 ## Active
 
-- [ ] `#83` Server-backed company settings
-  - [ ] Phase 1: trace current settings storage
-    - [ ] 1.1 Find local storage usage for Sales Settings, Duties & Taxes, Apps, Customise, and Features.
-    - [ ] 1.2 Inspect backend company/settings module patterns and permission guards.
-  - [ ] Phase 2: implementation
-    - [ ] 2.1 Add backend persistence for company-scoped settings.
-    - [ ] 2.2 Add settings API endpoints protected by existing auth/role flow.
-    - [ ] 2.3 Wire frontend settings pages to server-backed storage with local fallback only where needed.
-  - [ ] Phase 3: validation
-    - [ ] 3.1 Run focused typechecks.
-    - [ ] 3.2 Update changelog/version tracking.
+- [x] `#86` Billing workspace side menu
+  - [x] Phase 1: inspect desk routing and sidebar
+    - [x] 1.1 Review current desk shell nav grouping and billing route.
+    - [x] 1.2 Review dashboard workspace page patterns.
+  - [x] Phase 2: implementation
+    - [x] 2.1 Add a Billing workspace/dashboard page.
+    - [x] 2.2 Add Billing to the app switcher/desk registry.
+    - [x] 2.3 Show Billing sidebar groups: Overview, Entries, Reports, Master, Common.
+    - [x] 2.4 Keep non-billing/admin/application menus on Application desk pages.
+  - [x] Phase 3: validation
+    - [x] 3.1 Run focused frontend typecheck.
+    - [x] 3.2 Update release tracking.

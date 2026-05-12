@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { DeskDashboard } from "../../../../components/dashboard/desk-dashboard";
+import { BillingWorkspacePage } from "../../../../features/billing/interface/pages/billing-workspace-page";
 import { CxsunOverviewPage } from "../../../../features/cxsun/interface/pages/cxsun-workspace";
 import {
   deskPortals,
@@ -25,6 +26,10 @@ export default async function DeskPortalPage({
 
   if (portal.id === "cxsun") {
     return <CxsunOverviewPage />;
+  }
+
+  if (portal.id === "billing") {
+    return <BillingWorkspacePage />;
   }
 
   return <DeskDashboard portal={portal} />;

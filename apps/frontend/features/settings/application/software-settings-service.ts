@@ -3,6 +3,7 @@ import {
   type SoftwareSettingsState,
   type SoftwareToggleSetting,
 } from "../domain/software-settings";
+import { getCompanySetting, saveCompanySetting } from "../infrastructure/company-settings-api";
 
 export const softwareSettingsStorageKey = "cxnext-software-settings";
 export const companySoftwareSettingsStorageKeyPrefix = `${softwareSettingsStorageKey}:company:`;
@@ -55,6 +56,44 @@ export function saveCompanySoftwareSettings(
   }
 
   window.localStorage.setItem(companySoftwareSettingsStorageKey(companyId), JSON.stringify(state));
+}
+
+export async function loadCompanySoftwareSettingsFromServer(
+  companyId: string | null | undefined,
+  options?: { readonly signal?: AbortSignal },
+) {
+  if (!companyId) {
+    return defaultSoftwareSettingsState;
+  }
+
+  const record = await getCompanySetting<Partial<SoftwareSettingsState>>(
+    "software",
+    companyId,
+    options,
+  );
+  const state = mergeSoftwareSettings(defaultSoftwareSettingsState, record.values);
+  saveCompanySoftwareSettings(companyId, state);
+  return state;
+}
+
+export async function saveCompanySoftwareSettingsToServer(
+  companyId: string | null | undefined,
+  state: SoftwareSettingsState,
+  options?: { readonly signal?: AbortSignal },
+) {
+  if (!companyId) {
+    return state;
+  }
+
+  const record = await saveCompanySetting<Partial<SoftwareSettingsState>>(
+    "software",
+    companyId,
+    state,
+    options,
+  );
+  const savedState = mergeSoftwareSettings(defaultSoftwareSettingsState, record.values);
+  saveCompanySoftwareSettings(companyId, savedState);
+  return savedState;
 }
 
 export function hasPublishedCompanySoftwareSettings(companyId: string | null | undefined) {

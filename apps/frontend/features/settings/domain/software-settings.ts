@@ -99,21 +99,24 @@ export const defaultSoftwareSettingsState: SoftwareSettingsState = {
         {
           id: "billing-print-template",
           label: "Use textile invoice print template",
-          description: "Keeps garment-style PO, DC, HSN, GST, and blank-line fitting controls ready.",
+          description:
+            "Keeps garment-style PO, DC, HSN, GST, and blank-line fitting controls ready.",
           scope: "industry",
           enabled: true,
         },
         {
           id: "billing-shipping-address",
           label: "Show shipping address block",
-          description: "Adds buyer shipping details beside billing details on sales and purchase bills.",
+          description:
+            "Adds buyer shipping details beside billing details on sales and purchase bills.",
           scope: "client",
           enabled: true,
         },
         {
           id: "billing-irn-qr",
           label: "Show IRN and QR area",
-          description: "Reserves the e-invoice acknowledgement and QR position in the print header.",
+          description:
+            "Reserves the e-invoice acknowledgement and QR position in the print header.",
           scope: "client",
           enabled: true,
         },
@@ -143,12 +146,14 @@ export const defaultSoftwareSettingsState: SoftwareSettingsState = {
     {
       id: "workflow",
       title: "Workflow",
-      description: "Basic application behavior that can later branch per tenant, company, or industry.",
+      description:
+        "Basic application behavior that can later branch per tenant, company, or industry.",
       settings: [
         {
           id: "workflow-default-company",
           label: "Require default company context",
-          description: "Loads company, accounting year, tenant, and industry context before desk pages.",
+          description:
+            "Loads company, accounting year, tenant, and industry context before desk pages.",
           scope: "client",
           enabled: true,
         },
@@ -164,46 +169,11 @@ export const defaultSoftwareSettingsState: SoftwareSettingsState = {
   ],
   features: [
     {
-      id: "feature-basic-billing",
-      label: "Basic billing entries",
-      description: "Sales, purchase, payment, receipt, and allocation scaffolds.",
+      id: "feature-billing",
+      label: "Billing",
+      description: "Sales, purchase, receipt, payment, and report modules for simple billing.",
       scope: "industry",
       enabled: true,
-    },
-    {
-      id: "feature-invoice-printing",
-      label: "Invoice print preview",
-      description: "Single-page invoice preview with line budgeting and print actions.",
-      scope: "client",
-      enabled: true,
-    },
-    {
-      id: "feature-master-upsert-tabs",
-      label: "Animated master upsert tabs",
-      description: "Tabbed company, contact, and product forms with grouped fields.",
-      scope: "client",
-      enabled: true,
-    },
-    {
-      id: "feature-entry-approval",
-      label: "Entry approval workflow",
-      description: "Future draft, posted, cancelled, and approval routing controls.",
-      scope: "industry",
-      enabled: false,
-    },
-    {
-      id: "feature-stock-ledger",
-      label: "Stock ledger integration",
-      description: "Future inventory movement hooks from sales and purchase items.",
-      scope: "industry",
-      enabled: false,
-    },
-    {
-      id: "feature-roles-policy",
-      label: "Role policy controls",
-      description: "Future per-module access and action-level permission switches.",
-      scope: "client",
-      enabled: false,
     },
   ],
 };

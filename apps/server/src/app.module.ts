@@ -10,6 +10,7 @@ import { CoreModule } from "./core/core.module";
 import { EventsModule } from "./events/events.module";
 import { CompaniesModule } from "./modules/companies/companies.module";
 import { CommonModule } from "./modules/common/common.module";
+import { CompanySettingsModule } from "./modules/company-settings/company-settings.module";
 import { ContactsModule } from "./modules/contacts/contacts.module";
 import { EntriesModule } from "./modules/entries/entries.module";
 import { DocumentSettingsModule } from "./modules/document-settings/document-settings.module";
@@ -31,6 +32,7 @@ import { TenantsModule } from "./modules/tenants/tenants.module";
     ApplicationContextModule,
     AuthModule,
     CompaniesModule,
+    CompanySettingsModule,
     CommonModule,
     ContactsModule,
     CoreModule,

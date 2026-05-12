@@ -2,11 +2,53 @@
 
 ## Version State
 
-- Current package version: `1.0.82`
-- Current release tag: `v-1.0.82`
+- Current package version: `1.0.86`
+- Current release tag: `v-1.0.86`
 - Versioned changelog label format: `v 1.0.<reference>`
 - Version section format: `## v-1.0.<reference>`
 - Entry format: `### [v 1.0.<reference>] YYYY-MM-DD - Title`
+
+## v-1.0.86
+
+### [v 1.0.86] 2026-05-12 - Add Billing Workspace Sidebar
+
+- Added Billing as a dedicated desk workspace available from the app switcher.
+- Added a Billing overview dashboard with shortcuts for entries, reports, and masters.
+- Switched Billing-related routes to a focused sidebar ordered as Overview, Entries, Reports, Master, and Common.
+- Kept organisation, settings, and admin menus on the Application desk side menu outside Billing.
+- Updated the dashboard Billing app card to open `/desk/billing`.
+- Bumped workspace package manifests to `1.0.86`.
+
+## v-1.0.85
+
+### [v 1.0.85] 2026-05-12 - Consolidate Billing App Catalog
+
+- Reduced Apps settings to a single Billing app feature.
+- Reordered the Apps catalog so Entries is the first module group with Sales, Purchase, Receipt, Payment, and Reports.
+- Removed unrelated app/module choices from the visible Apps settings catalog.
+- Sanitized Apps activation payloads so old broad-catalog keys are ignored and dropped on the next activation.
+- Reduced Settings > Features to the single Billing feature.
+- Bumped workspace package manifests to `1.0.85`.
+
+## v-1.0.84
+
+### [v 1.0.84] 2026-05-12 - Activate Apps On Demand
+
+- Added a top-level Activate action on Apps settings.
+- Changed Apps module toggles to draft changes that persist to the database only when activated.
+- Kept the local Apps settings cache aligned after successful activation.
+- Bumped workspace package manifests to `1.0.84`.
+
+## v-1.0.83
+
+### [v 1.0.83] 2026-05-12 - Persist Company Settings
+
+- Added server-backed company settings persistence for software settings and app enablement.
+- Added authenticated company settings endpoints protected by company read/update permissions.
+- Wired Sales Settings, Duties & Taxes, Customise, Features, Apps, and GST report settings reads to server-backed company settings with local cache fallback.
+- Split Core Settings into a focused page file to keep settings page modules under the repository file-size limit.
+- Applied the `billing:company-settings:001-create-company-settings` migration locally.
+- Bumped workspace package manifests to `1.0.83`.
 
 ## v-1.0.82
 

@@ -33,8 +33,8 @@ const applicationCards = [
     summary:
       "Accounting, vouchers, inventory, ledgers, billing documents, and reporting foundations.",
     badge: "Business app",
-    modules: 33,
-    href: "/desk/cxsun/records",
+    modules: 5,
+    href: "/desk/billing",
     icon: ReceiptText,
     accent: "from-emerald-200/70 via-emerald-100/50 to-transparent",
   },

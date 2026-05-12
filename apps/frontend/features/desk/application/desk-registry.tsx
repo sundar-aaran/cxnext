@@ -7,6 +7,7 @@ import {
   Factory,
   Inbox,
   LayoutDashboard,
+  ReceiptText,
   Settings,
   ShieldCheck,
   Store,
@@ -25,7 +26,8 @@ export type DeskPortalId =
   | "industry"
   | "company"
   | "default-company"
-  | "contact";
+  | "contact"
+  | "billing";
 
 export interface DeskMenuItem {
   readonly id: string;
@@ -242,6 +244,27 @@ export const deskPortals: readonly DeskPortalDefinition[] = [
         label: "Contacts",
         href: "/desk/contact",
         icon: <Users className="h-4 w-4" />,
+      },
+    ],
+  },
+  {
+    id: "billing",
+    label: "Billing",
+    href: "/desk/billing",
+    badge: "Billing",
+    summary: "Billing workspace for entries, reports, masters, and common billing setup.",
+    menuItems: [
+      {
+        id: "billing-overview",
+        label: "Overview",
+        href: "/desk/billing",
+        icon: <LayoutDashboard className="h-4 w-4" />,
+      },
+      {
+        id: "billing-entries",
+        label: "Entries",
+        href: "/desk/sales",
+        icon: <ReceiptText className="h-4 w-4" />,
       },
     ],
   },

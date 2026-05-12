@@ -144,16 +144,16 @@ const entriesNavItems = [
     icon: <ShoppingBag className="h-4 w-4" />,
   },
   {
-    id: "payment",
-    label: "Payment",
-    href: "/desk/payment",
-    icon: <CreditCard className="h-4 w-4" />,
-  },
-  {
     id: "receipt",
     label: "Receipt",
     href: "/desk/receipt",
     icon: <HandCoins className="h-4 w-4" />,
+  },
+  {
+    id: "payment",
+    label: "Payment",
+    href: "/desk/payment",
+    icon: <CreditCard className="h-4 w-4" />,
   },
 ] as const;
 
@@ -264,6 +264,29 @@ function getPortalIdFromPath(pathname: string) {
   return root === "desk" ? portalId : undefined;
 }
 
+function isBillingWorkspacePath(pathname: string) {
+  return (
+    pathname === "/desk/billing" ||
+    pathname.startsWith("/desk/billing/") ||
+    pathname === "/desk/sales" ||
+    pathname.startsWith("/desk/sales/") ||
+    pathname === "/desk/purchase" ||
+    pathname.startsWith("/desk/purchase/") ||
+    pathname === "/desk/receipt" ||
+    pathname.startsWith("/desk/receipt/") ||
+    pathname === "/desk/payment" ||
+    pathname.startsWith("/desk/payment/") ||
+    pathname === "/desk/reports" ||
+    pathname.startsWith("/desk/reports/") ||
+    pathname === "/desk/contact" ||
+    pathname.startsWith("/desk/contact/") ||
+    pathname === "/desk/product" ||
+    pathname.startsWith("/desk/product/") ||
+    pathname === "/desk/common" ||
+    pathname.startsWith("/desk/common/")
+  );
+}
+
 function getWorkspaceLabel(pathname: string, isDeskRoot: boolean, fallbackLabel: string) {
   if (isDeskRoot) {
     return "Application Desk";
@@ -316,7 +339,10 @@ export function DeskShell({ children }: { readonly children: ReactNode }) {
   const [companies, setCompanies] = useState<readonly CompanyRecord[]>([]);
   const [isContextLoading, setIsContextLoading] = useState(true);
   const isDeskRoot = pathname === "/desk";
-  const activePortal = getDeskPortal(getPortalIdFromPath(pathname));
+  const isBillingWorkspace = isBillingWorkspacePath(pathname);
+  const activePortal = isBillingWorkspace
+    ? getDeskPortal("billing")
+    : getDeskPortal(getPortalIdFromPath(pathname));
   const workspaceLabel = getWorkspaceLabel(pathname, isDeskRoot, activePortal.badge);
   const canSeeSystemMenus = session?.user.roles.some((role) => role.key === "super_admin") ?? false;
   const canSeeAdminMenus =
@@ -352,7 +378,7 @@ export function DeskShell({ children }: { readonly children: ReactNode }) {
       active: pathname === item.href || pathname.startsWith(`${item.href}/`),
     })),
   }));
-  const visibleNavItems = [
+  const applicationNavItems = [
     ...(canSeeSystemMenus ? navItems : []),
     ...masterItems,
     ...entriesItems,
@@ -360,7 +386,7 @@ export function DeskShell({ children }: { readonly children: ReactNode }) {
     ...(canSeeSystemMenus ? settingsItems : []),
     ...(canSeeAdminMenus ? adminItems : []),
   ];
-  const visibleNavGroups = [
+  const applicationNavGroups = [
     ...(canSeeSystemMenus
       ? [
           {
@@ -416,6 +442,35 @@ export function DeskShell({ children }: { readonly children: ReactNode }) {
       subGroups: commonGroups,
     },
   ];
+  const billingNavItems = [...entriesItems, ...reportItems, ...masterItems];
+  const billingNavGroups = [
+    {
+      id: "entries",
+      label: "Entries",
+      icon: <ReceiptText className="size-4" />,
+      items: entriesItems,
+    },
+    {
+      id: "reports",
+      label: "Reports",
+      icon: <LineChart className="size-4" />,
+      items: reportItems,
+    },
+    {
+      id: "master",
+      label: "Master",
+      icon: <Contact className="size-4" />,
+      items: masterItems,
+    },
+    {
+      id: "common",
+      label: "Common",
+      icon: <Flag className="size-4" />,
+      subGroups: commonGroups,
+    },
+  ];
+  const visibleNavItems = isBillingWorkspace ? billingNavItems : applicationNavItems;
+  const visibleNavGroups = isBillingWorkspace ? billingNavGroups : applicationNavGroups;
 
   useEffect(() => {
     const storedSession = readStoredAuthSession();
@@ -558,6 +613,12 @@ export function DeskShell({ children }: { readonly children: ReactNode }) {
       workspace={workspaceLabel}
       navItems={visibleNavItems}
       navGroups={visibleNavGroups}
+      activeAppLabel={isBillingWorkspace ? "Billing" : "Application"}
+      sidebarOverview={{
+        href: isBillingWorkspace ? "/desk/billing" : "/desk",
+        active: isBillingWorkspace ? pathname === "/desk/billing" : isDeskRoot,
+        label: "Overview",
+      }}
       shellTechnicalName={
         isDeskRoot
           ? "shell.application-desk"

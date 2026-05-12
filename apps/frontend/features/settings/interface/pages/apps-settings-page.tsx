@@ -2,31 +2,18 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
-  BadgeCheck,
-  BookOpen,
-  Boxes,
-  Building2,
   Check,
-  ClipboardCheck,
-  CreditCard,
-  Database,
-  FileText,
-  Globe,
-  GraduationCap,
-  Headphones,
-  MessageSquare,
-  Package,
-  PenLine,
+  CheckCircle2,
+  ClipboardList,
+  FileBarChart2,
   ReceiptText,
-  Settings2,
   ShoppingBag,
-  ShoppingCart,
-  Store,
-  Truck,
-  Wrench,
+  WalletCards,
 } from "lucide-react";
-import { Badge, Card, CardContent, CommonListPageFrame, cn } from "@cxnext/ui";
+import { Badge, Button, Card, CardContent, CommonListPageFrame, cn } from "@cxnext/ui";
+import { toast } from "sonner";
 import { readStoredApplicationContext } from "../../../auth/infrastructure/session-storage";
+import { getCompanySetting, saveCompanySetting } from "../../infrastructure/company-settings-api";
 
 const storageKey = "cxnext.settings.apps.enabled";
 const companyStorageKeyPrefix = `${storageKey}:company:`;
@@ -35,7 +22,7 @@ type AppModule = {
   readonly id: string;
   readonly title: string;
   readonly description: string;
-  readonly icon: typeof Globe;
+  readonly icon: typeof ReceiptText;
   readonly defaultEnabled?: boolean;
 };
 
@@ -47,205 +34,42 @@ type AppModuleGroup = {
 
 const appModuleGroups: readonly AppModuleGroup[] = [
   {
-    id: "website",
-    title: "Website",
+    id: "entries",
+    title: "Entries",
     modules: [
-      {
-        id: "website",
-        title: "Website",
-        description: "Enterprise website builder",
-        icon: Globe,
-        defaultEnabled: true,
-      },
-      {
-        id: "ecommerce",
-        title: "eCommerce",
-        description: "Sell your products online",
-        icon: ShoppingBag,
-        defaultEnabled: true,
-      },
-      {
-        id: "blog",
-        title: "Blog",
-        description: "Publish posts, announcements, news",
-        icon: MessageSquare,
-      },
-      {
-        id: "forum",
-        title: "Forum",
-        description: "Manage a forum with FAQ and Q&A",
-        icon: BookOpen,
-      },
-      {
-        id: "elearning",
-        title: "eLearning",
-        description: "Manage and publish courses",
-        icon: GraduationCap,
-      },
-      {
-        id: "live-chat",
-        title: "Live Chat",
-        description: "Chat with your website visitors",
-        icon: Headphones,
-      },
-    ],
-  },
-  {
-    id: "sales",
-    title: "Sales",
-    modules: [
-      {
-        id: "crm",
-        title: "CRM",
-        description: "Track leads and close opportunities",
-        icon: BadgeCheck,
-        defaultEnabled: true,
-      },
       {
         id: "sales",
         title: "Sales",
-        description: "From quotations to invoices",
+        description: "Create invoices and sales vouchers",
         icon: ReceiptText,
         defaultEnabled: true,
-      },
-      {
-        id: "point-of-sale",
-        title: "Point of Sale",
-        description: "PoS interface for shops and restaurants",
-        icon: Store,
-      },
-      {
-        id: "subscriptions",
-        title: "Subscriptions",
-        description: "Recurring invoices and renewals",
-        icon: CreditCard,
-      },
-      {
-        id: "rental",
-        title: "Rental",
-        description: "Manage contracts, deliveries and returns",
-        icon: Wrench,
-      },
-    ],
-  },
-  {
-    id: "finance",
-    title: "Finance",
-    modules: [
-      {
-        id: "accounting",
-        title: "Accounting",
-        description: "Manage financial and analytic accounting",
-        icon: CreditCard,
-        defaultEnabled: true,
-      },
-      {
-        id: "invoicing",
-        title: "Invoicing",
-        description: "Invoices and payments",
-        icon: ReceiptText,
-        defaultEnabled: true,
-      },
-      {
-        id: "expenses",
-        title: "Expenses",
-        description: "Manage employee expenses",
-        icon: ShoppingCart,
-      },
-      {
-        id: "documents",
-        title: "Documents",
-        description: "Document management",
-        icon: FileText,
-      },
-      {
-        id: "spreadsheets",
-        title: "Spreadsheets",
-        description: "Documents spreadsheet",
-        icon: Database,
-      },
-      {
-        id: "sign",
-        title: "Sign",
-        description: "Sign documents online",
-        icon: PenLine,
-      },
-    ],
-  },
-  {
-    id: "inventory",
-    title: "Inventory & Manufacturing",
-    modules: [
-      {
-        id: "inventory",
-        title: "Inventory",
-        description: "Manage your stock and logistics activities",
-        icon: Package,
-        defaultEnabled: true,
-      },
-      {
-        id: "manufacturing",
-        title: "Manufacturing",
-        description: "Manufacturing orders and BOMs",
-        icon: Building2,
-      },
-      {
-        id: "plm",
-        title: "PLM",
-        description: "Product lifecycle management",
-        icon: Boxes,
       },
       {
         id: "purchase",
         title: "Purchase",
-        description: "Purchase orders, tenders and agreements",
+        description: "Record supplier bills and purchases",
         icon: ShoppingBag,
         defaultEnabled: true,
       },
       {
-        id: "maintenance",
-        title: "Maintenance",
-        description: "Track equipment and manage requests",
-        icon: Settings2,
-      },
-      {
-        id: "quality",
-        title: "Quality",
-        description: "Control the quality of your products",
-        icon: ClipboardCheck,
-      },
-    ],
-  },
-  {
-    id: "operations",
-    title: "Operations",
-    modules: [
-      {
-        id: "billing",
-        title: "Billing",
-        description: "Sales, purchases, receipts and payments",
+        id: "receipt",
+        title: "Receipt",
+        description: "Record incoming customer receipts",
         icon: ReceiptText,
         defaultEnabled: true,
       },
       {
-        id: "stock",
-        title: "Stock",
-        description: "Stock queues, movement and availability",
-        icon: Truck,
+        id: "payment",
+        title: "Payment",
+        description: "Record outgoing supplier payments",
+        icon: WalletCards,
         defaultEnabled: true,
       },
       {
-        id: "task",
-        title: "Task",
-        description: "Work queues and follow-up actions",
-        icon: ClipboardCheck,
-        defaultEnabled: true,
-      },
-      {
-        id: "tally",
-        title: "Tally",
-        description: "Accounting handoff and ledger workflow",
-        icon: Database,
+        id: "reports",
+        title: "Reports",
+        description: "Review statements and GST reports",
+        icon: FileBarChart2,
         defaultEnabled: true,
       },
     ],
@@ -258,14 +82,26 @@ const defaultEnabledApps = Object.fromEntries(
   ),
 );
 
+const appFeature = {
+  id: "billing",
+  title: "Billing",
+  description: "Simple billing workspace for entries, payments, receipts, and reports.",
+  icon: ClipboardList,
+} as const;
+
 export function AppsSettingsPage() {
+  const FeatureIcon = appFeature.icon;
   const [enabledApps, setEnabledApps] = useState<Record<string, boolean>>(defaultEnabledApps);
+  const [activatedApps, setActivatedApps] = useState<Record<string, boolean>>(defaultEnabledApps);
+  const [isActivating, setIsActivating] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
   const [activeCompany, setActiveCompany] = useState<{
     readonly id: string | null;
     readonly name: string;
   }>({ id: null, name: "Active company" });
 
   useEffect(() => {
+    const controller = new AbortController();
     const context = readStoredApplicationContext();
     const companyId = context?.company.id ?? null;
     setActiveCompany({
@@ -275,47 +111,122 @@ export function AppsSettingsPage() {
 
     try {
       const stored = companyId ? window.localStorage.getItem(companyStorageKey(companyId)) : null;
-      if (!stored) return;
-      setEnabledApps({ ...defaultEnabledApps, ...JSON.parse(stored) });
+      if (stored) {
+        const storedApps = normalizeEnabledApps(JSON.parse(stored) as Record<string, unknown>);
+        setActivatedApps(storedApps);
+        setEnabledApps(storedApps);
+      }
     } catch {
+      setActivatedApps(defaultEnabledApps);
       setEnabledApps(defaultEnabledApps);
     }
-  }, []);
 
-  useEffect(() => {
-    if (!activeCompany.id) return;
-    window.localStorage.setItem(companyStorageKey(activeCompany.id), JSON.stringify(enabledApps));
-  }, [activeCompany.id, enabledApps]);
+    if (companyId) {
+      void getCompanySetting<Record<string, boolean>>("apps", companyId, {
+        signal: controller.signal,
+      })
+        .then((record) => {
+          if (controller.signal.aborted) return;
+          const serverApps = normalizeEnabledApps(record.values);
+          setActivatedApps(serverApps);
+          setEnabledApps(serverApps);
+          window.localStorage.setItem(companyStorageKey(companyId), JSON.stringify(serverApps));
+        })
+        .catch((error: unknown) => {
+          if (isAbortError(error)) return;
+          toast.error("Could not load app settings", {
+            description: error instanceof Error ? error.message : "Using local settings for now.",
+          });
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) setIsLoaded(true);
+        });
+    } else {
+      setIsLoaded(true);
+    }
+
+    return () => controller.abort();
+  }, []);
 
   const enabledCount = useMemo(
     () => Object.values(enabledApps).filter(Boolean).length,
     [enabledApps],
   );
   const totalCount = appModuleGroups.reduce((total, group) => total + group.modules.length, 0);
+  const hasDraftChanges = !areAppMapsEqual(enabledApps, activatedApps);
 
   function toggleModule(moduleId: string) {
     setEnabledApps((current) => ({ ...current, [moduleId]: !current[moduleId] }));
   }
 
+  async function activateApps() {
+    if (!activeCompany.id) return;
+    setIsActivating(true);
+
+    try {
+      const activationPayload = normalizeEnabledApps(enabledApps);
+      const record = await saveCompanySetting("apps", activeCompany.id, activationPayload);
+      const nextActivatedApps = normalizeEnabledApps(record.values);
+      setActivatedApps(nextActivatedApps);
+      setEnabledApps(nextActivatedApps);
+      window.localStorage.setItem(
+        companyStorageKey(activeCompany.id),
+        JSON.stringify(nextActivatedApps),
+      );
+      toast.success("Apps activated", {
+        description: `${activeCompany.name} now uses the selected apps.`,
+      });
+    } catch (error) {
+      toast.error("Could not activate apps", {
+        description: error instanceof Error ? error.message : "Please try again.",
+      });
+    } finally {
+      setIsActivating(false);
+    }
+  }
+
   return (
     <CommonListPageFrame
+      action={
+        <Button
+          className="rounded-xl"
+          disabled={!activeCompany.id || !isLoaded || !hasDraftChanges || isActivating}
+          onClick={() => void activateApps()}
+        >
+          <CheckCircle2 className="size-4" />
+          {isActivating ? "Activating" : "Activate"}
+        </Button>
+      }
       description={`Enable the application modules available for ${activeCompany.name}.`}
       technicalName="page.settings.apps"
       title="Apps"
     >
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border/70 bg-card px-4 py-3 shadow-sm">
-        <div>
-          <p className="text-sm font-medium text-foreground">One need, one app.</p>
-          <p className="text-sm text-muted-foreground">
-            {enabledCount} of {totalCount} modules enabled
-          </p>
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-emerald-50 text-emerald-700">
+            <FeatureIcon className="size-5" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-foreground">{appFeature.title}</p>
+            <p className="text-sm text-muted-foreground">{appFeature.description}</p>
+          </div>
         </div>
-        <Badge
-          variant="outline"
-          className="rounded-md border-emerald-200 bg-emerald-50 text-emerald-700"
-        >
-          Enabled modules
-        </Badge>
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-sm text-muted-foreground">
+            {enabledCount} of {totalCount} modules selected
+          </p>
+          <Badge
+            variant="outline"
+            className={cn(
+              "rounded-md",
+              hasDraftChanges
+                ? "border-amber-200 bg-amber-50 text-amber-700"
+                : "border-emerald-200 bg-emerald-50 text-emerald-700",
+            )}
+          >
+            {hasDraftChanges ? "Activation pending" : "Activated modules"}
+          </Badge>
+        </div>
       </div>
 
       <div className="grid gap-8">
@@ -341,6 +252,24 @@ export function AppsSettingsPage() {
 
 function companyStorageKey(companyId: string) {
   return `${companyStorageKeyPrefix}${companyId}`;
+}
+
+function isAbortError(error: unknown) {
+  return error instanceof DOMException && error.name === "AbortError";
+}
+
+function areAppMapsEqual(left: Record<string, boolean>, right: Record<string, boolean>) {
+  const keys = Object.keys(defaultEnabledApps);
+  return keys.every((key) => Boolean(left[key]) === Boolean(right[key]));
+}
+
+function normalizeEnabledApps(values: Record<string, unknown>): Record<string, boolean> {
+  return Object.fromEntries(
+    Object.keys(defaultEnabledApps).map((key) => [
+      key,
+      Boolean(values[key] ?? defaultEnabledApps[key]),
+    ]),
+  );
 }
 
 function AppModuleCard({

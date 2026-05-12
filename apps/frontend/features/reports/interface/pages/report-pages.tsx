@@ -16,7 +16,7 @@ import { listContacts } from "../../../contact/application/contact-list.service"
 import type { ContactRecord } from "../../../contact/domain/contact";
 import { listCommonRecords, type CommonRecord } from "../../../common/application/common-service";
 import { readStoredApplicationContext } from "../../../auth/infrastructure/session-storage";
-import { loadCompanySoftwareSettings } from "../../../settings/application/software-settings-service";
+import { loadCompanySoftwareSettingsFromServer } from "../../../settings/application/software-settings-service";
 import {
   defaultSoftwareSettingsState,
   type DutiesTaxSettings,
@@ -135,7 +135,12 @@ export function GstStatementReportPage() {
   useEffect(() => {
     const controller = new AbortController();
     const companyId = readStoredApplicationContext()?.company.id ?? null;
-    setDutiesTaxSettings(loadCompanySoftwareSettings(companyId).dutiesTaxSettings);
+    void loadCompanySoftwareSettingsFromServer(companyId, { signal: controller.signal })
+      .then((settings) => {
+        if (controller.signal.aborted) return;
+        setDutiesTaxSettings(settings.dutiesTaxSettings);
+      })
+      .catch(() => undefined);
     void Promise.all([
       listSales({ signal: controller.signal }).catch(() => []),
       listPurchase({ signal: controller.signal }).catch(() => []),

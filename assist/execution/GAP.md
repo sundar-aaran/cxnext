@@ -20,11 +20,11 @@ Product intent: simple billing for small business users with company/year isolat
 
 - Active company context is now used for Sales, Purchase, Receipt, Payment print company details and Customer Statement, Supplier Statement, and GST Statement report headers. These paths no longer choose `isPrimary` or the first company after a company switch.
 - Document numbering is now backend-backed by company/accounting-year/kind document settings. Sales, Purchase, Payment, and Receipt new forms load automatic previews, create flows reserve numbers on the backend, and manual override remains available by editing the number field.
+- Company settings for Sales Settings, Duties & Taxes, Apps, Customise, and Features are now persisted through authenticated backend company settings endpoints, isolated by company, shared across devices, and protected by company read/update permissions. Browser storage remains only as a local cache/fallback.
 
 ### P0 - Must Fix Before Calling It Ready
 
 - Dashboard still feels like a platform scaffold, not a billing product home. The application cards still include generic/scaffold workspaces and billing links do not open a focused billing dashboard with Sales, Purchase, Receipt, Payment, Contacts, Products, and Reports as the main path.
-- Company settings are stored in browser local storage. Sales Settings, Duties & Taxes, Apps, Customise, and Features are isolated by company id locally, but they are not persisted server-side, not shared across devices, and not protected by role permissions.
 - Receipt and Payment allocations are manual text fields. They do not fetch open invoices/bills, validate available balance, or update invoice/bill paid and balance amounts automatically.
 - Receipt party selection is weaker than Sales/Payment. Receipt uses a plain customer name input instead of a contact lookup, so statements and balances can split the same customer by spelling.
 - Payment supplier lookup currently reuses the Sales contact lookup path. That risks showing customer-oriented contacts for supplier payments unless contact-type filtering is made explicit.

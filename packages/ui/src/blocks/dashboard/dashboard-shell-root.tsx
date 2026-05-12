@@ -5,25 +5,19 @@ import { useEffect, useMemo, useState } from "react";
 import {
   BadgeCheck,
   Bell,
-  Boxes,
   Building2,
   Check,
   ChevronDown,
   ChevronRight,
   ChevronsUpDown,
   CreditCard,
-  Database,
-  Globe,
   Home,
   LogOut,
   Menu,
   MoonStar,
   ReceiptText,
-  SlidersHorizontal,
   Sparkles,
   SunMedium,
-  Users,
-  Warehouse,
 } from "lucide-react";
 import { Button } from "../../components/button";
 import {
@@ -83,6 +77,12 @@ export interface DashboardShellProps {
   readonly workspace: string;
   readonly navItems: readonly DashboardNavItem[];
   readonly navGroups?: readonly DashboardNavGroup[];
+  readonly activeAppLabel?: string;
+  readonly sidebarOverview?: {
+    readonly href: string;
+    readonly active?: boolean;
+    readonly label?: string;
+  };
   readonly currentUser?: {
     readonly name: string;
     readonly email: string;
@@ -97,13 +97,7 @@ export interface DashboardShellProps {
 
 const switchableApps = [
   { id: "dashboard", label: "Dashboard", href: "/desk", icon: Home },
-  { id: "ecommerce", label: "Ecommerce", href: "/desk/cxsun", icon: Boxes },
-  { id: "billing", label: "Billing", href: "/desk/cxsun/records", icon: ReceiptText },
-  { id: "stock", label: "Stock", href: "/desk/cxsun/queue", icon: Warehouse },
-  { id: "site", label: "Site", href: "/desk/cxsun", icon: Globe },
-  { id: "task", label: "Task", href: "/desk/cxsun/queue", icon: SlidersHorizontal },
-  { id: "tally", label: "Tally", href: "/desk/cxsun/records", icon: Database },
-  { id: "crm", label: "Crm", href: "/desk/cxsun", icon: Users },
+  { id: "billing", label: "Billing", href: "/desk/billing", icon: ReceiptText },
 ] as const;
 
 const notifications = [
@@ -277,6 +271,8 @@ export function DashboardShell({
   workspace,
   navItems,
   navGroups,
+  activeAppLabel = "Application",
+  sidebarOverview,
   currentUser,
   onLogout,
   children,
@@ -325,6 +321,9 @@ export function DashboardShell({
     null;
   const companySwitcherTitle = activeCompany?.name ?? brand;
   const companySwitcherSubtitle = activeCompany?.subtitle ?? brandSubtitle;
+  const overviewHref = sidebarOverview?.href ?? "/desk";
+  const overviewLabel = sidebarOverview?.label ?? "Overview";
+  const overviewActive = sidebarOverview?.active ?? workspace === "Application Desk";
 
   function markAllNotificationsRead() {
     setReadNotificationIds(new Set(notifications.map((item) => item.id)));
@@ -520,12 +519,12 @@ export function DashboardShell({
           <Tooltip>
             <TooltipTrigger asChild>
               <a
-                href="/desk"
-                aria-current={workspace === "Application Desk" ? "page" : undefined}
-                aria-label="Overview"
+                href={overviewHref}
+                aria-current={overviewActive ? "page" : undefined}
+                aria-label={overviewLabel}
                 className={cn(
                   "group mb-1.5 flex min-h-11 w-full cursor-pointer items-center rounded-md text-sm font-semibold text-foreground transition-[background-color,padding,gap,justify-content,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-sidebar-accent",
-                  workspace === "Application Desk" && "bg-sidebar-accent",
+                  overviewActive && "bg-sidebar-accent",
                   labelsHidden ? "justify-center px-0" : "gap-3 px-1 py-2",
                 )}
                 onClick={() => {
@@ -544,7 +543,7 @@ export function DashboardShell({
                   <Home className="size-4" />
                 </span>
                 <span className={cn("flex-1 text-left", sidebarLabelClass(labelsHidden))}>
-                  <span className="block truncate">Overview</span>
+                  <span className="block truncate">{overviewLabel}</span>
                 </span>
               </a>
             </TooltipTrigger>
@@ -555,7 +554,7 @@ export function DashboardShell({
                 sideOffset={12}
                 className="max-w-56 rounded-md bg-foreground px-3 py-2 text-background shadow-lg"
               >
-                <span className="block text-xs font-semibold">Overview</span>
+                <span className="block text-xs font-semibold">{overviewLabel}</span>
               </TooltipContent>
             ) : null}
           </Tooltip>
@@ -970,7 +969,7 @@ export function DashboardShell({
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm" className="gap-2 px-2">
                           <Home className="size-4" />
-                          <span className="hidden truncate sm:inline">Application</span>
+                          <span className="hidden truncate sm:inline">{activeAppLabel}</span>
                           <ChevronDown className="size-4 text-muted-foreground" />
                         </Button>
                       </DropdownMenuTrigger>
