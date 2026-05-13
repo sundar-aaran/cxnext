@@ -80,3 +80,62 @@ Product intent: simple billing for small business users with company/year isolat
 - Print/PDF output uses the active company details.
 - Basic GST and statement reports match saved backend data.
 - Normal users see only the billing paths they can use.
+
+---
+
+# System Update Gap Review
+
+Date: 2026-05-13
+Reference: `#91`
+Product intent: let a trusted operator pull the latest GitHub version, build the Docker app image, restart the running app, and verify health from the System Update page.
+
+## Current Working Base
+
+- System Update page calls authenticated backend endpoints for status, preflight, sync, build, restart, smoke, and deploy.
+- Backend exposes `system-update` controller actions protected by the existing auth update permission.
+- Backend URL rewrite now accepts both `/api/v1` and `/v1`, so deployed frontend calls to `/v1/system-update/deploy` can reach the controller.
+- Update script supports preflight, Git fetch/pull, Docker Compose build, Docker Compose restart, and optional smoke test.
+
+## Fixed From This Review
+
+- Backend System Update writable actions now use a single-flight lock, so sync, build, restart, smoke, and deploy cannot be started concurrently inside the running backend process.
+- A second writable action now receives a clear `409 Conflict` busy response with the running action, operation id, and started timestamp.
+- System Update status responses expose the active operation while the lock is held, and the frontend disables conflicting actions when another tab/user has an action running.
+- Deploy/restart/rollback actions now require confirmation before execution.
+- System Update operations are persisted to `system_update_operations` with requester, progress, stdout/stderr tail, commit metadata, and started/finished timestamps.
+- Deploy now runs a database backup gate and database migration step before build/restart.
+- System Update controller access moved from broad `auth.update` to dedicated `system-update.run` / `system-update.read` RBAC catalog permissions, assigned through the super admin role blueprint.
+- Next.js now proxies same-origin `/v1/*` requests as well as `/api/v1/*`.
+- Rollback can rebuild/restart from the previous successful deploy commit recorded in operation history.
+- Added route rewrite tests for both `/api/v1/system-update/*` and `/v1/system-update/*`.
+
+## Critical Gaps
+
+### P0 - Must Fix Before Calling It Ready
+
+- The restart helper assumes image/tag and container names match `cxnext-app:${APP_VERSION:-local}` and `cxnext-app`. Any changed compose service, image name, or container name can break self-restart.
+
+### P1 - Needed For Daily Operation
+
+- System Update menu/card visibility is static. The page link can appear for users who later fail backend permission checks.
+- `status` and `preflight` execute external commands on page load. This can make Settings slow and can hit GitHub every time the page opens.
+- Failure reporting can expose raw stdout/stderr in the UI. Git URLs, paths, env-derived values, or command output may leak operational details.
+- Timeout handling kills only the direct child process. Grandchild Docker/Git processes can survive after timeout on some platforms.
+- The script falls back to a hardcoded public GitHub URL. Production should require explicit configured repository details instead of silently using a default.
+
+### P2 - Product Polish And Operational Gaps
+
+- The page does not clearly show whether System Update is enabled or disabled before the user clicks an action.
+- There is no "new version available" state beyond local/latest hash text.
+- There is no dry-run plan showing exact branch, local commit, remote commit, image tag, compose file, and container before deploy.
+- Manual actions are available independently, but the UI does not explain current stage, last successful stage, or whether build is stale after pull.
+- Smoke test is optional and only reports final pass/fail; it does not show which health check failed.
+
+## Suggested Execution Order
+
+1. Make restart helper image/service/container names fully configurable and validate them during preflight.
+2. Add a dry-run deploy plan showing branch, local commit, remote commit, image tag, compose file, and container.
+3. Reduce expensive GitHub/preflight checks on initial Settings load with explicit refresh controls or cached status.
+4. Sanitize raw stdout/stderr before showing command output to operators.
+5. Add process-tree timeout handling for child Git/Docker commands.
+6. Add smoke-test detail so the UI shows which health check failed.

@@ -50,11 +50,14 @@ export function SystemUpdateSettingsPage() {
   }, [show]);
 
   async function runAction(action: SystemUpdateAction) {
+    const rollbackTarget = action === "rollback" ? status?.rollbackTarget : null;
+    if (!confirmSystemUpdateAction(action, rollbackTarget)) return;
+
     setRunningAction(action);
     setError(null);
     const hide = show();
     try {
-      const result = await runSystemUpdateAction(action);
+      const result = await runSystemUpdateAction(action, action === "rollback" ? { targetCommit: rollbackTarget } : undefined);
       setStatus(result);
     } catch (actionError) {
       setError(actionError instanceof Error ? actionError.message : `Could not run ${action}.`);
@@ -64,9 +67,32 @@ export function SystemUpdateSettingsPage() {
     }
   }
 
+  async function refreshStatus() {
+    try {
+      const nextStatus = await getSystemUpdateStatus();
+      setStatus(nextStatus);
+      setError(null);
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "Could not refresh system update status.");
+    }
+  }
+
   const git = useMemo(() => readObject(status?.git), [status]);
   const preflight = useMemo(() => readObject(status?.preflight), [status]);
+  const activeOperation = useMemo(() => readObject(status?.activeOperation), [status]);
+  const history = Array.isArray(status?.history) ? status.history : [];
   const problems = Array.isArray(preflight?.problems) ? preflight.problems.map(String) : [];
+  const remoteRunningAction = typeof status?.runningAction === "string" ? status.runningAction : null;
+  const busyAction = runningAction ?? remoteRunningAction;
+  const actionsDisabled = Boolean(busyAction);
+
+  useEffect(() => {
+    if (!busyAction) return;
+    const intervalId = window.setInterval(() => {
+      void refreshStatus();
+    }, 4000);
+    return () => window.clearInterval(intervalId);
+  }, [busyAction]);
 
   return (
     <CommonListPageFrame
@@ -84,10 +110,10 @@ export function SystemUpdateSettingsPage() {
           <Button
             className="rounded-xl"
             onClick={() => void runAction("deploy")}
-            disabled={Boolean(runningAction)}
+            disabled={actionsDisabled}
           >
             <RefreshCcw className="size-4" />
-            Pull GitHub, Build & Restart
+            {busyAction === "deploy" ? "Running..." : "Pull GitHub, Build & Restart"}
           </Button>
         </div>
       }
@@ -98,6 +124,14 @@ export function SystemUpdateSettingsPage() {
       {error ? (
         <div className="rounded-md border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
           {error}
+        </div>
+      ) : null}
+
+      {remoteRunningAction ? (
+        <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Maintenance is in progress: system update {remoteRunningAction} is already running
+          {typeof activeOperation?.startedAt === "string" ? ` since ${formatDateTime(activeOperation.startedAt)}` : ""}.
+          Keep users out of critical entry work until this finishes.
         </div>
       ) : null}
 
@@ -136,10 +170,10 @@ export function SystemUpdateSettingsPage() {
               className="rounded-xl capitalize"
               variant="outline"
               onClick={() => void runAction(action)}
-              disabled={Boolean(runningAction)}
+              disabled={actionsDisabled}
             >
               <Play className="size-4" />
-              {runningAction === action ? "Running..." : label}
+              {busyAction === action ? "Running..." : label}
             </Button>
           ))}
         </CardContent>
@@ -177,6 +211,60 @@ export function SystemUpdateSettingsPage() {
 
       <Card className="rounded-md border-border/70">
         <CardHeader className="pb-3">
+          <CardTitle className="text-base">Rollback</CardTitle>
+          <CardDescription>
+            Rebuild and restart from the previous commit recorded by the last successful deploy.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-wrap items-center gap-3">
+          <Button
+            className="rounded-xl"
+            variant="outline"
+            onClick={() => void runAction("rollback")}
+            disabled={actionsDisabled || !status?.rollbackTarget}
+          >
+            <RotateCcw className="size-4" />
+            {busyAction === "rollback" ? "Running..." : "Rollback"}
+          </Button>
+          <div className="text-xs text-muted-foreground">Target: {shortHash(status?.rollbackTarget)}</div>
+        </CardContent>
+      </Card>
+
+      <Card className="rounded-md border-border/70">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">History</CardTitle>
+          <CardDescription>Recent update operations with persisted progress and results.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-2">
+          {history.length ? (
+            history.map((record) => (
+              <div
+                key={record.operationId}
+                className="grid gap-1 rounded-md border border-border/70 px-3 py-2 text-sm md:grid-cols-[160px_1fr_120px]"
+              >
+                <div className="font-medium capitalize">{record.action}</div>
+                <div className="min-w-0 text-muted-foreground">
+                  <div className="truncate">{record.message ?? "-"}</div>
+                  <div className="text-xs">
+                    {record.startedAt ? formatDateTime(record.startedAt) : "-"} | {shortHash(record.previousCommit)} to{" "}
+                    {shortHash(record.targetCommit ?? record.localCommit)}
+                  </div>
+                </div>
+                <Badge variant="outline" className="w-fit rounded-md">
+                  {record.status} {typeof record.progressPercent === "number" ? `${record.progressPercent}%` : ""}
+                </Badge>
+              </div>
+            ))
+          ) : (
+            <div className="rounded-md border border-border/70 px-3 py-2 text-sm text-muted-foreground">
+              No update history recorded yet.
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="rounded-md border-border/70">
+        <CardHeader className="pb-3">
           <CardTitle className="text-base">Last Result</CardTitle>
           <CardDescription>Raw update response for troubleshooting.</CardDescription>
         </CardHeader>
@@ -199,6 +287,21 @@ const manualActions: readonly {
   { action: "restart", label: "Restart" },
   { action: "smoke", label: "Smoke" },
 ];
+
+function confirmSystemUpdateAction(action: SystemUpdateAction, targetCommit?: string | null) {
+  if (action === "deploy") {
+    return window.confirm(
+      "Pull the latest GitHub version, back up the database, run migrations, build the app image, and restart the application?",
+    );
+  }
+  if (action === "restart") {
+    return window.confirm("Restart the running application now?");
+  }
+  if (action === "rollback") {
+    return window.confirm(`Rollback, build, and restart using commit ${shortHash(targetCommit)}?`);
+  }
+  return true;
+}
 
 function StatusCard({
   icon,
@@ -233,6 +336,12 @@ function readObject(value: unknown) {
 
 function shortHash(value: unknown) {
   return typeof value === "string" && value ? value.slice(0, 8) : "-";
+}
+
+function formatDateTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString();
 }
 
 function isAbortError(error: unknown) {

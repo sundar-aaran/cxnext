@@ -59,4 +59,5 @@ FROM base AS runner
 ENV NODE_ENV=production
 COPY --from=builder /app /app
 EXPOSE 3000 4000
+HEALTHCHECK --interval=10s --timeout=5s --start-period=20s --retries=12 CMD /bin/sh -c 'curl -fsS "http://127.0.0.1:${APP_HTTP_PORT:-4000}/health" >/dev/null && curl -fsS "http://127.0.0.1:${FRONTEND_HTTP_PORT:-3000}" >/dev/null || exit 1'
 CMD ["node", "scripts/start.mjs"]

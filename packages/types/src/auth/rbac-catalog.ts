@@ -1,4 +1,4 @@
-export const authPolicyActions = ["read", "list", "create", "update", "delete", "report"] as const;
+export const authPolicyActions = ["read", "list", "create", "update", "delete", "report", "run"] as const;
 
 export type AuthPolicyAction = (typeof authPolicyActions)[number];
 
@@ -14,7 +14,8 @@ export type AuthPolicyModuleKey =
   | "purchase"
   | "payment"
   | "receipt"
-  | "common";
+  | "common"
+  | "system-update";
 
 export interface AuthPolicyModuleDefinition {
   readonly key: AuthPolicyModuleKey;
@@ -124,6 +125,13 @@ export const authPolicyModules = {
     actions: ["read", "list", "create", "update", "delete", "report"],
     description: "Shared common masters and location records used across modules.",
   },
+  "system-update": {
+    key: "system-update",
+    name: "System Update",
+    boundedContext: "operations",
+    actions: ["run", "read"],
+    description: "Pull, build, restart, rollback, and inspect application update operations.",
+  },
 } as const satisfies Record<AuthPolicyModuleKey, AuthPolicyModuleDefinition>;
 
 export const authPolicyModuleList = Object.values(authPolicyModules);
@@ -163,6 +171,12 @@ export const authPolicyActionDefinitions = [
     key: "report",
     name: "Report",
     description: "Allow report and analytical output for a module.",
+    isSystem: true,
+  },
+  {
+    key: "run",
+    name: "Run",
+    description: "Allow executing operational commands for a module.",
     isSystem: true,
   },
 ] as const satisfies readonly AuthPolicyActionDefinition[];

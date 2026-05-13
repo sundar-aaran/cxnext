@@ -1,21 +1,49 @@
 import { getRequiredApiUrl } from "@/lib/runtime-env";
 import { authFetch } from "../../auth/infrastructure/auth-api";
 
-export type SystemUpdateAction = "build" | "deploy" | "preflight" | "restart" | "smoke" | "sync";
+export type SystemUpdateAction = "build" | "deploy" | "preflight" | "restart" | "rollback" | "smoke" | "sync";
+
+export interface SystemUpdateHistoryRecord {
+  readonly action: string;
+  readonly finishedAt?: string | null;
+  readonly gitBranch?: string | null;
+  readonly id?: number;
+  readonly localCommit?: string | null;
+  readonly message?: string | null;
+  readonly operationId: string;
+  readonly previousCommit?: string | null;
+  readonly progressPercent?: number;
+  readonly remoteCommit?: string | null;
+  readonly requestedByName?: string | null;
+  readonly startedAt?: string | null;
+  readonly status: string;
+  readonly stderr?: string | null;
+  readonly stdout?: string | null;
+  readonly targetCommit?: string | null;
+}
 
 export interface SystemUpdateResponse {
+  readonly activeOperation?: {
+    readonly action?: string;
+    readonly operationId?: string;
+    readonly startedAt?: string;
+  };
   readonly action?: string;
   readonly command?: string;
   readonly deployDir?: string;
   readonly exitCode?: number;
   readonly gitBranch?: string;
   readonly gitUrl?: string;
+  readonly history?: readonly SystemUpdateHistoryRecord[];
+  readonly maintenanceMode?: boolean;
   readonly message?: string;
   readonly preflight?: {
     readonly ok?: boolean;
     readonly problems?: readonly string[];
   };
   readonly status: string;
+  readonly runningAction?: string;
+  readonly rollbackTarget?: string | null;
   readonly stderr?: string;
   readonly stdout?: string;
   readonly timestamp?: string;
@@ -34,8 +62,10 @@ export async function getSystemUpdateStatus(options?: { readonly signal?: AbortS
   return (await response.json()) as SystemUpdateResponse;
 }
 
-export async function runSystemUpdateAction(action: SystemUpdateAction) {
+export async function runSystemUpdateAction(action: SystemUpdateAction, input?: { readonly targetCommit?: string | null }) {
   const response = await authFetch(`${apiBaseUrl()}/system-update/${action}`, {
+    body: input ? JSON.stringify(input) : undefined,
+    headers: input ? { "Content-Type": "application/json" } : undefined,
     method: "POST",
   });
 

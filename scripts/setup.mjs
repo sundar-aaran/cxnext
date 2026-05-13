@@ -220,6 +220,10 @@ function isRunningInContainer() {
   return existsSync("/.dockerenv");
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function shellQuote(value) {
   return `'${String(value).replaceAll("'", "'\\''")}'`;
 }
@@ -229,6 +233,25 @@ async function currentContainerDeploySource() {
   const template = `{{range .Mounts}}{{if eq .Destination "${root}"}}{{.Source}}{{end}}{{end}}`;
   const appContainerName = String(readCurrentEnv().get("APP_CONTAINER_NAME") || "cxnext-app");
   return (await capture("docker", ["inspect", appContainerName, "--format", template])) || root;
+}
+
+async function waitForContainerHealthy(containerName, attempts = 60, delayMs = 2000) {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const status = await capture("docker", [
+      "inspect",
+      containerName,
+      "--format",
+      "{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}",
+    ]);
+
+    if (status === "healthy") {
+      return;
+    }
+
+    await sleep(delayMs);
+  }
+
+  fail(`Application container ${containerName} did not become healthy in time.`);
 }
 
 async function runDetachedComposeStart() {
@@ -241,7 +264,8 @@ async function runDetachedComposeStart() {
   const smokeCommand = isEnabled(env.get("SMOKE_TEST_ENABLED"))
     ? `; docker compose -f ${shellQuote(composePath)} exec -T app pnpm smoke:test`
     : "";
-  const startCommand = `sleep 2; docker compose -f ${shellQuote(composePath)} up -d app${smokeCommand}`;
+  const waitCommand = `until [ "$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' ${shellQuote(appContainerName)} 2>/dev/null)" = "healthy" ]; do sleep 2; done`;
+  const startCommand = `sleep 2; docker compose -f ${shellQuote(composePath)} up -d app; ${waitCommand}${smokeCommand}`;
   const completed = await run(
     "docker",
     [
@@ -295,6 +319,7 @@ async function startApp() {
   }
 
   await runComposeStep("Docker start", ["up", "-d", "app"]);
+  await waitForContainerHealthy(String(readCurrentEnv().get("APP_CONTAINER_NAME") || "cxnext-app"));
   return output("ok", { message: "Application container started." });
 }
 

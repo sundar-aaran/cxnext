@@ -26,6 +26,8 @@ const gitUrl = env.GIT_URL || defaultGitUrl;
 const gitBranch = env.GIT_BRANCH || "main";
 const composeFile = env.COMPOSE_FILE || ".container/docker-compose.yml";
 const appContainerName = env.APP_CONTAINER_NAME || "cxnext-app";
+const backupDir = path.resolve(env.SYSTEM_UPDATE_BACKUP_DIR || path.join(deployDir, "storage", "backups"));
+const backupRequired = !isDisabled(env.SYSTEM_UPDATE_BACKUP_REQUIRED);
 
 function log(message) {
   if (!jsonMode) console.log(message);
@@ -109,6 +111,11 @@ async function requireCommand(commandName, versionArgs = ["--version"]) {
   };
 }
 
+async function hasCommand(commandName, versionArgs = ["--version"]) {
+  const completed = await run(commandName, versionArgs, { cwd: scriptRoot });
+  return completed.code === 0;
+}
+
 function resolveExecutable(commandName) {
   if (path.isAbsolute(commandName)) return commandName;
   if (process.platform === "win32" && ["pnpm"].includes(commandName)) {
@@ -121,6 +128,10 @@ function isRunningInContainer() {
   return existsSync("/.dockerenv");
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function shellQuote(value) {
   return `'${String(value).replaceAll("'", "'\\''")}'`;
 }
@@ -129,6 +140,25 @@ async function currentContainerDeploySource() {
   if (!isRunningInContainer()) return deployDir;
   const template = `{{range .Mounts}}{{if eq .Destination "${deployDir}"}}{{.Source}}{{end}}{{end}}`;
   return (await capture("docker", ["inspect", appContainerName, "--format", template])) || deployDir;
+}
+
+async function waitForContainerHealthy(containerName, attempts = 90, delayMs = 2000) {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const status = await capture("docker", [
+      "inspect",
+      containerName,
+      "--format",
+      "{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}",
+    ]);
+
+    if (status === "healthy") {
+      return;
+    }
+
+    await sleep(delayMs);
+  }
+
+  fail(`Application container ${containerName} did not become healthy in time after restart.`);
 }
 
 async function dockerCompose(args, options = {}) {
@@ -181,12 +211,18 @@ async function gitStatus() {
 }
 
 async function preflight() {
+  const dumpAvailable = (await hasCommand("mysqldump")) || (await hasCommand("mariadb-dump"));
   const checks = [
     await requireCommand("node"),
-    await requireCommand("npm"),
+    await requireCommand("pnpm"),
     await requireCommand("git"),
     await requireCommand("docker"),
     await checkDockerCompose(),
+    {
+      available: !backupRequired || dumpAvailable,
+      detail: dumpAvailable ? "database dump command available" : "set SYSTEM_UPDATE_BACKUP_REQUIRED=false to bypass",
+      name: "database backup",
+    },
   ];
   const git = await gitStatus();
   const missing = checks.filter((check) => !check.available).map((check) => check.name);
@@ -198,6 +234,44 @@ async function preflight() {
   ].filter(Boolean);
 
   return { checks, git, ok: problems.length === 0, problems };
+}
+
+async function backupDatabase() {
+  if (!backupRequired) {
+    return { skipped: true, reason: "SYSTEM_UPDATE_BACKUP_REQUIRED is disabled" };
+  }
+
+  const dumpCommand = (await hasCommand("mysqldump")) ? "mysqldump" : (await hasCommand("mariadb-dump")) ? "mariadb-dump" : "";
+  if (!dumpCommand) {
+    fail("Database backup is required before deploy, but mysqldump/mariadb-dump is not available.");
+  }
+
+  const dbName = env.DB_NAME;
+  if (!dbName) fail("Database backup requires DB_NAME.");
+
+  await import("node:fs").then(({ mkdirSync }) => mkdirSync(backupDir, { recursive: true }));
+  const stamp = new Date().toISOString().replaceAll(":", "-").replace(/\.\d{3}Z$/, "Z");
+  const backupPath = path.join(backupDir, `${dbName}-${stamp}.sql`);
+  const backupArgs = [
+    `--host=${env.DB_HOST || "127.0.0.1"}`,
+    `--port=${env.DB_PORT || "3306"}`,
+    `--user=${env.DB_USER || "root"}`,
+    `--result-file=${backupPath}`,
+  ];
+  if (env.DB_PASSWORD) backupArgs.push(`--password=${env.DB_PASSWORD}`);
+  backupArgs.push(dbName);
+
+  log(`Backing up database ${dbName} to ${backupPath}`);
+  const completed = await run(dumpCommand, backupArgs, { cwd: deployDir });
+  if (completed.code !== 0) fail("Database backup failed. Deploy was stopped before code update.", completed.stderr);
+
+  return { backupPath, dbName };
+}
+
+async function migrateDatabase() {
+  log("Running database migrations");
+  const completed = await run("pnpm", ["db:migrate"], { cwd: deployDir });
+  if (completed.code !== 0) fail("Database migration failed. Deploy was stopped before restart.", completed.stderr || completed.stdout);
 }
 
 async function syncSource() {
@@ -237,7 +311,8 @@ async function restartApp() {
     const smokeCommand = isEnabled(env.SMOKE_TEST_ENABLED)
       ? `; docker compose -f ${shellQuote(composeFile)} exec -T app pnpm smoke:test`
       : "";
-    const restartCommand = `sleep 2; docker compose -f ${shellQuote(composeFile)} up -d app${smokeCommand}`;
+    const waitCommand = `until [ "$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' ${shellQuote(appContainerName)} 2>/dev/null)" = "healthy" ]; do sleep 2; done`;
+    const restartCommand = `sleep 2; docker compose -f ${shellQuote(composeFile)} up -d app; ${waitCommand}${smokeCommand}`;
     const completed = await run(
       "docker",
       [
@@ -267,16 +342,36 @@ async function restartApp() {
 
   const completed = await dockerCompose(["up", "-d", "app"], { cwd: deployDir });
   if (completed.code !== 0) fail("Docker compose restart failed.", completed.stderr);
+  await waitForContainerHealthy(appContainerName);
 }
 
 function isEnabled(value) {
   return ["1", "true", "yes", "on"].includes(String(value ?? "").trim().toLowerCase());
 }
 
+function isDisabled(value) {
+  return ["0", "false", "no", "off"].includes(String(value ?? "").trim().toLowerCase());
+}
+
 async function smokeTest() {
   log("Running smoke test");
   const completed = await dockerCompose(["exec", "-T", "app", "pnpm", "smoke:test"], { cwd: deployDir });
   if (completed.code !== 0) fail("Smoke test failed.", completed.stderr || completed.stdout);
+}
+
+async function rollbackSource() {
+  const targetCommit = env.ROLLBACK_COMMIT || env.SYSTEM_UPDATE_ROLLBACK_COMMIT;
+  if (!targetCommit) fail("Rollback requires ROLLBACK_COMMIT.");
+  if (!existsSync(path.join(deployDir, ".git"))) {
+    fail(`Rollback requires a git repository: ${deployDir}`);
+  }
+
+  log(`Rolling back source to ${targetCommit}`);
+  const fetch = await run("git", ["fetch", "origin", gitBranch], { cwd: deployDir });
+  if (fetch.code !== 0) fail("Git fetch failed before rollback.", fetch.stderr);
+  const checkout = await run("git", ["checkout", "--force", targetCommit], { cwd: deployDir });
+  if (checkout.code !== 0) fail("Git rollback checkout failed.", checkout.stderr);
+  return gitStatus();
 }
 
 switch (command) {
@@ -305,14 +400,27 @@ switch (command) {
     await smokeTest();
     result("ok", { git: await gitStatus() });
     break;
-  case "deploy": {
+  case "rollback": {
     const data = await preflight();
     if (!data.ok) fail("Preflight failed.", data.problems);
-    await syncSource();
+    await rollbackSource();
     await buildApp();
     await restartApp();
     if (isEnabled(env.SMOKE_TEST_ENABLED) && !isRunningInContainer()) await smokeTest();
     result("ok", { git: await gitStatus() });
+    break;
+  }
+  case "deploy": {
+    const data = await preflight();
+    if (!data.ok) fail("Preflight failed.", data.problems);
+    const previousCommit = data.git.localCommit;
+    const backup = await backupDatabase();
+    await syncSource();
+    await migrateDatabase();
+    await buildApp();
+    await restartApp();
+    if (isEnabled(env.SMOKE_TEST_ENABLED) && !isRunningInContainer()) await smokeTest();
+    result("ok", { backup, git: await gitStatus(), previousCommit });
     break;
   }
   default:

@@ -56,10 +56,17 @@ import {
   type SoftwareToggleSetting,
 } from "../../domain/software-settings";
 import { getCoreEnvSettings, type CoreEnvGroup } from "../../infrastructure/core-settings-api";
-import { readStoredApplicationContext } from "../../../auth/infrastructure/session-storage";
+import { readStoredApplicationContext, readStoredAuthSession } from "../../../auth/infrastructure/session-storage";
 import { formatMoney } from "../../../sales/application/sales-service";
 
 export function SettingsIndexPage() {
+  const [canRunSystemUpdate, setCanRunSystemUpdate] = useState(false);
+
+  useEffect(() => {
+    const session = readStoredAuthSession();
+    setCanRunSystemUpdate(session?.user.roles.some((role) => role.key === "super_admin") ?? false);
+  }, []);
+
   return (
     <CommonListPageFrame
       description="Configure software behavior and feature availability for the active application context."
@@ -121,12 +128,14 @@ export function SettingsIndexPage() {
           icon={<Landmark className="size-5" />}
           title="Duties & Taxes"
         />
-        <SettingsLinkCard
-          description="Run deployment preflight, sync from GitHub, rebuild Docker, and restart the app."
-          href="/desk/settings/system-update"
-          icon={<RefreshCcw className="size-5" />}
-          title="System Update"
-        />
+        {canRunSystemUpdate ? (
+          <SettingsLinkCard
+            description="Run deployment preflight, sync from GitHub, rebuild Docker, and restart the app."
+            href="/desk/settings/system-update"
+            icon={<RefreshCcw className="size-5" />}
+            title="System Update"
+          />
+        ) : null}
       </div>
     </CommonListPageFrame>
   );

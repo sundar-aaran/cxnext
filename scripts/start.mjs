@@ -14,6 +14,9 @@ const setupMode = process.env.SETUP_MODE === "true" || !envFileExists;
 loadRootEnv(root);
 
 const runtimeEnv = resolveRuntimeEnv();
+const backendHealthUrl = `http://127.0.0.1:${runtimeEnv.PORT}/health`;
+const frontendHealthUrl = `http://127.0.0.1:${runtimeEnv.FRONTEND_HTTP_PORT ?? "3000"}`;
+const readinessTimeoutMs = Number(runtimeEnv.START_READY_TIMEOUT_MS ?? 120000);
 
 function pnpmInvocation(args) {
   const npmExecPath = process.env.npm_execpath;
@@ -56,6 +59,41 @@ function spawnPnpm(args, name) {
   });
 
   return child;
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+async function checkUrl(url) {
+  try {
+    const response = await fetch(url, {
+      signal: AbortSignal.timeout(5000),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+async function waitForUrl(url, label, child, timeoutMs = readinessTimeoutMs) {
+  const startedAt = Date.now();
+
+  while (Date.now() - startedAt < timeoutMs) {
+    if (child.exitCode !== null) {
+      throw new Error(`${label} process exited before readiness with code ${child.exitCode}.`);
+    }
+
+    if (await checkUrl(url)) {
+      return;
+    }
+
+    await sleep(1000);
+  }
+
+  throw new Error(`${label} was not ready within ${timeoutMs}ms at ${url}.`);
 }
 
 async function releasePorts() {
@@ -135,14 +173,29 @@ if (!setupMode) {
 }
 await releasePorts();
 
-const children = [
-  spawnPnpm(["--filter", "@cxnext/server", "start"], "server"),
-  spawnPnpm(["--filter", "@cxnext/frontend", "start"], "frontend"),
-];
+const children = [];
+const server = spawnPnpm(["--filter", "@cxnext/server", "start"], "server");
+children.push(server);
+await waitForUrl(backendHealthUrl, "server health", server);
+
+const frontend = spawnPnpm(["--filter", "@cxnext/frontend", "start"], "frontend");
+children.push(frontend);
+await waitForUrl(frontendHealthUrl, "frontend", frontend);
 
 if (includeDesktop) {
   children.push(spawnPnpm(["--filter", "@cxnext/desktop", "start"], "desktop"));
 }
+
+process.stdout.write(
+  [
+    "",
+    "cxnext production services are ready.",
+    `frontend: ${runtimeEnv.FRONTEND_URL}`,
+    `server: ${runtimeEnv.BACKEND_URL}`,
+    `health: ${runtimeEnv.BACKEND_HEALTH_URL}`,
+    "",
+  ].join("\n"),
+);
 
 process.once("SIGINT", () => stopChildren(children));
 process.once("SIGTERM", () => stopChildren(children));

@@ -1,10 +1,10 @@
-import { Controller, Get, Inject, Post } from "@nestjs/common";
-import { RequirePermissions } from "../../modules/auth/interface/http/auth-context";
+import { Body, Controller, Get, Inject, Post } from "@nestjs/common";
+import { CurrentAuth, RequirePermissions, type AuthRequestContext } from "../../modules/auth/interface/http/auth-context";
 import { modulePermission } from "../../modules/auth/interface/http/module-permissions";
 import { SystemUpdateService } from "./system-update.service";
 
 @Controller("system-update")
-@RequirePermissions(modulePermission("auth", "update"))
+@RequirePermissions(modulePermission("system-update", "run"))
 export class SystemUpdateController {
   public constructor(
     @Inject(SystemUpdateService)
@@ -12,6 +12,7 @@ export class SystemUpdateController {
   ) {}
 
   @Get("status")
+  @RequirePermissions(modulePermission("system-update", "read"))
   public status() {
     return this.systemUpdateService.status();
   }
@@ -22,27 +23,41 @@ export class SystemUpdateController {
   }
 
   @Post("sync")
-  public sync() {
-    return this.systemUpdateService.sync();
+  public sync(@CurrentAuth() auth: AuthRequestContext | null) {
+    return this.systemUpdateService.sync(auth);
   }
 
   @Post("build")
-  public build() {
-    return this.systemUpdateService.build();
+  public build(@CurrentAuth() auth: AuthRequestContext | null) {
+    return this.systemUpdateService.build(auth);
   }
 
   @Post("restart")
-  public restart() {
-    return this.systemUpdateService.restart();
+  public restart(@CurrentAuth() auth: AuthRequestContext | null) {
+    return this.systemUpdateService.restart(auth);
   }
 
   @Post("smoke")
-  public smoke() {
-    return this.systemUpdateService.smoke();
+  public smoke(@CurrentAuth() auth: AuthRequestContext | null) {
+    return this.systemUpdateService.smoke(auth);
   }
 
   @Post("deploy")
-  public deploy() {
-    return this.systemUpdateService.deploy();
+  public deploy(@CurrentAuth() auth: AuthRequestContext | null) {
+    return this.systemUpdateService.deploy(auth);
+  }
+
+  @Post("rollback")
+  public rollback(
+    @CurrentAuth() auth: AuthRequestContext | null,
+    @Body() body: { readonly targetCommit?: string | null } = {},
+  ) {
+    return this.systemUpdateService.rollback(auth, body.targetCommit);
+  }
+
+  @Get("history")
+  @RequirePermissions(modulePermission("system-update", "read"))
+  public history() {
+    return this.systemUpdateService.listHistory(20);
   }
 }

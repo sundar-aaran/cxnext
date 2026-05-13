@@ -571,6 +571,31 @@ export interface MailDeliveryAttemptsTable {
   readonly created_at: TimestampColumn;
 }
 
+export interface SystemUpdateOperationsTable {
+  readonly id: Generated<number>;
+  readonly operation_id: string;
+  readonly action: string;
+  readonly status: string;
+  readonly message: string | null;
+  readonly progress_percent: ColumnType<number, number | string | undefined, number | string>;
+  readonly deploy_dir: string | null;
+  readonly git_branch: string | null;
+  readonly git_url: string | null;
+  readonly local_commit: string | null;
+  readonly remote_commit: string | null;
+  readonly previous_commit: string | null;
+  readonly target_commit: string | null;
+  readonly stdout: string | null;
+  readonly stderr: string | null;
+  readonly result_json: JsonColumn<unknown>;
+  readonly requested_by_user_id: string | null;
+  readonly requested_by_name: string | null;
+  readonly started_at: TimestampColumn;
+  readonly finished_at: NullableTimestampColumn;
+  readonly created_at: TimestampColumn;
+  readonly updated_at: TimestampColumn;
+}
+
 export interface CommonCountriesTable {
   readonly id: Generated<number>;
   readonly code: string;
@@ -665,6 +690,7 @@ export interface DatabaseSchema {
   readonly receipts: ReceiptsTable;
   readonly sales: SalesTable;
   readonly sales_items: SalesItemsTable;
+  readonly system_update_operations: SystemUpdateOperationsTable;
   readonly tenants: TenantsTable;
 }
 

@@ -2,13 +2,40 @@
 
 ## Version State
 
-- Current package version: `1.0.91`
-- Current release tag: `v-1.0.91`
+- Current package version: `1.0.92`
+- Current release tag: `v-1.0.92`
 - Versioned changelog label format: `v 1.0.<reference>`
 - Version section format: `## v-1.0.<reference>`
 - Entry format: `### [v 1.0.<reference>] YYYY-MM-DD - Title`
 
+## v-1.0.92
+
+### [v 1.0.92] 2026-05-13 - Harden Client Startup Readiness
+
+- Changed production startup so the backend boots first and the frontend waits until API health is ready, reducing first-load failures during cold starts.
+- Added a Docker health check that verifies both backend health and frontend HTML reachability inside the app container.
+- Added wait-for-healthy behavior to setup and system-update restart flows so restart completion is aligned with actual app readiness.
+- Reduced the chance of client browsers seeing partially started app responses that only recover after manual refresh.
+- Synchronized workspace package versions to `1.0.92`.
+
 ## v-1.0.91
+
+### [v 1.0.91] 2026-05-13 - Harden System Update Deploy Operations
+
+- Added durable System Update operation history with progress, stdout/stderr tail, commit metadata, requester, started time, and finished time.
+- Added deploy confirmation, maintenance banner wording, polling progress/history view, and rollback control on the System Update page.
+- Added a pre-deploy database backup gate, database migration step, and rollback script action that rebuilds and restarts from the previous successful deploy commit.
+- Replaced broad `auth.update` protection with dedicated `system-update.run` / `system-update.read` RBAC catalog permissions assigned only through the super admin role blueprint.
+- Added a same-origin Next.js rewrite for `/v1/*` and route rewrite tests for both `/api/v1/system-update/*` and `/v1/system-update/*`.
+- Revalidated shared package builds, focused server/frontend typechecks, and the new route test.
+
+### [v 1.0.91] 2026-05-13 - Lock Concurrent System Update Actions
+
+- Added a backend single-flight lock around System Update writable actions so only one sync, build, restart, smoke, or deploy can run at a time.
+- Returned a clear `409 Conflict` busy response with the running action, operation id, and started timestamp when another update action is already active.
+- Exposed the active System Update operation through status responses so the frontend can disable conflicting actions opened from another tab or user session.
+- Refined the System Update page to show the active running operation and disable update actions while the backend lock is held.
+- Revalidated focused server and frontend typechecks.
 
 ### [v 1.0.91] 2026-05-13 - Fix System Update Versioned Route
 

@@ -16,6 +16,7 @@ import { createCompanySettingsMigration } from "./015-create-company-settings";
 import { addCompanyBankAccountQrMigration } from "./016-add-company-bank-account-qr";
 import { createQueueJobsMigration } from "./017-create-queue-jobs";
 import { createMailServiceMigration } from "./018-create-mail-service";
+import { createSystemUpdateOperationsMigration } from "./019-create-system-update-operations";
 import {
   contactsCommonMigrations,
   locationCommonMigrations,
@@ -46,6 +47,7 @@ export const databaseMigrations = [
   addCompanyBankAccountQrMigration,
   createQueueJobsMigration,
   createMailServiceMigration,
+  createSystemUpdateOperationsMigration,
   createAuthRbacMigration,
   createAuthPolicyCatalogMigration,
 ] as const;
@@ -66,6 +68,7 @@ export { createCompanySettingsMigration };
 export { addCompanyBankAccountQrMigration };
 export { createQueueJobsMigration };
 export { createMailServiceMigration };
+export { createSystemUpdateOperationsMigration };
 export { createAuthRbacMigration };
 export { createAuthPolicyCatalogMigration };
 export {

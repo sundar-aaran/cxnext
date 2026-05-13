@@ -1,16 +1,16 @@
 # Task
 
-Active reference: `#91`
+Active reference: `#92`
 
 ## Active
 
-- [x] `#91` Fix System Update versioned deploy route
-  - [x] Phase 1: trace failing route
-    - [x] 1.1 Inspect System Update frontend action URLs.
-    - [x] 1.2 Inspect backend System Update controller and versioned API rewrite.
-  - [x] Phase 2: implementation
-    - [x] 2.1 Add `/v1` as an accepted versioned API prefix alongside `/api/v1`.
-    - [x] 2.2 Refactor System Update action wording for GitHub pull/update clarity.
-  - [x] Phase 3: validation and log
-    - [x] 3.1 Run focused server and frontend typechecks.
-    - [x] 3.2 Add changelog entry under `v 1.0.91`.
+- [x] `#92` Harden client startup readiness on deployed boot
+  - [x] Phase 1: inspect startup race
+    - [x] 1.1 Review deployed startup behavior, client container flow, and public proxy wiring.
+    - [x] 1.2 Confirm that production startup can expose the frontend before the backend and container are fully ready.
+  - [x] Phase 2: implement readiness guards
+    - [x] 2.1 Start the backend first in production and wait for API health before starting the frontend.
+    - [x] 2.2 Add container health checks and wait-for-healthy behavior to setup and system-update restart flows.
+  - [x] Phase 3: validate and track
+    - [x] 3.1 Run syntax checks for the touched startup scripts and a focused server typecheck.
+    - [x] 3.2 Refresh changelog, execution tracking, and lockstep version alignment for `1.0.92`.
