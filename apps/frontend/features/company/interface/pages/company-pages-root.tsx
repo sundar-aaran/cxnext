@@ -52,6 +52,7 @@ import { listTenants } from "../../../tenant/application/tenant-service";
 import type { TenantRecord } from "../../../tenant/domain/tenant";
 import { createCommonRecord, listCommonRecords } from "../../../common/application/common-service";
 import type { CommonRecord } from "../../../common/domain/common-master";
+import { MasterAutocompleteLookup } from "../../../common/interface/components/master-autocomplete-lookup";
 import {
   buildCompanyColumnOptions,
   filterCompanies,
@@ -175,6 +176,17 @@ const companySchema = z.object({
     z.object({
       platform: z.string(),
       url: z.string(),
+      isActive: z.boolean(),
+    }),
+  ),
+  bankAccounts: z.array(
+    z.object({
+      bankName: z.string(),
+      accountNumber: z.string(),
+      accountHolderName: z.string(),
+      ifsc: z.string(),
+      branch: z.string().nullable(),
+      isPrimary: z.boolean(),
       isActive: z.boolean(),
     }),
   ),
@@ -601,6 +613,7 @@ export function CompanyUpsertPage({
   const [industries, setIndustries] = useState<readonly IndustryRecord[]>([]);
   const [locationLookups, setLocationLookups] = useState<LocationLookupMap>(emptyLocationLookups);
   const [addressTypes, setAddressTypes] = useState<readonly CommonRecord[]>([]);
+  const [bankNames, setBankNames] = useState<readonly CommonRecord[]>([]);
   const [isLoaded, setIsLoaded] = useState(!isEdit);
   const [message, setMessage] = useState<string | null>(null);
   const [logoUploadDialog, setLogoUploadDialog] = useState<{
@@ -650,6 +663,7 @@ export function CompanyUpsertPage({
       listIndustries({ signal: controller.signal }),
       loadLocationLookups(controller.signal),
       listCommonRecords("addressTypes", { signal: controller.signal }),
+      listCommonRecords("bankNames", { signal: controller.signal }),
     ] as const;
     const companyLoader = companyId
       ? getCompany(companyId, { signal: controller.signal })
@@ -662,12 +676,14 @@ export function CompanyUpsertPage({
           industryRecords,
           nextLocationLookups,
           addressTypeRecords,
+          bankNameRecords,
           companyRecord,
         ]) => {
           setTenants(tenantRecords);
           setIndustries(industryRecords);
           setLocationLookups(nextLocationLookups);
           setAddressTypes(addressTypeRecords);
+          setBankNames(bankNameRecords);
           setExistingCompany(companyRecord);
           const values = normalizeCompanyAddressTypes(
             defaultCompanyFormValues(companyRecord, tenantRecords[0]?.id, industryRecords[0]?.id),
@@ -720,6 +736,26 @@ export function CompanyUpsertPage({
       toast.error(`Could not create ${locationLookupLabel(moduleKey).toLowerCase()}`, {
         description: getErrorMessage(error),
       });
+      return null;
+    }
+  }
+
+  async function createBankName(label: string) {
+    const trimmedLabel = label.trim();
+    if (!trimmedLabel) return null;
+
+    try {
+      const record = await createCommonRecord("bankNames", {
+        code: toLookupCode(trimmedLabel) || "BANK",
+        description: null,
+        isActive: true,
+        name: trimmedLabel,
+      });
+      setBankNames((current) => [...current, record]);
+      toast.success("Bank name created", { description: getCommonRecordLabel(record) });
+      return record;
+    } catch (error) {
+      toast.error("Could not create bank name", { description: getErrorMessage(error) });
       return null;
     }
   }
@@ -1205,6 +1241,140 @@ export function CompanyUpsertPage({
                         <NumberField form={form} name="tcsRatePercent" label="TCS Rate %" />
                       </div>
                     </div>
+                  ),
+                },
+                {
+                  value: "accounts",
+                  label: "Accounts",
+                  content: (
+                    <CollectionCard
+                      title="Company Bank Accounts"
+                      description="Bank accounts used for receipts and payments."
+                      actionLabel="Add"
+                      onAdd={() =>
+                        form.setFieldValue("bankAccounts", [
+                          ...form.getFieldValue("bankAccounts"),
+                          {
+                            bankName: "",
+                            accountNumber: "",
+                            accountHolderName: form.getFieldValue("legalName") || form.getFieldValue("name"),
+                            ifsc: "",
+                            branch: null,
+                            isPrimary: form.getFieldValue("bankAccounts").length === 0,
+                            isActive: true,
+                          },
+                        ])
+                      }
+                    >
+                      <form.Field name="bankAccounts">
+                        {(field) => (
+                          <div className="space-y-4">
+                            {field.state.value.map((bankAccount, index) => (
+                              <CollectionRow
+                                key={index}
+                                gridClassName="md:grid-cols-2"
+                                onRemove={() =>
+                                  field.handleChange(
+                                    field.state.value.filter((_, itemIndex) => itemIndex !== index),
+                                  )
+                                }
+                              >
+                                <MasterAutocompleteLookup
+                                  allowCreate
+                                  className="[&_input]:rounded-xl"
+                                  defaultId=""
+                                  defaultLabel=""
+                                  label="Bank name"
+                                  moduleKey="bankNames"
+                                  getOptionLabel={getCommonRecordLabel}
+                                  options={bankNames}
+                                  placeholder="Search or create bank"
+                                  value={findBankNameId(bankNames, bankAccount.bankName)}
+                                  onChange={(_, record) =>
+                                    updateCollectionItem(field, index, {
+                                      bankName: record ? getCommonRecordLabel(record) : "",
+                                    })
+                                  }
+                                  onQuickCreate={({ label }) => createBankName(label)}
+                                />
+                                <FieldShell label="Account number" error={null}>
+                                  <Input
+                                    className="h-11 rounded-xl"
+                                    value={bankAccount.accountNumber}
+                                    onChange={(event) =>
+                                      updateCollectionItem(field, index, {
+                                        accountNumber: event.target.value,
+                                      })
+                                    }
+                                  />
+                                </FieldShell>
+                                <FieldShell label="Account holder name" error={null}>
+                                  <Input
+                                    className="h-11 rounded-xl"
+                                    value={bankAccount.accountHolderName}
+                                    onChange={(event) =>
+                                      updateCollectionItem(field, index, {
+                                        accountHolderName: event.target.value,
+                                      })
+                                    }
+                                  />
+                                </FieldShell>
+                                <FieldShell label="IFSC" error={null}>
+                                  <Input
+                                    className="h-11 rounded-xl uppercase"
+                                    value={bankAccount.ifsc}
+                                    onChange={(event) =>
+                                      updateCollectionItem(field, index, {
+                                        ifsc: event.target.value.toUpperCase(),
+                                      })
+                                    }
+                                  />
+                                </FieldShell>
+                                <FieldShell label="Branch" error={null}>
+                                  <Input
+                                    className="h-11 rounded-xl"
+                                    value={bankAccount.branch ?? ""}
+                                    onChange={(event) =>
+                                      updateCollectionItem(field, index, {
+                                        branch: event.target.value || null,
+                                      })
+                                    }
+                                  />
+                                </FieldShell>
+                                <label
+                                  className={
+                                    bankAccount.isPrimary
+                                      ? "flex min-h-11 cursor-pointer items-center justify-between gap-4 self-end rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-emerald-950"
+                                      : "flex min-h-11 cursor-pointer items-center justify-between gap-4 self-end rounded-xl border border-border/70 bg-muted/10 px-4 py-2"
+                                  }
+                                >
+                                  <span>
+                                    <span className="block text-sm font-medium leading-tight">
+                                      Primary bank
+                                    </span>
+                                    <span className="block text-xs leading-tight text-muted-foreground">
+                                      First choice in receipts and payments.
+                                    </span>
+                                  </span>
+                                  <Switch
+                                    checked={bankAccount.isPrimary}
+                                    aria-label="Primary bank"
+                                    onCheckedChange={(checked) =>
+                                      field.handleChange(
+                                        field.state.value.map((item, itemIndex) => ({
+                                          ...item,
+                                          isPrimary: itemIndex === index ? checked : false,
+                                        })),
+                                      )
+                                    }
+                                  />
+                                </label>
+                              </CollectionRow>
+                            ))}
+                          </div>
+                        )}
+                      </form.Field>
+                    </CollectionCard>
                   ),
                 },
                 {
@@ -2443,6 +2613,16 @@ function defaultCompanyFormValues(
         url: link.url,
         isActive: link.isActive,
       })) ?? [],
+    bankAccounts:
+      company?.bankAccounts.map((bankAccount) => ({
+        bankName: bankAccount.bankName,
+        accountNumber: bankAccount.accountNumber,
+        accountHolderName: bankAccount.accountHolderName,
+        ifsc: bankAccount.ifsc,
+        branch: bankAccount.branch,
+        isPrimary: bankAccount.isPrimary,
+        isActive: bankAccount.isActive,
+      })) ?? [],
     addresses:
       company?.addresses.map((address) => ({
         addressTypeId: address.addressTypeId,
@@ -2613,6 +2793,17 @@ function getCommonRecordLabel(record: CommonRecord) {
   const code = typeof record.code === "string" ? record.code : "";
   const areaName = typeof record.areaName === "string" ? record.areaName : "";
   return name || areaName || code || String(record.id);
+}
+
+function findBankNameId(bankNames: readonly CommonRecord[], bankName: string) {
+  const normalizedBankName = normalizeLookupText(bankName);
+  if (!normalizedBankName) return null;
+  const record = bankNames.find(
+    (item) =>
+      normalizeLookupText(getCommonRecordLabel(item)) === normalizedBankName ||
+      normalizeLookupText(String(item.code ?? "")) === normalizedBankName,
+  );
+  return record ? String(record.id) : null;
 }
 
 function getLocationRecordLabel(moduleKey: LocationLookupKey, record: CommonRecord) {

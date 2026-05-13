@@ -54,6 +54,15 @@ function composeUrl(env, hostKey, httpPortKey, httpsPortKey) {
   return `${scheme}://${host}:${port}`;
 }
 
+function versionedApiUrl(baseUrl) {
+  const normalized = baseUrl.replace(/\/$/, "");
+  if (normalized.endsWith("/api/v1")) {
+    return normalized;
+  }
+  const apiBase = normalized.endsWith("/api") ? normalized : `${normalized}/api`;
+  return `${apiBase}/v1`;
+}
+
 export function resolveRuntimeEnv(source = process.env) {
   const env = { ...source };
 
@@ -71,7 +80,7 @@ export function resolveRuntimeEnv(source = process.env) {
     env.BACKEND_URL ||
     `${protocol(env)}://${urlHost(env.APP_HOST ?? "localhost")}:${requireRuntimeEnv(env, "PORT")}`;
   env.BACKEND_HEALTH_URL = env.BACKEND_HEALTH_URL || `${env.BACKEND_URL}/health`;
-  env.NEXT_PUBLIC_API_URL = env.NEXT_PUBLIC_API_URL || env.BACKEND_URL;
+  env.NEXT_PUBLIC_API_URL = versionedApiUrl(env.NEXT_PUBLIC_API_URL || env.BACKEND_URL);
   env.AUTH_TOKEN_EXPIRES_SECONDS = env.AUTH_TOKEN_EXPIRES_SECONDS || env.JWT_EXPIRES_IN_SECONDS;
 
   return {

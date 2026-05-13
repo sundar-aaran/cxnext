@@ -1,5 +1,5 @@
 import type { SalesInput, SalesRecord } from "../domain/sales";
-import { getRequiredPublicApiUrl } from "@/lib/runtime-env";
+import { getRequiredApiUrl } from "@/lib/runtime-env";
 import {
   authFetch,
   withStoredApplicationContextPayload,
@@ -57,7 +57,7 @@ export async function deleteSales(id: number) {
 }
 
 function apiBaseUrl() {
-  return getRequiredPublicApiUrl();
+  return getRequiredApiUrl();
 }
 
 function toRecord(record: Omit<SalesRecord, "id"> & { id: string }): SalesRecord {

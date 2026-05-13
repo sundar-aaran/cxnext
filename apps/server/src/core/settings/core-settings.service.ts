@@ -62,6 +62,7 @@ const coreEnvGroups = [
       "FRONTEND_DOMAIN",
       "FRONTEND_HTTP_PORT",
       "FRONTEND_HTTPS_PORT",
+      "CORS_ORIGINS",
     ],
   },
   {

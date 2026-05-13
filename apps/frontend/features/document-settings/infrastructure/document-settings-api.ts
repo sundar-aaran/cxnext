@@ -1,4 +1,4 @@
-import { getRequiredPublicApiUrl } from "@/lib/runtime-env";
+import { getRequiredApiUrl } from "@/lib/runtime-env";
 import {
   authFetch,
   withStoredApplicationContextPayload,
@@ -68,5 +68,5 @@ export function withAutoDocumentNumber<T extends Record<string, unknown>>(input:
 }
 
 function apiBaseUrl() {
-  return getRequiredPublicApiUrl();
+  return getRequiredApiUrl();
 }

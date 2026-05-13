@@ -78,12 +78,13 @@ export function MasterAutocompleteLookup({
   const optionCount = filteredOptions.length + (canCreate ? 1 : 0);
 
   useEffect(() => {
+    if (isOpen) return;
     setQuery(
       selectedOption
         ? selectedOptionLabel(selectedOption, value, defaultId, defaultLabel, getOptionLabel)
         : defaultQueryLabel(value, defaultId, defaultLabel),
     );
-  }, [defaultId, defaultLabel, getOptionLabel, selectedOption, value]);
+  }, [defaultId, defaultLabel, getOptionLabel, isOpen, selectedOption, value]);
 
   useEffect(() => {
     if (!isOpen) return;

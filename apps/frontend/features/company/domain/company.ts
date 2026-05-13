@@ -132,6 +132,7 @@ export type CompanyUpsertInput = Pick<
   readonly emails: readonly Omit<CompanyEmailRecord, "id">[];
   readonly phones: readonly Omit<CompanyPhoneRecord, "id">[];
   readonly socialLinks: readonly Omit<CompanySocialLinkRecord, "id">[];
+  readonly bankAccounts: readonly Omit<CompanyBankAccountRecord, "id">[];
 };
 
 export type CompanyStatusFilter = "all" | "active" | "inactive";

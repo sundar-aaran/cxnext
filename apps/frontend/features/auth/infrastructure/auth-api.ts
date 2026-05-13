@@ -10,7 +10,7 @@ import type {
   AuthUser,
   AuthUserInput,
 } from "../domain/auth";
-import { getRequiredPublicApiUrl } from "@/lib/runtime-env";
+import { getRequiredApiUrl } from "@/lib/runtime-env";
 import { clearStoredAuthSession, getStoredAccessToken } from "./session-storage";
 
 export {
@@ -206,7 +206,7 @@ export async function authFetch(input: RequestInfo | URL, init: RequestInit = {}
 }
 
 function apiBaseUrl() {
-  return getRequiredPublicApiUrl();
+  return getRequiredApiUrl();
 }
 
 async function readApiErrorMessage(response: Response, fallback: string) {

@@ -57,6 +57,15 @@ function composeUrl(hostKey: string, httpPortKey: string, httpsPortKey: string) 
   return `${scheme}://${urlHost(process.env[hostKey])}:${port}`;
 }
 
+function versionedApiUrl(baseUrl: string) {
+  const normalized = baseUrl.replace(/\/$/, "");
+  if (normalized.endsWith("/api/v1")) {
+    return normalized;
+  }
+  const apiBase = normalized.endsWith("/api") ? normalized : `${normalized}/api`;
+  return `${apiBase}/v1`;
+}
+
 process.env.NODE_ENV = process.env.NODE_ENV || process.env.APP_ENV || "development";
 process.env.FRONTEND_URL =
   process.env.FRONTEND_URL ||
@@ -70,6 +79,10 @@ if (!process.env.BACKEND_URL && isPresent(process.env.PORT)) {
 process.env.BACKEND_HEALTH_URL =
   process.env.BACKEND_HEALTH_URL ||
   (process.env.BACKEND_URL ? `${process.env.BACKEND_URL}/health` : undefined);
-process.env.NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL;
+process.env.NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL
+  ? versionedApiUrl(process.env.NEXT_PUBLIC_API_URL)
+  : process.env.BACKEND_URL
+    ? versionedApiUrl(process.env.BACKEND_URL)
+    : undefined;
 process.env.AUTH_TOKEN_EXPIRES_SECONDS =
   process.env.AUTH_TOKEN_EXPIRES_SECONDS || process.env.JWT_EXPIRES_IN_SECONDS;

@@ -1,5 +1,5 @@
 import type { PaymentInput, PaymentRecord } from "../domain/payment";
-import { getRequiredPublicApiUrl } from "@/lib/runtime-env";
+import { getRequiredApiUrl } from "@/lib/runtime-env";
 import {
   authFetch,
   withStoredApplicationContextPayload,
@@ -59,7 +59,7 @@ export async function deletePayment(id: number) {
 }
 
 function apiBaseUrl() {
-  return getRequiredPublicApiUrl();
+  return getRequiredApiUrl();
 }
 
 function toRecord(record: Omit<PaymentRecord, "id"> & { id: string }): PaymentRecord {

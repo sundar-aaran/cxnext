@@ -3,7 +3,7 @@ import type {
   CommonLocationRecord,
   CommonLocationUpsertInput,
 } from "../domain/common-location";
-import { getRequiredPublicApiUrl } from "@/lib/runtime-env";
+import { getRequiredApiUrl } from "@/lib/runtime-env";
 import { commonLocationDefinitions } from "../domain/common-location";
 import { authFetch } from "../../../auth/infrastructure/auth-api";
 
@@ -106,7 +106,7 @@ export async function softDeleteCommonLocation(
 }
 
 function getApiBaseUrl() {
-  return getRequiredPublicApiUrl();
+  return getRequiredApiUrl();
 }
 
 async function fetchCommonLocationRecords(

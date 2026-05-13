@@ -78,11 +78,15 @@ Open:
 
 - Frontend: `https://codexsun.com`
 - API health: `https://codexsun.com/health`
-- Browser API base: `https://codexsun.com/api`
+- Browser API base: `https://codexsun.com/api/v1`
 
 When using Nginx, serve the frontend at `/` and proxy `/api/` to the backend
-port with the `/api` prefix stripped. Example client blocks are available in
+port without stripping the prefix. Example client blocks are available in
 `.container/proxy/nginx-clients.conf`.
+
+The frontend also includes a fallback rewrite for `/api/v1/*` plus legacy
+`/api/*` forwarding to the internal backend port. Direct Nginx proxying is
+still preferred.
 
 Stop:
 

@@ -282,6 +282,10 @@ export class KyselyCompanyRepository implements CompanyRepository, OnModuleDestr
         .deleteFrom("company_social_links")
         .where("company_id", "=", companyId)
         .execute(),
+      this.connection.db
+        .deleteFrom("company_bank_accounts")
+        .where("company_id", "=", companyId)
+        .execute(),
     ]);
 
     const logos = (params.logos ?? []).filter((item) => toNullableString(item.logoUrl));
@@ -291,6 +295,13 @@ export class KyselyCompanyRepository implements CompanyRepository, OnModuleDestr
     const emails = (params.emails ?? []).filter((item) => toNullableString(item.email));
     const phones = (params.phones ?? []).filter((item) => toNullableString(item.phoneNumber));
     const socialLinks = (params.socialLinks ?? []).filter((item) => toNullableString(item.url));
+    const bankAccounts = (params.bankAccounts ?? []).filter(
+      (item) =>
+        toNullableString(item.bankName) &&
+        toNullableString(item.accountNumber) &&
+        toNullableString(item.accountHolderName) &&
+        toNullableString(item.ifsc),
+    );
 
     await Promise.all([
       insertIfAny(
@@ -363,6 +374,23 @@ export class KyselyCompanyRepository implements CompanyRepository, OnModuleDestr
             company_id: companyId,
             platform: item.platform.trim() || "Website",
             url: item.url.trim(),
+            is_active: item.isActive !== false,
+            created_at: timestamp,
+            updated_at: timestamp,
+          })),
+        ),
+      ),
+      insertIfAny(
+        bankAccounts,
+        this.connection.db.insertInto("company_bank_accounts").values(
+          bankAccounts.map((item) => ({
+            company_id: companyId,
+            bank_name: item.bankName.trim(),
+            account_number: item.accountNumber.trim(),
+            account_holder_name: item.accountHolderName.trim(),
+            ifsc: item.ifsc.trim().toUpperCase(),
+            branch: toNullableString(item.branch),
+            is_primary: Boolean(item.isPrimary),
             is_active: item.isActive !== false,
             created_at: timestamp,
             updated_at: timestamp,

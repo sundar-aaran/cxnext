@@ -42,7 +42,21 @@ import { EntryCollaborationPanel } from "../../../entries/interface/components/e
 import { getCoreEnvSettings } from "../../../settings/infrastructure/core-settings-api";
 import { getNextDocumentNumber } from "../../../document-settings/infrastructure/document-settings-api";
 import { resolveSalesBillingLayout } from "../../../sales/application/sales-billing-layout-service";
-import type { SalesRecord } from "../../../sales/domain/sales";
+import {
+  listSalesContactLookups,
+  listSalesProductLookups,
+} from "../../../sales/application/sales-service";
+import type { SalesLookupOption, SalesRecord } from "../../../sales/domain/sales";
+import {
+  ContactAutocompleteField,
+  ProductAutocompleteField,
+  SalesItemMasterLookupField,
+} from "../../../sales/interface/components/sales-voucher-form";
+import {
+  createCommonRecord,
+  listCommonRecords,
+  type CommonRecord,
+} from "../../../common/application/common-service";
 import {
   SalesInvoiceDocument,
   type SalesPrintCopy,
@@ -455,7 +469,21 @@ export function PurchaseShowPage({
 export function PurchaseUpsertPage({ purchaseId }: { readonly purchaseId?: number }) {
   const router = useRouter();
   const [form, setForm] = useState<PurchaseInput>(defaultPurchaseInput());
+  const [contacts, setContacts] = useState<readonly SalesLookupOption[]>([]);
+  const [products, setProducts] = useState<readonly SalesLookupOption[]>([]);
   useEffect(() => {
+    const lookupController = new AbortController();
+    void listSalesContactLookups({ signal: lookupController.signal })
+      .then(setContacts)
+      .catch((error) => {
+        if (!isAbortError(error)) setContacts([]);
+      });
+    void listSalesProductLookups({ signal: lookupController.signal })
+      .then(setProducts)
+      .catch((error) => {
+        if (!isAbortError(error)) setProducts([]);
+      });
+
     if (purchaseId)
       void getPurchase(purchaseId).then(
         (record) =>
@@ -491,8 +519,13 @@ export function PurchaseUpsertPage({ purchaseId }: { readonly purchaseId?: numbe
             });
           }
         });
-      return () => controller.abort();
+      return () => {
+        controller.abort();
+        lookupController.abort();
+      };
     }
+
+    return () => lookupController.abort();
   }, [purchaseId]);
   async function save(printAfterSave = false) {
     const record = await upsertPurchase(preparePurchaseInput(form), purchaseId);
@@ -527,7 +560,12 @@ export function PurchaseUpsertPage({ purchaseId }: { readonly purchaseId?: numbe
             }}
           >
             <div className="px-0 pb-4 pt-3 md:pb-5">
-              <PurchaseVoucherTabs form={form} setForm={setForm} />
+              <PurchaseVoucherTabs
+                contacts={contacts}
+                form={form}
+                products={products}
+                setForm={setForm}
+              />
             </div>
             <div className="flex flex-wrap justify-start gap-3 border-t border-border/70 bg-muted/20 px-4 py-4 md:px-6">
               <SavePrintButtons saveLabel="Save" onSavePrint={() => void save(true)} />
@@ -546,10 +584,14 @@ export function PurchaseUpsertPage({ purchaseId }: { readonly purchaseId?: numbe
 }
 
 function PurchaseVoucherTabs({
+  contacts,
   form,
+  products,
   setForm,
 }: {
+  readonly contacts: readonly SalesLookupOption[];
   readonly form: PurchaseInput;
+  readonly products: readonly SalesLookupOption[];
   readonly setForm: (value: PurchaseInput) => void;
 }) {
   const totals = useMemo(() => calculatePurchaseTotals(form), [form.items, form.roundOff]);
@@ -557,7 +599,15 @@ function PurchaseVoucherTabs({
     {
       value: "details",
       label: "Details",
-      content: <PurchaseDetailsTab form={form} setForm={setForm} totals={totals} />,
+      content: (
+        <PurchaseDetailsTab
+          contacts={contacts}
+          form={form}
+          products={products}
+          setForm={setForm}
+          totals={totals}
+        />
+      ),
     },
     {
       value: "address",
@@ -580,16 +630,61 @@ function PurchaseVoucherTabs({
 }
 
 function PurchaseDetailsTab({
+  contacts,
   form,
+  products,
   setForm,
   totals,
 }: {
+  readonly contacts: readonly SalesLookupOption[];
   readonly form: PurchaseInput;
+  readonly products: readonly SalesLookupOption[];
   readonly setForm: (value: PurchaseInput) => void;
   readonly totals: PurchaseTotals;
 }) {
   const [itemDraft, setItemDraft] = useState(defaultPurchaseItem());
+  const [itemLookups, setItemLookups] = useState<PurchaseItemLookupMap>({
+    colours: [],
+    sizes: [],
+  });
   const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    void Promise.all([
+      listCommonRecords("sizes", { signal: controller.signal }),
+      listCommonRecords("colours", { signal: controller.signal }),
+    ])
+      .then(([sizes, colours]) => {
+        if (!controller.signal.aborted) setItemLookups({ colours, sizes });
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setItemLookups({ colours: [], sizes: [] });
+      });
+
+    return () => controller.abort();
+  }, []);
+
+  async function createPurchaseItemLookup(moduleKey: PurchaseItemLookupKey, label: string) {
+    try {
+      const record = await createCommonRecord(
+        moduleKey,
+        buildPurchaseItemLookupCreatePayload(moduleKey, label),
+      );
+      setItemLookups((current) => ({
+        ...current,
+        [moduleKey]: [...current[moduleKey], record],
+      }));
+      toast.success(`${purchaseItemLookupLabel(moduleKey)} created`);
+      return record;
+    } catch (error) {
+      toast.error(`Could not create ${purchaseItemLookupLabel(moduleKey).toLowerCase()}`, {
+        description: getErrorMessage(error),
+      });
+      return null;
+    }
+  }
 
   function addItem() {
     if (!itemDraft.productName.trim()) return;
@@ -640,13 +735,21 @@ function PurchaseDetailsTab({
     <div className="space-y-8">
       <div className="grid gap-5 lg:grid-cols-2">
         <div className="space-y-5">
-          <Field label="Supplier name">
-            <Input
-              className="h-11 rounded-md"
-              value={form.partyName}
-              onChange={(event) => setForm({ ...form, partyName: event.target.value })}
-            />
-          </Field>
+          <ContactAutocompleteField
+            label="Supplier name"
+            options={contacts}
+            placeholder=""
+            selectedId={form.partyId}
+            selectedLabel={form.partyName}
+            onPick={(option) =>
+              setForm({
+                ...form,
+                billingAddress: option.billingAddress ?? form.billingAddress,
+                partyId: option.id,
+                partyName: option.label,
+              })
+            }
+          />
           <Field label="Supplier bill no">
             <Input
               className="h-11 rounded-md"
@@ -714,13 +817,29 @@ function PurchaseDetailsTab({
           Purchase Items
         </h2>
         <div className="grid gap-3 lg:grid-cols-[repeat(6,minmax(0,1fr))_auto]">
-          <Field label="Product name">
-            <Input
-              className="h-11 rounded-md"
-              value={itemDraft.productName}
-              onChange={(event) => setItemDraft({ ...itemDraft, productName: event.target.value })}
-            />
-          </Field>
+          <ProductAutocompleteField
+            label="Product name"
+            options={products}
+            placeholder=""
+            selectedId={itemDraft.productId}
+            selectedLabel={itemDraft.productName}
+            onPick={(option) =>
+              setItemDraft({
+                ...itemDraft,
+                colour: option.colour ?? itemDraft.colour,
+                hsnCodeId: option.hsnCodeId ?? null,
+                mrp: option.mrp ?? 0,
+                productId: option.id,
+                productName: option.label,
+                productSku: option.productSku ?? null,
+                rate: option.rate ?? 0,
+                size: option.size ?? itemDraft.size,
+                taxId: option.taxId ?? null,
+                taxRate: option.taxRate ?? 0,
+                unitId: option.unitId ?? null,
+              })
+            }
+          />
           <Field label="Description">
             <Input
               className="h-11 rounded-md"
@@ -728,20 +847,22 @@ function PurchaseDetailsTab({
               onChange={(event) => setItemDraft({ ...itemDraft, description: event.target.value })}
             />
           </Field>
-          <Field label="Size">
-            <Input
-              className="h-11 rounded-md"
-              value={itemDraft.size ?? ""}
-              onChange={(event) => setItemDraft({ ...itemDraft, size: event.target.value })}
-            />
-          </Field>
-          <Field label="Colour">
-            <Input
-              className="h-11 rounded-md"
-              value={itemDraft.colour ?? ""}
-              onChange={(event) => setItemDraft({ ...itemDraft, colour: event.target.value })}
-            />
-          </Field>
+          <SalesItemMasterLookupField
+            label="Size"
+            moduleKey="sizes"
+            options={itemLookups.sizes}
+            value={itemDraft.size}
+            onChange={(value) => setItemDraft({ ...itemDraft, size: value })}
+            onCreateLookup={createPurchaseItemLookup}
+          />
+          <SalesItemMasterLookupField
+            label="Colour"
+            moduleKey="colours"
+            options={itemLookups.colours}
+            value={itemDraft.colour}
+            onChange={(value) => setItemDraft({ ...itemDraft, colour: value })}
+            onCreateLookup={createPurchaseItemLookup}
+          />
           <Field label="Quantity">
             <Input
               className="h-11 rounded-md text-right"
@@ -770,7 +891,7 @@ function PurchaseDetailsTab({
             <Button
               type="button"
               className="h-11 rounded-md"
-              disabled={!itemDraft.productName.trim()}
+              disabled={!itemDraft.productId}
               onClick={addItem}
             >
               {editingItemIndex === null ? <Plus className="size-4" /> : <Check className="size-4" />}
@@ -1074,6 +1195,13 @@ interface PurchaseTotals {
   readonly taxableAmount: number;
 }
 
+type PurchaseItemLookupKey = "colours" | "sizes";
+
+interface PurchaseItemLookupMap {
+  readonly colours: readonly CommonRecord[];
+  readonly sizes: readonly CommonRecord[];
+}
+
 function calculatePurchaseTotals(form: PurchaseInput): PurchaseTotals {
   const quantity = form.items.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
   const taxableAmount = form.items.reduce(
@@ -1096,6 +1224,41 @@ function calculatePurchaseTotals(form: PurchaseInput): PurchaseTotals {
     quantity,
     taxableAmount,
   };
+}
+
+function buildPurchaseItemLookupCreatePayload(
+  moduleKey: PurchaseItemLookupKey,
+  label: string,
+) {
+  const trimmedLabel = label.trim();
+  const code =
+    trimmedLabel
+      .toUpperCase()
+      .replace(/[^A-Z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 40) || "NEW";
+
+  if (moduleKey === "colours") {
+    return {
+      code,
+      description: null,
+      hexCode: null,
+      isActive: true,
+      name: trimmedLabel,
+    };
+  }
+
+  return {
+    code,
+    description: null,
+    isActive: true,
+    name: trimmedLabel,
+    sortOrder: 0,
+  };
+}
+
+function purchaseItemLookupLabel(moduleKey: PurchaseItemLookupKey) {
+  return moduleKey === "colours" ? "Colour" : "Size";
 }
 
 function setItem(

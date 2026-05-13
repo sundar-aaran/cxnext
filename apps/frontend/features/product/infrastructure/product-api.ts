@@ -1,5 +1,5 @@
 import type { ProductRecord, ProductUpsertInput } from "../domain/product";
-import { getRequiredPublicApiUrl } from "@/lib/runtime-env";
+import { getRequiredApiUrl } from "@/lib/runtime-env";
 import { authFetch } from "../../auth/infrastructure/auth-api";
 
 interface ProductApiRecord extends Omit<ProductRecord, "id"> {
@@ -69,7 +69,7 @@ export async function softDeleteProduct(productId: number) {
 }
 
 function getApiBaseUrl() {
-  return getRequiredPublicApiUrl();
+  return getRequiredApiUrl();
 }
 
 function toProductRecord(record: ProductApiRecord): ProductRecord {

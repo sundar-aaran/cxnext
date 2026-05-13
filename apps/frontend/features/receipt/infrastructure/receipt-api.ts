@@ -1,5 +1,5 @@
 import type { ReceiptInput, ReceiptRecord } from "../domain/receipt";
-import { getRequiredPublicApiUrl } from "@/lib/runtime-env";
+import { getRequiredApiUrl } from "@/lib/runtime-env";
 import {
   authFetch,
   withStoredApplicationContextPayload,
@@ -59,7 +59,7 @@ export async function deleteReceipt(id: number) {
 }
 
 function apiBaseUrl() {
-  return getRequiredPublicApiUrl();
+  return getRequiredApiUrl();
 }
 
 function toRecord(record: Omit<ReceiptRecord, "id"> & { id: string }): ReceiptRecord {

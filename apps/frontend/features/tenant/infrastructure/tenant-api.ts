@@ -1,5 +1,5 @@
 import type { TenantRecord, TenantUpsertInput } from "../domain/tenant";
-import { getRequiredPublicApiUrl } from "@/lib/runtime-env";
+import { getRequiredApiUrl } from "@/lib/runtime-env";
 import { authFetch } from "../../auth/infrastructure/auth-api";
 
 interface TenantApiRecord {
@@ -82,7 +82,7 @@ export async function softDeleteTenant(tenantId: number) {
 }
 
 function getApiBaseUrl() {
-  return getRequiredPublicApiUrl();
+  return getRequiredApiUrl();
 }
 
 function toTenantRecord(record: TenantApiRecord): TenantRecord {

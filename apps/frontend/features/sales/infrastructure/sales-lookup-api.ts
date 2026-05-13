@@ -1,5 +1,5 @@
 import type { SalesLookupOption } from "../domain/sales";
-import { getRequiredPublicApiUrl } from "@/lib/runtime-env";
+import { getRequiredApiUrl } from "@/lib/runtime-env";
 import { authFetch } from "../../auth/infrastructure/auth-api";
 import { listCommonRecords } from "../../common/infrastructure/common-api";
 
@@ -141,7 +141,7 @@ function findVariantAttribute(
 }
 
 function apiBaseUrl() {
-  return getRequiredPublicApiUrl();
+  return getRequiredApiUrl();
 }
 
 function resolveContactAddress(record: ContactLookupRecord) {

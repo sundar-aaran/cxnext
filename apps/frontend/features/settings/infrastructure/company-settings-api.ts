@@ -1,4 +1,4 @@
-import { getRequiredPublicApiUrl } from "@/lib/runtime-env";
+import { getRequiredApiUrl } from "@/lib/runtime-env";
 import { authFetch } from "../../auth/infrastructure/auth-api";
 
 export type CompanySettingKey = "apps" | "software";
@@ -52,5 +52,5 @@ export async function saveCompanySetting<TValues>(
 }
 
 function apiBaseUrl() {
-  return getRequiredPublicApiUrl();
+  return getRequiredApiUrl();
 }

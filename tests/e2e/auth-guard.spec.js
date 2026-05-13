@@ -1,14 +1,16 @@
 const { test, expect, chromium } = require("@playwright/test");
 
 test("logout blocks access to protected desk routes", async () => {
+  const loginName = process.env.API_E2E_LOGIN || "sundar";
+  const loginPassword = process.env.API_E2E_PASSWORD || "Admin@1234";
   const browser = await chromium.launch({ channel: "chrome", headless: true });
   const context = await browser.newContext();
   const page = await context.newPage();
 
   try {
     await page.goto("http://localhost:3000/login", { waitUntil: "networkidle" });
-    await page.getByLabel("Username or email").fill("admin");
-    await page.getByLabel("Password").fill("Admin@12345");
+    await page.getByLabel("Username or email").fill(loginName);
+    await page.getByLabel("Password").fill(loginPassword);
     await page.getByRole("button", { name: "Login" }).click();
 
     await page.waitForURL(/\/desk(\/.*)?$/);

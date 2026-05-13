@@ -1,5 +1,5 @@
 import type { CommonModuleDefinition, CommonRecord } from "../domain/common-master";
-import { getRequiredPublicApiUrl } from "@/lib/runtime-env";
+import { getRequiredApiUrl } from "@/lib/runtime-env";
 import { authFetch } from "../../auth/infrastructure/auth-api";
 
 const commonEndpointByKey: Record<string, string> = {
@@ -156,7 +156,7 @@ async function readCommonApiError(response: Response, fallback: string) {
 }
 
 function getApiBaseUrl() {
-  return getRequiredPublicApiUrl();
+  return getRequiredApiUrl();
 }
 
 function getCommonEndpoint(moduleKey: string) {

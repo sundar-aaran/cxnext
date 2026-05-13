@@ -5,7 +5,9 @@ const os = require("node:os");
 async function main() {
   const { chromium } = require(resolvePlaywrightPath());
   const baseUrl = "http://localhost:3000";
-  const apiUrl = "http://127.0.0.1:4000";
+  const apiUrl = "http://127.0.0.1:4000/api/v1";
+  const loginName = process.env.API_E2E_LOGIN || "sundar";
+  const loginPassword = process.env.API_E2E_PASSWORD || "Admin@1234";
   const browser = await chromium.launch({ channel: "chrome", headless: true });
   const context = await browser.newContext();
   const page = await context.newPage();
@@ -13,11 +15,11 @@ async function main() {
 
   try {
     await waitForHttp(`${baseUrl}/login`);
-    await waitForHttp(`${apiUrl}/health`);
+    await waitForHttp("http://127.0.0.1:4000/health");
 
     await assertLoggedOutRedirect(page, `${baseUrl}/desk/sales`, `${baseUrl}/login?next=%2Fdesk%2Fsales`, results, "unauthenticated sales route");
 
-    await login(page, baseUrl, { login: "admin", password: "Admin@12345" });
+    await login(page, baseUrl, { login: loginName, password: loginPassword });
     results.push({ name: "login with username", status: "passed", detail: page.url() });
 
     const session = await readStoredSession(page);
@@ -44,7 +46,7 @@ async function main() {
     await assertCookiePresent(context, "cxnext-auth", false, results, "auth cookie cleared after header logout");
     await assertLoggedOutRedirect(page, `${baseUrl}/desk/sales`, `${baseUrl}/login?next=%2Fdesk%2Fsales`, results, "sales route after header logout");
 
-    await login(page, baseUrl, { login: "admin@cxnext.local", password: "Admin@12345" });
+    await login(page, baseUrl, { login: loginName, password: loginPassword });
     results.push({ name: "login with email", status: "passed", detail: page.url() });
 
     const secondSession = await readStoredSession(page);

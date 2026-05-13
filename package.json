@@ -34,6 +34,7 @@
     "system:update:preflight": "node scripts/system-update.mjs preflight",
     "system:update:sync": "node scripts/system-update.mjs sync",
     "smoke:test": "node scripts/smoke-test.mjs",
+    "test:api:e2e": "node tests/e2e/versioned-api-smoke.mjs",
     "setup:status": "node scripts/setup.mjs status",
     "setup:configure": "node scripts/setup.mjs configure",
     "setup:deploy": "node scripts/setup.mjs deploy",

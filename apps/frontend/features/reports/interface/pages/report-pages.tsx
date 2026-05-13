@@ -444,10 +444,24 @@ function buildSupplierStatementRows(
 ) {
   return withRunningBalance(
     [
-      ...purchases.map((record) => statementRow(record, "Purchase", record.grandTotal, 0)),
+      ...purchases.map((record) => supplierPurchaseStatementRow(record)),
       ...payments.map((record) => statementRow(record, "Payment", 0, record.netAmount)),
     ],
     filters,
+  );
+}
+
+function supplierPurchaseStatementRow(record: PurchaseRecord): StatementRow {
+  return statementRow(
+    {
+      documentDate: record.supplierInvoiceDate ?? record.documentDate,
+      documentNo: record.supplierInvoiceNo ?? record.documentNo,
+      partyName: record.partyName,
+      referenceNo: record.referenceNo,
+    },
+    "Purchase",
+    record.grandTotal,
+    0,
   );
 }
 

@@ -10,10 +10,69 @@
 
 ## v-1.0.87
 
+### [v 1.0.87] 2026-05-12 - Add Bank Name Lookup To Company Accounts
+
+- Replaced the Company Accounts bank name text field with the shared Bank Names autocomplete lookup.
+- Enabled search, keyboard selection, and quick create while keeping company bank accounts linked to Payment and Receipt bank selection.
+
+### [v 1.0.87] 2026-05-12 - Connect Company Bank Accounts To Payments And Receipts
+
+- Added a Company Accounts tab for maintaining multiple company bank accounts with primary account selection.
+- Updated company save APIs to persist bank account details through the existing `company_bank_accounts` table.
+- Payment and Receipt non-cash modes now select from the active company's bank accounts instead of the generic Bank Names master.
+
+### [v 1.0.87] 2026-05-12 - Add Bank Lookup To Payment And Receipt Transfers
+
+- Added Bank Names autocomplete lookups with keyboard navigation and quick create for RTGS, NEFT, and UPI modes in Payment and Receipt.
+- Payment now captures non-cash transfer bank details as `Paid from bank`; Receipt captures them as `Deposit in bank`.
+- Cash mode continues to use Cash and clears selected bank details when switching modes.
+
+### [v 1.0.87] 2026-05-12 - Connect Receipt Customer To Contact Master
+
+- Replaced the Receipt customer text box with the shared Contact autocomplete lookup.
+- Receipt saves now carry both customer contact id and customer name when a Contact master record is selected.
+
+### [v 1.0.87] 2026-05-12 - Show Supplier Bill Details In Supplier Statement
+
+- Updated Supplier Statement purchase rows so the Date column shows Purchase bill date when available.
+- Updated the Voucher column for purchase rows to show Supplier bill no when available, while preserving the existing payment row display and falling back to entry date/entry number if supplier bill details are blank.
+
+### [v 1.0.87] 2026-05-12 - Restore Product Popup Lookup Typing
+
+- Moved the Sales shared New Product popup outside the parent Product Name label wrapper so nested HSN Code, Unit, and GST Percent autocomplete inputs keep independent focus and accessible combobox names.
+- Restored direct typing and search-menu interaction for those popup lookups in Sales and the shared Purchase product flow.
+- Prevented the shared master autocomplete from resyncing its display label while the dropdown is actively open, which had been clearing HSN, Unit, and GST typed text immediately after focus/input changes.
+
+### [v 1.0.87] 2026-05-12 - Standardize Browser APIs On `/api/v1`
+
+- Standardized browser-facing APIs on a single `/api/v1` contract while keeping protected vs public behavior enforced by guards and permissions instead of path naming.
+- Updated frontend runtime resolution, Docker client envs, Nginx forwarding notes, and Next rewrites to use the same public versioned base path.
+- Added a versioned API E2E smoke runner covering login/setup, anonymous rejection on protected routes, authenticated API families, context-aware document/entry reads, media listing, and API health verification.
+- Updated the older browser auth smoke defaults to the active local admin credentials and `/api/v1` auth route, and removed a forced smoke-test process exit that could trip a Windows libuv shutdown assertion after successful checks.
+
+### [v 1.0.87] 2026-05-12 - Add Configurable API CORS Origins
+
+- Added comma-separated `CORS_ORIGINS` support to the Nest API bootstrap.
+- Seeded client deployment env files with same-domain HTTPS origins plus local `localhost` and `127.0.0.1` frontend origins for cross-origin testing.
+- Fixed lookup popups that surfaced browser `Failed to fetch` errors when a local frontend targeted a deployed client API.
+
+### [v 1.0.87] 2026-05-12 - Add Product Popup Master Quick Create
+
+- Enabled Product popup HSN Code, Unit, and GST Percent fields to use searchable keyboard autocomplete with Arrow Up, Arrow Down, Enter selection, and Escape close behavior.
+- Added quick-create flows for HSN Code, Unit, and GST Tax directly from the Sales and Purchase shared product popup.
+- Kept newly created product master records in the open popup option lists so they can be selected immediately.
+
+### [v 1.0.87] 2026-05-12 - Align Purchase Master Lookups With Sales
+
+- Converted Purchase supplier and product fields to the same autocomplete lookup flow used by Sales.
+- Wired selected supplier addresses and selected product pricing, GST, HSN, unit, size, and colour values into Purchase entry drafts.
+- Replaced Purchase free-text Size and Colour fields with master autocomplete lookups that support quick creation.
+
 ### [v 1.0.87] 2026-05-12 - Fix Public Client API Proxy Path
 
 - Changed client frontend API build URLs to use the same-domain `/api` prefix so login requests do not hit the Next frontend route space.
-- Added Nginx client server-block examples that proxy `/api/` to the backend ports and strip the public prefix before reaching Nest routes.
+- Added Nginx client server-block examples that proxy `/api/` to the backend ports while preserving the public prefix for versioned API routing.
+- Added a frontend rewrite fallback so `/api/*` requests that reach Next are forwarded to the internal backend port instead of returning a frontend 404.
 - Documented the public browser API base path for client deployments.
 
 ### [v 1.0.87] 2026-05-12 - Add Electron Windows Build Script

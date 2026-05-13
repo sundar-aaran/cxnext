@@ -1,4 +1,4 @@
-import { getRequiredPublicApiUrl } from "@/lib/runtime-env";
+import { getRequiredApiUrl } from "@/lib/runtime-env";
 
 export type SetupAction = "build" | "deploy" | "prepare-db" | "pull" | "smoke" | "start" | "status";
 
@@ -68,7 +68,7 @@ export async function runSetupAction(action: SetupAction) {
 }
 
 function apiBaseUrl() {
-  return getRequiredPublicApiUrl();
+  return getRequiredApiUrl();
 }
 
 async function readApiErrorMessage(response: Response, fallback: string) {

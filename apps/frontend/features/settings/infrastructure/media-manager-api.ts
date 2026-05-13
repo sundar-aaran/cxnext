@@ -1,4 +1,4 @@
-import { getRequiredPublicApiUrl } from "@/lib/runtime-env";
+import { getRequiredApiUrl } from "@/lib/runtime-env";
 import { authFetch } from "../../auth/infrastructure/auth-api";
 
 export type MediaVisibility = "private" | "public";
@@ -22,7 +22,7 @@ export async function listMedia(params: {
   readonly visibility: MediaVisibility;
 }) {
   const response = await authFetch(
-    `${getRequiredPublicApiUrl()}/media?companyId=${encodeURIComponent(params.companyId)}&visibility=${params.visibility}&folder=${encodeURIComponent(params.folder ?? "")}`,
+    `${getRequiredApiUrl()}/media?companyId=${encodeURIComponent(params.companyId)}&visibility=${params.visibility}&folder=${encodeURIComponent(params.folder ?? "")}`,
     {
       headers: { Accept: "application/json" },
       signal: params.signal,
@@ -44,7 +44,7 @@ export async function uploadMedia(params: {
   readonly visibility: MediaVisibility;
 }) {
   const response = await authFetch(
-    `${getRequiredPublicApiUrl()}/media/upload?companyId=${encodeURIComponent(params.companyId)}`,
+    `${getRequiredApiUrl()}/media/upload?companyId=${encodeURIComponent(params.companyId)}`,
     {
       body: JSON.stringify({
         contentBase64: await fileToBase64(params.file),
@@ -78,7 +78,7 @@ export async function deleteMedia(params: {
   readonly visibility: MediaVisibility;
 }) {
   const response = await authFetch(
-    `${getRequiredPublicApiUrl()}/media?companyId=${encodeURIComponent(params.companyId)}&visibility=${params.visibility}&path=${encodeURIComponent(params.path)}`,
+    `${getRequiredApiUrl()}/media?companyId=${encodeURIComponent(params.companyId)}&visibility=${params.visibility}&path=${encodeURIComponent(params.path)}`,
     {
       headers: { Accept: "application/json" },
       method: "DELETE",
@@ -93,7 +93,7 @@ export async function deleteMedia(params: {
 }
 
 export function privateMediaUrl(downloadPath: string) {
-  return `${getRequiredPublicApiUrl()}${downloadPath}`;
+  return `${getRequiredApiUrl()}${downloadPath}`;
 }
 
 async function fileToBase64(file: File) {

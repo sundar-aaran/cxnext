@@ -30,6 +30,8 @@ import { getActiveCompany } from "../../../company/application/company-service";
 import { getNextDocumentNumber } from "../../../document-settings/infrastructure/document-settings-api";
 import type { CompanyRecord } from "../../../company/domain/company";
 import { EntryCollaborationPanel } from "../../../entries/interface/components/entry-collaboration-panel";
+import type { CommonRecord } from "../../../common/domain/common-master";
+import { MasterAutocompleteLookup } from "../../../common/interface/components/master-autocomplete-lookup";
 import {
   buildPaymentColumnOptions,
   deletePayment,
@@ -369,6 +371,7 @@ export function PaymentShowPage({
 export function PaymentUpsertPage({ paymentId }: { readonly paymentId?: number }) {
   const router = useRouter();
   const [form, setForm] = useState<PaymentInput>(defaultPaymentInput());
+  const [companyBankAccounts, setCompanyBankAccounts] = useState<CompanyRecord["bankAccounts"]>([]);
   const [contacts, setContacts] = useState<readonly SalesLookupOption[]>([]);
 
   useEffect(() => {
@@ -419,6 +422,18 @@ export function PaymentUpsertPage({ paymentId }: { readonly paymentId?: number }
     return () => controller.abort();
   }, []);
 
+  useEffect(() => {
+    const controller = new AbortController();
+    void getActiveCompany({ signal: controller.signal })
+      .then((company) => {
+        if (!controller.signal.aborted) setCompanyBankAccounts(company?.bankAccounts ?? []);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setCompanyBankAccounts([]);
+      });
+    return () => controller.abort();
+  }, []);
+
   async function save(printAfterSave = false) {
     const record = await upsertPayment(preparePaymentInput(form), paymentId);
     toast.success(paymentId ? "Payment updated" : "Payment created");
@@ -459,7 +474,14 @@ export function PaymentUpsertPage({ paymentId }: { readonly paymentId?: number }
                   {
                     value: "details",
                     label: "Details",
-                    content: <PaymentDetailsTab contacts={contacts} form={form} setForm={setForm} />,
+                    content: (
+                      <PaymentDetailsTab
+                        bankAccounts={companyBankAccounts}
+                        contacts={contacts}
+                        form={form}
+                        setForm={setForm}
+                      />
+                    ),
                   },
                   {
                     value: "allocations",
@@ -486,14 +508,19 @@ export function PaymentUpsertPage({ paymentId }: { readonly paymentId?: number }
 }
 
 function PaymentDetailsTab({
+  bankAccounts,
   contacts,
   form,
   setForm,
 }: {
+  readonly bankAccounts: CompanyRecord["bankAccounts"];
   readonly contacts: readonly SalesLookupOption[];
   readonly form: PaymentInput;
   readonly setForm: (value: PaymentInput) => void;
 }) {
+  const needsBank = isBankTransferMode(form.mode);
+  const bankOptions = useMemo(() => toCompanyBankLookupOptions(bankAccounts), [bankAccounts]);
+
   return (
     <div className="grid gap-5 lg:grid-cols-2">
       <div className="space-y-5">
@@ -541,7 +568,17 @@ function PaymentDetailsTab({
           <Input className="h-11 rounded-md text-right" type="date" value={form.documentDate} onChange={(event) => setForm({ ...form, documentDate: event.target.value })} />
         </Field>
         <Field label="Mode">
-          <Select value={form.mode} onValueChange={(value) => setForm({ ...form, mode: value })}>
+          <Select
+            value={form.mode}
+            onValueChange={(value) =>
+              setForm({
+                ...form,
+                bankAccountId: null,
+                ledgerName: isBankTransferMode(value) ? null : "Cash",
+                mode: value,
+              })
+            }
+          >
             <SelectTrigger className="h-11 rounded-md">
               <SelectValue />
             </SelectTrigger>
@@ -554,6 +591,24 @@ function PaymentDetailsTab({
             </SelectContent>
           </Select>
         </Field>
+        {needsBank ? (
+          <MasterAutocompleteLookup
+            defaultId=""
+            defaultLabel=""
+            label="Paid from bank"
+            getOptionLabel={companyBankAccountLabel}
+            options={bankOptions}
+            placeholder="Search company bank account"
+            value={form.bankAccountId}
+            onChange={(value, record) =>
+              setForm({
+                ...form,
+                bankAccountId: value,
+                ledgerName: record ? companyBankAccountLabel(record) : null,
+              })
+            }
+          />
+        ) : null}
         <Field label="Notes">
           <textarea
             className="min-h-[5.5rem] w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-foreground/40"
@@ -680,7 +735,9 @@ function PaymentPrintDocument({
         </div>
         <div className="space-y-1 p-2">
           <PrintLine label="Mode">{record.mode}</PrintLine>
-          <PrintLine label="Ledger">{record.ledgerName ?? ""}</PrintLine>
+          <PrintLine label={isBankTransferMode(record.mode) ? "Paid from bank" : "Ledger"}>
+            {record.ledgerName ?? ""}
+          </PrintLine>
           <PrintLine label="Reference">{record.referenceNo ?? ""}</PrintLine>
         </div>
       </div>
@@ -762,6 +819,45 @@ function Field({ children, label }: { readonly children: ReactNode; readonly lab
       {children}
     </div>
   );
+}
+
+function isBankTransferMode(mode: string) {
+  return mode !== "cash";
+}
+
+function toCompanyBankLookupOptions(
+  bankAccounts: CompanyRecord["bankAccounts"],
+): readonly CommonRecord[] {
+  return bankAccounts
+    .filter((bankAccount) => bankAccount.isActive)
+    .sort((left, right) => Number(right.isPrimary) - Number(left.isPrimary))
+    .map((bankAccount) => ({
+      ...bankAccount,
+      id: Number(bankAccount.id),
+      code: bankAccount.accountNumber,
+      name: bankAccount.bankName,
+      createdAt: "",
+      updatedAt: "",
+      deletedAt: null,
+      isActive: bankAccount.isActive,
+    }));
+}
+
+function companyBankAccountLabel(record: CommonRecord) {
+  const bankName = typeof record.bankName === "string" ? record.bankName.trim() : "";
+  const accountNumber =
+    typeof record.accountNumber === "string" ? record.accountNumber.trim() : "";
+  const branch = typeof record.branch === "string" ? record.branch.trim() : "";
+  const suffix = [accountNumber ? maskAccountNumber(accountNumber) : "", branch]
+    .filter(Boolean)
+    .join(" / ");
+  return suffix ? `${bankName || "Bank"} - ${suffix}` : bankName || String(record.id);
+}
+
+function maskAccountNumber(value: string) {
+  const trimmedValue = value.trim();
+  if (trimmedValue.length <= 4) return trimmedValue;
+  return `****${trimmedValue.slice(-4)}`;
 }
 
 function ContactAutocompleteField({

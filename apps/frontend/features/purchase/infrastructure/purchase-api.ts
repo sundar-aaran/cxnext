@@ -1,5 +1,5 @@
 import type { PurchaseInput, PurchaseRecord } from "../domain/purchase";
-import { getRequiredPublicApiUrl } from "@/lib/runtime-env";
+import { getRequiredApiUrl } from "@/lib/runtime-env";
 import {
   authFetch,
   withStoredApplicationContextPayload,
@@ -57,7 +57,7 @@ export async function deletePurchase(id: number) {
 }
 
 function apiBaseUrl() {
-  return getRequiredPublicApiUrl();
+  return getRequiredApiUrl();
 }
 
 function toRecord(record: ApiRecord): PurchaseRecord {

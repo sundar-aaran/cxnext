@@ -1,4 +1,4 @@
-import { getRequiredPublicApiUrl } from "@/lib/runtime-env";
+import { getRequiredApiUrl } from "@/lib/runtime-env";
 import type {
   AccountingYearRecord,
   ApplicationContext,
@@ -22,7 +22,7 @@ export class ApplicationContextRequestError extends Error {
 export async function getDefaultApplicationContext(
   options: { readonly signal?: AbortSignal } = {},
 ) {
-  const response = await authFetch(`${getRequiredPublicApiUrl()}/application/default-company`, {
+  const response = await authFetch(`${getRequiredApiUrl()}/application/default-company`, {
     signal: options.signal,
   });
 
@@ -40,7 +40,7 @@ export async function getDefaultApplicationContext(
 }
 
 export async function listAccountingYears(options: { readonly signal?: AbortSignal } = {}) {
-  const response = await authFetch(`${getRequiredPublicApiUrl()}/common/accounting-years`, {
+  const response = await authFetch(`${getRequiredApiUrl()}/common/accounting-years`, {
     signal: options.signal,
   });
 
@@ -53,7 +53,7 @@ export async function listAccountingYears(options: { readonly signal?: AbortSign
 }
 
 export async function listDefaultCompanies(options: { readonly signal?: AbortSignal } = {}) {
-  const response = await authFetch(`${getRequiredPublicApiUrl()}/application/default-companies`, {
+  const response = await authFetch(`${getRequiredApiUrl()}/application/default-companies`, {
     signal: options.signal,
   });
 
@@ -65,7 +65,7 @@ export async function listDefaultCompanies(options: { readonly signal?: AbortSig
 }
 
 export async function updateDefaultCompany(input: DefaultCompanyUpdateInput) {
-  const response = await authFetch(`${getRequiredPublicApiUrl()}/application/default-company`, {
+  const response = await authFetch(`${getRequiredApiUrl()}/application/default-company`, {
     body: JSON.stringify(input),
     headers: { "Content-Type": "application/json" },
     method: "PATCH",

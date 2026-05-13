@@ -1,5 +1,5 @@
 import type { ContactRecord, ContactUpsertInput } from "../domain/contact";
-import { getRequiredPublicApiUrl } from "@/lib/runtime-env";
+import { getRequiredApiUrl } from "@/lib/runtime-env";
 import { authFetch } from "../../auth/infrastructure/auth-api";
 
 interface ContactApiRecord extends Omit<ContactRecord, "id"> {
@@ -72,7 +72,7 @@ export async function softDeleteContact(contactId: number) {
 }
 
 function getApiBaseUrl() {
-  return getRequiredPublicApiUrl();
+  return getRequiredApiUrl();
 }
 
 function toContactRecord(record: ContactApiRecord): ContactRecord {

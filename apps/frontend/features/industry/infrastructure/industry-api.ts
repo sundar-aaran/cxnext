@@ -1,5 +1,5 @@
 import type { IndustryRecord, IndustryUpsertInput } from "../domain/industry";
-import { getRequiredPublicApiUrl } from "@/lib/runtime-env";
+import { getRequiredApiUrl } from "@/lib/runtime-env";
 import { authFetch } from "../../auth/infrastructure/auth-api";
 
 interface IndustryApiRecord {
@@ -85,7 +85,7 @@ export async function softDeleteIndustry(industryId: number) {
 }
 
 function getApiBaseUrl() {
-  return getRequiredPublicApiUrl();
+  return getRequiredApiUrl();
 }
 
 function toIndustryRecord(record: IndustryApiRecord): IndustryRecord {

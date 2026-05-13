@@ -41,6 +41,16 @@ export interface CompanySocialLinkInput {
   readonly isActive?: boolean;
 }
 
+export interface CompanyBankAccountInput {
+  readonly bankName: string;
+  readonly accountNumber: string;
+  readonly accountHolderName: string;
+  readonly ifsc: string;
+  readonly branch?: string | null;
+  readonly isPrimary?: boolean;
+  readonly isActive?: boolean;
+}
+
 export interface CompanyUpsertParams {
   readonly tenantId: number;
   readonly industryId: number;
@@ -72,6 +82,7 @@ export interface CompanyUpsertParams {
   readonly emails?: readonly CompanyEmailInput[];
   readonly phones?: readonly CompanyPhoneInput[];
   readonly socialLinks?: readonly CompanySocialLinkInput[];
+  readonly bankAccounts?: readonly CompanyBankAccountInput[];
 }
 
 export interface CompanyRepository {

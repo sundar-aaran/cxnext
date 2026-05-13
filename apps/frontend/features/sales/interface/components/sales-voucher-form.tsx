@@ -670,7 +670,7 @@ interface SalesItemLookupMap {
   readonly sizes: readonly CommonRecord[];
 }
 
-function SalesItemMasterLookupField({
+export function SalesItemMasterLookupField({
   label,
   moduleKey,
   onChange,
@@ -1229,8 +1229,9 @@ function AddressAutocompleteField({
   }
 
   return (
-    <Field label={label}>
-      <div className="relative z-10 focus-within:z-[90]">
+    <>
+      <Field label={label}>
+        <div className="relative z-10 focus-within:z-[90]">
         <Input
           className="h-11 rounded-md bg-background"
           disabled={disabled}
@@ -1326,7 +1327,8 @@ function AddressAutocompleteField({
             ) : null}
           </div>
         ) : null}
-      </div>
+        </div>
+      </Field>
       {isCreateOpen ? (
         <div className="fixed inset-0 z-[120] grid place-items-center bg-background/55 p-4 backdrop-blur-sm">
           <div className="relative w-[min(620px,calc(100vw-2rem))] rounded-md border-2 border-border bg-card p-5 shadow-2xl ring-1 ring-foreground/10">
@@ -1402,7 +1404,7 @@ function AddressAutocompleteField({
           </div>
         </div>
       ) : null}
-    </Field>
+    </>
   );
 }
 
@@ -1472,7 +1474,7 @@ function TermsTab({
   );
 }
 
-function ProductAutocompleteField({
+export function ProductAutocompleteField({
   label,
   onPick,
   options,
@@ -1591,9 +1593,40 @@ function ProductAutocompleteField({
     }
   }
 
+  async function createProductPopupLookup(
+    moduleKey: ProductPopupLookupKey,
+    label: string,
+  ) {
+    try {
+      const record = await createCommonRecord(
+        moduleKey,
+        buildProductPopupLookupCreatePayload(moduleKey, label),
+      );
+
+      if (moduleKey === "hsnCodes") {
+        setHsnCodes((current) => [...current, record]);
+      } else if (moduleKey === "units") {
+        setUnits((current) => [...current, record]);
+      } else {
+        setTaxes((current) => [...current, record]);
+      }
+
+      toast.success(`${productPopupLookupLabel(moduleKey)} created`, {
+        description: commonRecordLabel(record, moduleKey),
+      });
+      return record;
+    } catch (error) {
+      toast.error(`Could not create ${productPopupLookupLabel(moduleKey).toLowerCase()}`, {
+        description: getSalesItemLookupErrorMessage(error),
+      });
+      return null;
+    }
+  }
+
   return (
-    <Field label={label}>
-      <div className="relative z-10 focus-within:z-[90]">
+    <>
+      <Field label={label}>
+        <div className="relative z-10 focus-within:z-[90]">
         <Input
           aria-autocomplete="list"
           aria-expanded={isOpen}
@@ -1720,7 +1753,8 @@ function ProductAutocompleteField({
             </button>
           </div>
         ) : null}
-      </div>
+        </div>
+      </Field>
       {isCreateOpen ? (
         <div className="fixed inset-0 z-[120] grid place-items-center bg-background/55 p-4 backdrop-blur-sm">
           <div className="relative w-[min(640px,calc(100vw-2rem))] rounded-md border-2 border-border bg-card p-5 shadow-2xl ring-1 ring-foreground/10">
@@ -1752,6 +1786,7 @@ function ProductAutocompleteField({
                 />
               </Field>
               <MasterAutocompleteLookup
+                allowCreate
                 label="HSN code"
                 moduleKey="hsnCodes"
                 getOptionLabel={(record) => commonRecordLabel(record, "hsnCodes")}
@@ -1761,8 +1796,12 @@ function ProductAutocompleteField({
                 onChange={(value) =>
                   setCreateDraft((current) => ({ ...current, hsnCodeId: value }))
                 }
+                onQuickCreate={({ label }) =>
+                  createProductPopupLookup("hsnCodes", label)
+                }
               />
               <MasterAutocompleteLookup
+                allowCreate
                 label="Unit"
                 moduleKey="units"
                 getOptionLabel={(record) => commonRecordLabel(record, "units")}
@@ -1772,8 +1811,10 @@ function ProductAutocompleteField({
                 onChange={(value) =>
                   setCreateDraft((current) => ({ ...current, unitId: value }))
                 }
+                onQuickCreate={({ label }) => createProductPopupLookup("units", label)}
               />
               <MasterAutocompleteLookup
+                allowCreate
                 label="GST percent"
                 moduleKey="taxes"
                 getOptionLabel={(record) => commonRecordLabel(record, "taxes")}
@@ -1783,6 +1824,7 @@ function ProductAutocompleteField({
                 onChange={(value) =>
                   setCreateDraft((current) => ({ ...current, taxId: value }))
                 }
+                onQuickCreate={({ label }) => createProductPopupLookup("taxes", label)}
               />
             </div>
             {lookupError ? (
@@ -1812,11 +1854,11 @@ function ProductAutocompleteField({
           </div>
         </div>
       ) : null}
-    </Field>
+    </>
   );
 }
 
-function ContactAutocompleteField({
+export function ContactAutocompleteField({
   label,
   onPick,
   options,
@@ -2370,6 +2412,8 @@ interface ProductCreateDraft {
   readonly unitId: string | null;
 }
 
+type ProductPopupLookupKey = "hsnCodes" | "taxes" | "units";
+
 function createProductDraft(name: string): ProductCreateDraft {
   const trimmedName = name.trim();
 
@@ -2379,6 +2423,48 @@ function createProductDraft(name: string): ProductCreateDraft {
     taxId: masterAutocompleteDefaultId,
     unitId: masterAutocompleteDefaultId,
   };
+}
+
+function buildProductPopupLookupCreatePayload(
+  moduleKey: ProductPopupLookupKey,
+  label: string,
+) {
+  const trimmedLabel = label.trim();
+  const code = toSalesItemLookupCode(trimmedLabel);
+
+  if (moduleKey === "hsnCodes") {
+    return {
+      code,
+      description: trimmedLabel,
+      isActive: true,
+      name: trimmedLabel,
+    };
+  }
+
+  if (moduleKey === "units") {
+    return {
+      code,
+      description: null,
+      isActive: true,
+      name: trimmedLabel,
+      symbol: code.slice(0, 8),
+    };
+  }
+
+  return {
+    code,
+    description: null,
+    isActive: true,
+    name: trimmedLabel,
+    ratePercent: Number.parseFloat(trimmedLabel.replace(/[^0-9.]+/g, "")) || 0,
+    taxType: "GST",
+  };
+}
+
+function productPopupLookupLabel(moduleKey: ProductPopupLookupKey) {
+  if (moduleKey === "hsnCodes") return "HSN Code";
+  if (moduleKey === "units") return "Unit";
+  return "GST Tax";
 }
 
 function toProductInput(draft: ProductCreateDraft) {

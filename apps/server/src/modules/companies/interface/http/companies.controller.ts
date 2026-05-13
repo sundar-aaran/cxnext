@@ -49,6 +49,7 @@ interface CompanyUpsertRequest {
   readonly emails?: unknown;
   readonly phones?: unknown;
   readonly socialLinks?: unknown;
+  readonly bankAccounts?: unknown;
 }
 
 @Controller("companies")
@@ -150,6 +151,7 @@ function parseCompanyRequest(body: CompanyUpsertRequest) {
     emails: parseEmails(body.emails),
     phones: parsePhones(body.phones),
     socialLinks: parseSocialLinks(body.socialLinks),
+    bankAccounts: parseBankAccounts(body.bankAccounts),
   };
 }
 
@@ -219,6 +221,23 @@ function parseSocialLinks(value: unknown) {
     return {
       platform: typeof record.platform === "string" ? record.platform : "",
       url: typeof record.url === "string" ? record.url : "",
+      isActive: record.isActive !== false,
+    };
+  });
+}
+
+function parseBankAccounts(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value.map((item) => {
+    const record = item as Record<string, unknown>;
+    return {
+      bankName: typeof record.bankName === "string" ? record.bankName : "",
+      accountNumber: typeof record.accountNumber === "string" ? record.accountNumber : "",
+      accountHolderName:
+        typeof record.accountHolderName === "string" ? record.accountHolderName : "",
+      ifsc: typeof record.ifsc === "string" ? record.ifsc : "",
+      branch: typeof record.branch === "string" ? record.branch : null,
+      isPrimary: record.isPrimary === true,
       isActive: record.isActive !== false,
     };
   });

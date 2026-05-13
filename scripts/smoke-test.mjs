@@ -147,4 +147,4 @@ if (jsonMode) {
   log(`Smoke test ${payload.status}.`);
 }
 
-process.exit(ok ? 0 : 1);
+process.exitCode = ok ? 0 : 1;

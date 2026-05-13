@@ -1,5 +1,5 @@
 import type { CompanyRecord, CompanyUpsertInput } from "../domain/company";
-import { getRequiredPublicApiUrl } from "@/lib/runtime-env";
+import { getRequiredApiUrl } from "@/lib/runtime-env";
 import { authFetch } from "../../auth/infrastructure/auth-api";
 
 type CompanyApiRecord = Omit<CompanyRecord, "id" | "tenantId" | "industryId"> & {
@@ -71,7 +71,7 @@ export async function softDeleteCompany(companyId: number) {
 }
 
 function getApiBaseUrl() {
-  return getRequiredPublicApiUrl();
+  return getRequiredApiUrl();
 }
 
 function toCompanyRecord(record: CompanyApiRecord): CompanyRecord {

@@ -1,4 +1,4 @@
-import { getRequiredPublicApiUrl } from "@/lib/runtime-env";
+import { getRequiredApiUrl } from "@/lib/runtime-env";
 import { authFetch } from "../../auth/infrastructure/auth-api";
 
 export type SystemUpdateAction = "build" | "deploy" | "preflight" | "restart" | "smoke" | "sync";
@@ -47,7 +47,7 @@ export async function runSystemUpdateAction(action: SystemUpdateAction) {
 }
 
 function apiBaseUrl() {
-  return getRequiredPublicApiUrl();
+  return getRequiredApiUrl();
 }
 
 async function readApiErrorMessage(response: Response, fallback: string) {
