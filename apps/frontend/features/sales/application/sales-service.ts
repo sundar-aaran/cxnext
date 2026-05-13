@@ -2,6 +2,7 @@ import { deleteSales, getSales, listSales, upsertSales } from "../infrastructure
 import {
   listSalesContactLookups,
   listSalesProductLookups,
+  listSupplierContactLookups,
 } from "../infrastructure/sales-lookup-api";
 import { salesColumnCatalog } from "../domain/sales";
 import type {
@@ -18,6 +19,7 @@ export {
   listSales,
   listSalesContactLookups,
   listSalesProductLookups,
+  listSupplierContactLookups,
   upsertSales,
 };
 

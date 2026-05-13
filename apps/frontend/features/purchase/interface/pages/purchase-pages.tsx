@@ -43,8 +43,8 @@ import { getCoreEnvSettings } from "../../../settings/infrastructure/core-settin
 import { getNextDocumentNumber } from "../../../document-settings/infrastructure/document-settings-api";
 import { resolveSalesBillingLayout } from "../../../sales/application/sales-billing-layout-service";
 import {
-  listSalesContactLookups,
   listSalesProductLookups,
+  listSupplierContactLookups,
 } from "../../../sales/application/sales-service";
 import type { SalesLookupOption, SalesRecord } from "../../../sales/domain/sales";
 import {
@@ -473,7 +473,7 @@ export function PurchaseUpsertPage({ purchaseId }: { readonly purchaseId?: numbe
   const [products, setProducts] = useState<readonly SalesLookupOption[]>([]);
   useEffect(() => {
     const lookupController = new AbortController();
-    void listSalesContactLookups({ signal: lookupController.signal })
+    void listSupplierContactLookups({ signal: lookupController.signal })
       .then(setContacts)
       .catch((error) => {
         if (!isAbortError(error)) setContacts([]);

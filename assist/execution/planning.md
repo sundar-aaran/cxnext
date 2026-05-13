@@ -1,42 +1,32 @@
 # Planning
 
-Active reference: `#87`
+Active reference: `#89`
 
 ## Active
 
-- `#87` Media manager, storage, and branding assets
+- `#89` Add external env support for packaged Electron builds
   - Goal:
-    - Add a frontend media manager, Laravel-style storage structure, and branded light/dark logo assets wired through the application.
+    - Let packaged Electron builds read configuration from an external env file outside the bundle so runtime credentials and endpoints can be changed without rebuilding the desktop app.
   - Scope:
-    - Repository storage folder bootstrap and frontend public linking.
-    - Backend media HTTP endpoints for listing, uploading, deleting, and private downloads.
-    - Settings route/page for media management.
-    - Public logo, logo-dark, and favicon assets.
-    - Branding updates for app shell, public pages, auth pages, and invoice fallback usage.
-    - Release tracking/version alignment.
+    - Desktop env resolution in `apps/desktop/src/main.ts`
+    - Build output support for an editable sidecar sample env file
+    - Execution tracking, changelog, and lockstep version update
   - Constraints:
-    - Storage must contain `public` and `private` folders.
-    - Frontend should expose public media through a storage link/copy flow similar to Laravel.
-    - Dark theme needs a distinct `logo-dark.svg`.
-    - Existing company logo URL fields should remain compatible.
+    - Preserve repo-root `.env` fallback for local development.
+    - Support explicit env-file overrides and packaged sidecar env discovery.
+    - Keep credentials outside the app bundle so they can be edited after install/build.
   - Planned validation:
-    - Run focused frontend and server typechecks.
+    - Run `pnpm --filter @cxnext/desktop typecheck`
+    - Run any additional touched workspace typecheck if needed
   - Implemented:
-    - Reviewed current Next.js public asset setup, desk settings navigation, dashboard branding, and company logo fields.
-    - Confirmed there was no existing storage link bootstrap, media manager UI, or backend upload/static-serving module.
-    - Confirmed invoice and report print flows already support company logo URLs, which can be pointed at managed media assets.
-    - Added `storage/public` and `storage/private` plus a frontend storage-link bootstrap for `/storage` and `/logo`.
-    - Added authenticated backend media endpoints for list, upload, delete, and private file download.
-    - Added Settings > Media Manager with public/private tabs, uploads, URL copy, and delete actions.
-    - Added default logo, dark logo, and favicon assets and wired them into app metadata, desk shell branding, public pages, auth pages, and company defaults.
-    - Added invoice and report print fallbacks to the new shared logo asset.
-    - Reworked company logo editing to use a popup uploader that stores files into `storage/public/logo`.
-    - Normalized company logo values to the shared `/storage/logo/<file>` path while the form shows only the file name.
-    - Added overwrite protection for media uploads so replacing an existing logo requires an explicit second confirmation.
+    - Added layered env resolution in `apps/desktop/src/main.ts` so packaged Electron startup now looks for config in this order across file layers: repo root fallback, packaged sidecar env beside the executable or resources directory, and explicit env-file override via `CXNEXT_ENV_FILE` or `DESKTOP_ENV_FILE`.
+    - Preserved shell environment variable precedence by merging file-based env values first and only filling keys that are not already present in `process.env`.
+    - Added `CXNEXT_ENV_SOURCE` runtime metadata so the active env file source can be inspected if needed.
+    - Added `apps/desktop/env.desktop.sample` as an editable sidecar template containing endpoint, service-management, timeout, and DB credentials keys.
+    - Configured Electron Builder `extraFiles` to place `env.desktop.sample` outside the bundled app content so operators can copy and edit it after packaging.
+    - Synchronized workspace package versions to `1.0.89`.
   - Validation:
-    - `pnpm --filter @cxnext/server typecheck` passed.
-    - `pnpm --filter @cxnext/frontend typecheck` passed.
-    - `pnpm --filter @cxnext/ui typecheck` passed.
+    - `pnpm --filter @cxnext/desktop typecheck`
+    - `pnpm --filter @cxnext/frontend typecheck`
   - Residual risk:
-    - Final runtime browser walkthrough is still pending.
-    - Dashboard shell branding changes should stay narrowly scoped because the shared shell file is already large.
+    - The packaged desktop app can now read external env files, but its service startup model still assumes access to the repo/workspace when `DESKTOP_START_SERVICES=true`; fully standalone embedded runtime packaging remains a separate step.

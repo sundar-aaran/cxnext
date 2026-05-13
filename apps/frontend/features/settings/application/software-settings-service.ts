@@ -1,5 +1,6 @@
 import {
   defaultSoftwareSettingsState,
+  type FavoriteDashboardApp,
   type SoftwareSettingsState,
   type SoftwareToggleSetting,
 } from "../domain/software-settings";
@@ -129,6 +130,31 @@ export function updateSalesBillingLayoutSetting(
   };
 }
 
+export function updateSalesPrintingSetting(
+  state: SoftwareSettingsState,
+  settingId: string,
+  enabled: boolean,
+): SoftwareSettingsState {
+  return {
+    ...state,
+    salesPrintingSettings: updateToggleList(state.salesPrintingSettings, settingId, enabled),
+  };
+}
+
+export function updateSalesPrintingOption(
+  state: SoftwareSettingsState,
+  key: keyof SoftwareSettingsState["salesPrintingOptions"],
+  value: string,
+): SoftwareSettingsState {
+  return {
+    ...state,
+    salesPrintingOptions: {
+      ...state.salesPrintingOptions,
+      [key]: value,
+    },
+  };
+}
+
 export function updateSalesDocumentSetting(
   state: SoftwareSettingsState,
   key: keyof SoftwareSettingsState["salesDocumentSettings"],
@@ -168,6 +194,16 @@ export function updateFeatureSetting(
   };
 }
 
+export function updateFavoriteDashboardApp(
+  state: SoftwareSettingsState,
+  favoriteDashboardApp: FavoriteDashboardApp,
+): SoftwareSettingsState {
+  return {
+    ...state,
+    favoriteDashboardApp,
+  };
+}
+
 function updateToggleList(
   settings: readonly SoftwareToggleSetting[],
   settingId: string,
@@ -191,8 +227,12 @@ function mergeSoftwareSettings(
   const storedSalesBillingLayout = new Map(
     (storedState.salesBillingLayout ?? []).map((setting) => [setting.id, setting.enabled]),
   );
+  const storedSalesPrintingSettings = new Map(
+    (storedState.salesPrintingSettings ?? []).map((setting) => [setting.id, setting.enabled]),
+  );
 
   return {
+    favoriteDashboardApp: normalizeFavoriteDashboardApp(storedState.favoriteDashboardApp),
     dutiesTaxSettings: {
       ...defaults.dutiesTaxSettings,
       ...(storedState.dutiesTaxSettings ?? {}),
@@ -201,9 +241,17 @@ function mergeSoftwareSettings(
       ...defaults.salesDocumentSettings,
       ...(storedState.salesDocumentSettings ?? {}),
     },
+    salesPrintingOptions: {
+      ...defaults.salesPrintingOptions,
+      ...(storedState.salesPrintingOptions ?? {}),
+    },
     salesBillingLayout: defaults.salesBillingLayout.map((setting) => ({
       ...setting,
       enabled: storedSalesBillingLayout.get(setting.id) ?? setting.enabled,
+    })),
+    salesPrintingSettings: defaults.salesPrintingSettings.map((setting) => ({
+      ...setting,
+      enabled: storedSalesPrintingSettings.get(setting.id) ?? setting.enabled,
     })),
     customiseGroups: defaults.customiseGroups.map((group) => ({
       ...group,
@@ -241,4 +289,8 @@ function loadSoftwareSettingsFromKey(storageKey: string) {
 
 function companySoftwareSettingsStorageKey(companyId: string) {
   return `${companySoftwareSettingsStorageKeyPrefix}${companyId}`;
+}
+
+function normalizeFavoriteDashboardApp(value: unknown): FavoriteDashboardApp {
+  return value === "billing" ? "billing" : "application";
 }

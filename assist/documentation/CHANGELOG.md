@@ -2,13 +2,73 @@
 
 ## Version State
 
-- Current package version: `1.0.87`
-- Current release tag: `v-1.0.87`
+- Current package version: `1.0.89`
+- Current release tag: `v-1.0.89`
 - Versioned changelog label format: `v 1.0.<reference>`
 - Version section format: `## v-1.0.<reference>`
 - Entry format: `### [v 1.0.<reference>] YYYY-MM-DD - Title`
 
+## v-1.0.89
+
+### [v 1.0.89] 2026-05-13 - Add External Env Support For Electron Builds
+
+- Added external env discovery in the Electron main process so packaged desktop builds can read config from sidecar env files outside the bundle.
+- Supported explicit env-file overrides through `CXNEXT_ENV_FILE` and `DESKTOP_ENV_FILE`, while keeping shell env vars highest priority.
+- Added `apps/desktop/env.desktop.sample` and configured Electron Builder to ship it as an external editable file with packaged builds.
+- Synchronized workspace package versions to `1.0.89`.
+
+## v-1.0.88
+
+### [v 1.0.88] 2026-05-13 - Add Queue Manager With Local Job Execution
+
+- Added persisted `queue_jobs` storage with migration support in `@cxnext/db`.
+- Added a new Nest queue module with local in-process execution, a queue catalog, stats, paged job history, enqueue, retry, cancel, and delete APIs.
+- Added a lazy-loaded frontend Queue Manager page under Settings with queue/job selection, JSON payload editing, status metrics, filtered history, and load-more pagination.
+- Wired Queue Manager into settings navigation and synchronized workspace package versions to `1.0.88`.
+
 ## v-1.0.87
+
+### [v 1.0.87] 2026-05-13 - Add Blog Module Prompt
+
+- Added a repo-aligned `assist/execution/blog.md` prompt for planning a full blogging system.
+- Covered TipTap authoring, multi-image support, editorial review, public web reading, comments, replies, likes, shares, moderation, SEO, analytics, and lifecycle workflow.
+- Aligned the prompt with the current NestJS module shape, Next.js web and desk route split, media reuse, auth boundaries, event-driven patterns, and `/api/v1` API surface.
+
+### [v 1.0.87] 2026-05-13 - Refit Sync Execution Guide To Repo Boundaries
+
+- Replaced the generic offline-sync prompt with a repo-specific guide aligned to the current NestJS modular monolith and Next.js feature structure.
+- Defined sync as one backend bounded context under `apps/server/src/modules/sync` with DDD layers, versioned `/api/v1/sync` endpoints, Kysely persistence, and event-driven integration through public contracts.
+- Scoped the first operator UI to Settings and clarified that data synchronization is separate from the existing `system-update` Git/Docker sync action.
+
+### [v 1.0.87] 2026-05-13 - Add Offline Desktop Runtime
+
+- Added a one-client Electron offline launcher that builds desktop dependencies, applies the selected client env, and starts local frontend/backend services.
+- Electron can now manage the local Nest backend, Next frontend, and database prepare step before opening the desktop window.
+- Added desktop env switches for managed services, DB preparation, selected client, and readiness timeout.
+- Added first-run local desktop DB credential setup through `.env.desktop.local` and explicit DB env file loading for desktop.
+
+### [v 1.0.87] 2026-05-13 - Rename Contact Types
+
+- Renamed contact type choices from Sundry Debtors/Creditors to Customer/Supplier.
+- Added Vendor Customer for contacts that act as both customer and supplier.
+- Kept legacy Sundry Debtors/Creditors matching so existing contact records still resolve to the new labels.
+- Sales now labels the party field as Customer name and only lists Customer/Vendor Customer contacts.
+- Receipt keeps Customer/Vendor Customer contacts, while Purchase and Payment now list Supplier/Vendor Customer contacts.
+- Customer Statement filters now show Customer/Vendor Customer contacts, while Supplier Statement shows Supplier/Vendor Customer contacts.
+- Updated the default contact type seed row from `-` to `VC` / Vendor Customer.
+- Added a contact type normalization seeder so `db:refresh` maps the first `-` row to Vendor Customer and rewrites old Sundry Debtors/Creditors seed labels to Customer/Supplier.
+- Mapped the first/default contact seed record to Vendor Customer and added a repair seeder for existing databases.
+- Made Contact Type mandatory before saving a contact.
+
+### [v 1.0.87] 2026-05-13 - Add Sales Printing Logo Setting
+
+- Added a Printing tab to Sales Settings.
+- Added a `Print with logo` switch for sales invoices and wired it to the sales print renderer.
+- Added a `Print account no` switch for sales invoice bank details.
+- Added a `Print QR account details` switch to Sales Settings Printing.
+- Added custom sales print terms that can be published from Sales Settings and used on invoice print output.
+- Sales show/print now loads the published company printing options before rendering and no longer falls back to a default logo when no active company logo is selected.
+- Added QR image attachment support to Company Accounts, company detail display, and sales invoice bank details near the account number.
 
 ### [v 1.0.87] 2026-05-12 - Add Bank Name Lookup To Company Accounts
 

@@ -8,12 +8,6 @@ Use the shared client compose with one client env file at a time.
 ./.container/setup.sh codexsun
 ```
 
-Compatibility wrapper:
-
-```bash
-./container/setup.sh codexsun
-```
-
 The setup script:
 
 - creates the shared Docker network

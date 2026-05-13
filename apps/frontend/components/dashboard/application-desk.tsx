@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowUpRight,
   Bell,
@@ -14,6 +17,8 @@ import {
   Warehouse,
 } from "lucide-react";
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@cxnext/ui";
+import { readStoredApplicationContext } from "../../features/auth/infrastructure/session-storage";
+import { loadCompanySoftwareSettings, loadCompanySoftwareSettingsFromServer } from "../../features/settings/application/software-settings-service";
 
 const applicationCards = [
   {
@@ -108,6 +113,43 @@ const quickActions = [
 ] as const;
 
 export function ApplicationDesk() {
+  const [favoriteAppId, setFavoriteAppId] = useState("application");
+
+  useEffect(() => {
+    const context = readStoredApplicationContext();
+    const companyId = context?.company.id ?? null;
+    const localSettings = loadCompanySoftwareSettings(companyId);
+    setFavoriteAppId(localSettings.favoriteDashboardApp);
+
+    if (!companyId) {
+      return;
+    }
+
+    const controller = new AbortController();
+    void loadCompanySoftwareSettingsFromServer(companyId, { signal: controller.signal })
+      .then((settings) => {
+        if (!controller.signal.aborted) {
+          setFavoriteAppId(settings.favoriteDashboardApp);
+        }
+      })
+      .catch(() => undefined);
+
+    return () => controller.abort();
+  }, []);
+
+  const orderedApplicationCards = useMemo(() => {
+    const cards = [...applicationCards];
+    cards.sort((left, right) => {
+      if (favoriteAppId === "application") {
+        return 0;
+      }
+      if (left.id === favoriteAppId) return -1;
+      if (right.id === favoriteAppId) return 1;
+      return 0;
+    });
+    return cards;
+  }, [favoriteAppId]);
+
   return (
     <div
       data-technical-name="page.application-desk"
@@ -170,8 +212,9 @@ export function ApplicationDesk() {
           <CardDescription>Click any app icon to open its workspace.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3 px-4 pb-4 pt-0 sm:px-5 sm:pb-5 md:grid-cols-2 lg:px-6 lg:pb-6 2xl:grid-cols-3">
-          {applicationCards.map((app) => {
+          {orderedApplicationCards.map((app) => {
             const AppIcon = app.icon;
+            const isFavorite = favoriteAppId !== "application" && app.id === favoriteAppId;
 
             return (
               <Link
@@ -190,7 +233,7 @@ export function ApplicationDesk() {
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="min-w-0 text-lg font-semibold text-foreground">{app.name}</p>
-                        <Badge variant="secondary">scaffold</Badge>
+                        {isFavorite ? <Badge>favorite</Badge> : <Badge variant="secondary">scaffold</Badge>}
                       </div>
                       <p className="mt-3 text-sm leading-6 text-muted-foreground">{app.summary}</p>
                     </div>

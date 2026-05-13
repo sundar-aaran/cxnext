@@ -13,6 +13,8 @@ import { addEntryCompanyContextMigration } from "./012-add-entry-company-context
 import { enforceEntryContextReferencesMigration } from "./013-enforce-entry-context-references";
 import { createDocumentNumberSettingsMigration } from "./014-create-document-number-settings";
 import { createCompanySettingsMigration } from "./015-create-company-settings";
+import { addCompanyBankAccountQrMigration } from "./016-add-company-bank-account-qr";
+import { createQueueJobsMigration } from "./017-create-queue-jobs";
 import {
   contactsCommonMigrations,
   locationCommonMigrations,
@@ -40,6 +42,8 @@ export const databaseMigrations = [
   enforceEntryContextReferencesMigration,
   createDocumentNumberSettingsMigration,
   createCompanySettingsMigration,
+  addCompanyBankAccountQrMigration,
+  createQueueJobsMigration,
   createAuthRbacMigration,
   createAuthPolicyCatalogMigration,
 ] as const;
@@ -57,6 +61,8 @@ export { addEntryCompanyContextMigration };
 export { enforceEntryContextReferencesMigration };
 export { createDocumentNumberSettingsMigration };
 export { createCompanySettingsMigration };
+export { addCompanyBankAccountQrMigration };
+export { createQueueJobsMigration };
 export { createAuthRbacMigration };
 export { createAuthPolicyCatalogMigration };
 export {

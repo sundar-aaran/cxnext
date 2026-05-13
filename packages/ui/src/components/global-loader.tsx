@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { LoaderCircle } from "lucide-react";
 
 import { cn } from "../lib";
 
@@ -84,8 +83,21 @@ export function GlobalLoader({
       aria-hidden={!isVisible}
       role="status"
     >
-      <div className="flex size-11 items-center justify-center rounded-full border border-border/80 bg-background/95 text-foreground shadow-lg shadow-black/10">
-        <LoaderCircle className="size-5 animate-spin" />
+      <div className="relative flex size-32 items-center justify-center">
+        <div className="absolute inset-0 rounded-full border border-border/60 bg-background/80 shadow-[0_16px_40px_rgba(15,23,42,0.08)]" />
+        <div className="absolute inset-1 rounded-full border border-border/45 bg-background/95" />
+        <div className="absolute inset-0 rounded-full border-[3px] border-transparent border-t-foreground/75 border-r-foreground/35 animate-spin" />
+        <div className="absolute inset-3 rounded-full border border-border/30" />
+        <div className="relative flex size-20 items-center justify-center rounded-full border border-border/70 bg-background shadow-sm">
+          <picture className="inline-flex items-center justify-center">
+            <source media="(prefers-color-scheme: dark)" srcSet="/storage/logo/logo-dark.svg" />
+            <img
+              src="/storage/logo/logo.svg"
+              alt="cxnext"
+              className="h-10 w-auto"
+            />
+          </picture>
+        </div>
       </div>
       <span className="sr-only">Loading</span>
     </div>

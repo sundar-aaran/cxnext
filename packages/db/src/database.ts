@@ -177,6 +177,7 @@ export interface CompanyBankAccountsTable {
   readonly account_holder_name: string;
   readonly ifsc: string;
   readonly branch: string | null;
+  readonly qr_image_url: string | null;
   readonly is_primary: Generated<boolean>;
   readonly is_active: Generated<boolean>;
   readonly created_at: TimestampColumn;
@@ -504,6 +505,29 @@ export interface DocumentNumberSettingsTable {
   readonly updated_at: TimestampColumn;
 }
 
+export interface QueueJobsTable {
+  readonly id: Generated<number>;
+  readonly queue_name: string;
+  readonly job_name: string;
+  readonly status: string;
+  readonly payload_json: JsonColumn<unknown>;
+  readonly result_json: JsonColumn<unknown>;
+  readonly progress_percent: ColumnType<number, number | string | undefined, number | string>;
+  readonly attempts_made: ColumnType<number, number | string | undefined, number | string>;
+  readonly max_attempts: ColumnType<number, number | string | undefined, number | string>;
+  readonly priority: ColumnType<number, number | string | undefined, number | string>;
+  readonly company_id: number | null;
+  readonly requested_by_user_id: string | null;
+  readonly requested_by_name: string | null;
+  readonly available_at: TimestampColumn;
+  readonly locked_at: NullableTimestampColumn;
+  readonly started_at: NullableTimestampColumn;
+  readonly finished_at: NullableTimestampColumn;
+  readonly last_error: string | null;
+  readonly created_at: TimestampColumn;
+  readonly updated_at: TimestampColumn;
+}
+
 export interface CommonCountriesTable {
   readonly id: Generated<number>;
   readonly code: string;
@@ -591,6 +615,7 @@ export interface DatabaseSchema {
   readonly products: ProductsTable;
   readonly purchase_items: PurchaseItemsTable;
   readonly purchases: PurchasesTable;
+  readonly queue_jobs: QueueJobsTable;
   readonly receipt_allocations: ReceiptAllocationsTable;
   readonly receipts: ReceiptsTable;
   readonly sales: SalesTable;

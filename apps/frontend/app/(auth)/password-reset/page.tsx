@@ -1,15 +1,12 @@
 import { Suspense } from "react";
 import { AuthCard } from "../../../components/auth/auth-card";
-import { AuthForm } from "../../../components/auth/auth-form";
+import { ResetPasswordForm } from "../../../components/auth/reset-password-form";
 
 export default function PasswordResetPage() {
   return (
-    <AuthCard
-      title="Reset password"
-      description="Request a password reset when auth is implemented."
-    >
+    <AuthCard title="Reset password">
       <Suspense fallback={null}>
-        <AuthForm mode="reset" />
+        <ResetPasswordForm />
       </Suspense>
     </AuthCard>
   );

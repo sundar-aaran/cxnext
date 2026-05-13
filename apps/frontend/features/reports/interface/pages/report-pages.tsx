@@ -40,9 +40,9 @@ import {
 type ReportKind = "customer" | "gst" | "supplier";
 type StatementContactType = "customer" | "supplier";
 
-const reportContactTypeIds: Record<StatementContactType, string> = {
-  customer: "contact-type:customer",
-  supplier: "contact-type:supplier",
+const reportContactTypeIds: Record<StatementContactType, readonly string[]> = {
+  customer: ["contact-type:customer", "contact-type:vendor-customer"],
+  supplier: ["contact-type:supplier", "contact-type:vendor-customer"],
 };
 
 export function CustomerStatementReportPage() {
@@ -353,10 +353,10 @@ function useReportContacts(type: StatementContactType) {
     void listContacts({ signal: controller.signal })
       .then((records) => {
         if (controller.signal.aborted) return;
-        const contactTypeId = reportContactTypeIds[type];
+        const contactTypeIds = reportContactTypeIds[type];
         setContacts(
           records
-            .filter((contact) => contact.isActive && contact.contactTypeId === contactTypeId)
+            .filter((contact) => contact.isActive && isReportContact(contact, contactTypeIds, type))
             .sort((left, right) => left.name.localeCompare(right.name)),
         );
       })
@@ -369,6 +369,18 @@ function useReportContacts(type: StatementContactType) {
   }, [type]);
 
   return contacts;
+}
+
+function isReportContact(
+  contact: ContactRecord,
+  contactTypeIds: readonly string[],
+  type: StatementContactType,
+) {
+  if (contact.contactTypeId && contactTypeIds.includes(contact.contactTypeId)) return true;
+  const normalizedLedger = contact.ledgerName?.trim().toLowerCase() ?? "";
+  if (normalizedLedger === "vendor customer") return true;
+  if (type === "customer") return normalizedLedger === "customer" || normalizedLedger === "sundry debtors";
+  return normalizedLedger === "supplier" || normalizedLedger === "sundry creditors";
 }
 
 function currentReportMonth() {

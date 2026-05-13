@@ -48,7 +48,7 @@ import {
   upsertContact,
 } from "../../../contact/application/contact-upsert.service";
 import { createDefaultContactFormValues } from "../../../contact/domain/contact-form";
-import { listSalesContactLookups } from "../../../sales/application/sales-service";
+import { listSupplierContactLookups } from "../../../sales/application/sales-service";
 import type { SalesLookupOption } from "../../../sales/domain/sales";
 import {
   defaultPaymentAllocation,
@@ -414,7 +414,7 @@ export function PaymentUpsertPage({ paymentId }: { readonly paymentId?: number }
 
   useEffect(() => {
     const controller = new AbortController();
-    void listSalesContactLookups({ signal: controller.signal })
+    void listSupplierContactLookups({ signal: controller.signal })
       .then(setContacts)
       .catch((error) => {
         if (!isAbortError(error)) setContacts([]);

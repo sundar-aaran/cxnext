@@ -6,6 +6,7 @@ import { listCommonRecords } from "../../common/infrastructure/common-api";
 interface ContactLookupRecord {
   readonly id: string | number;
   readonly code?: string | null;
+  readonly contactTypeId?: string | null;
   readonly name?: string | null;
   readonly ledgerName?: string | null;
   readonly legalName?: string | null;
@@ -53,7 +54,20 @@ interface ProductVariantAttributeLookupRecord {
   readonly isActive?: boolean;
 }
 
+type ContactLookupRole = "customer" | "supplier";
+
 export async function listSalesContactLookups(options?: { readonly signal?: AbortSignal }) {
+  return listContactLookupsForRole("customer", options);
+}
+
+export async function listSupplierContactLookups(options?: { readonly signal?: AbortSignal }) {
+  return listContactLookupsForRole("supplier", options);
+}
+
+async function listContactLookupsForRole(
+  role: ContactLookupRole,
+  options?: { readonly signal?: AbortSignal },
+) {
   const response = await authFetch(`${apiBaseUrl()}/contacts`, {
     cache: "no-store",
     headers: { Accept: "application/json" },
@@ -64,18 +78,20 @@ export async function listSalesContactLookups(options?: { readonly signal?: Abor
     throw new Error(`Contact lookup failed with status ${response.status}.`);
   }
 
-  return ((await response.json()) as ContactLookupRecord[]).map((record) => {
-    const address = resolveContactAddress(record);
+  return ((await response.json()) as ContactLookupRecord[])
+    .filter((record) => isContactForLookupRole(record, role))
+    .map((record) => {
+      const address = resolveContactAddress(record);
 
-    return {
-      id: String(record.id),
-      label: record.name?.trim() || record.legalName?.trim() || `Contact ${record.id}`,
-      secondaryLabel:
-        [record.code, record.ledgerName, record.gstin].filter(Boolean).join(" / ") || null,
-      billingAddress: address,
-      shippingAddress: address,
-    };
-  }) satisfies SalesLookupOption[];
+      return {
+        id: String(record.id),
+        label: record.name?.trim() || record.legalName?.trim() || `Contact ${record.id}`,
+        secondaryLabel:
+          [record.code, record.ledgerName, record.gstin].filter(Boolean).join(" / ") || null,
+        billingAddress: address,
+        shippingAddress: address,
+      };
+    }) satisfies SalesLookupOption[];
 }
 
 export async function listSalesProductLookups(options?: { readonly signal?: AbortSignal }) {
@@ -154,6 +170,26 @@ function resolveContactAddress(record: ContactLookupRecord) {
     .map((part) => part?.trim())
     .filter(Boolean)
     .join(", ");
+}
+
+function isContactForLookupRole(record: ContactLookupRecord, role: ContactLookupRole) {
+  const contactTypeId = record.contactTypeId?.trim().toLowerCase() ?? "";
+  const ledgerName = record.ledgerName?.trim().toLowerCase() ?? "";
+  if (contactTypeId === "contact-type:vendor-customer" || ledgerName === "vendor customer") {
+    return true;
+  }
+  if (role === "supplier") {
+    return (
+      contactTypeId === "contact-type:supplier" ||
+      ledgerName === "supplier" ||
+      ledgerName === "sundry creditors"
+    );
+  }
+  return (
+    contactTypeId === "contact-type:customer" ||
+    ledgerName === "customer" ||
+    ledgerName === "sundry debtors"
+  );
 }
 
 function resolveProductPrice(record: ProductLookupRecord) {

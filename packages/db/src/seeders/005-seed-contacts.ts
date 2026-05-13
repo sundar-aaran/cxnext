@@ -31,9 +31,9 @@ export const seedContactsSeeder = defineDatabaseSeeder({
       .values({
         uuid: "seed-contact-default",
         code: "-",
-        contact_type_id: null,
-        ledger_id: null,
-        ledger_name: null,
+        contact_type_id: "contact-type:vendor-customer",
+        ledger_id: "ledger:vendor-customer",
+        ledger_name: "Vendor Customer",
         name: "-",
         legal_name: "-",
         pan: null,
@@ -55,6 +55,28 @@ export const seedContactsSeeder = defineDatabaseSeeder({
         updated_at: "2026-04-28 09:00:00",
         deleted_at: null,
       })
+      .execute();
+  },
+});
+
+export const normalizeDefaultContactSeeder = defineDatabaseSeeder({
+  id: "crm:contacts:002-normalize-default-contact",
+  appId: "crm",
+  moduleKey: "contacts",
+  name: "Normalize default contact",
+  order: 65.1,
+  run: async ({ database }) => {
+    const queryDatabase = asQueryDatabase(database);
+    await queryDatabase
+      .updateTable("contacts")
+      .set({
+        contact_type_id: "contact-type:vendor-customer",
+        ledger_id: "ledger:vendor-customer",
+        ledger_name: "Vendor Customer",
+        updated_at: "2026-05-13 09:00:00",
+        deleted_at: null,
+      })
+      .where("code", "=", "-")
       .execute();
   },
 });

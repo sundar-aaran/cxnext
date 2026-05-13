@@ -57,15 +57,21 @@ const addressTypeDisplayOrder = [
 const contactTypeOptions = [
   {
     value: "contact-type:customer",
-    label: "Sundry Debtors",
+    label: "Customer",
     ledgerId: "ledger:sundry-debitors",
-    ledgerName: "Sundry Debtors",
+    ledgerName: "Customer",
   },
   {
     value: "contact-type:supplier",
-    label: "Sundry Creditors",
+    label: "Supplier",
     ledgerId: "ledger:sundry-creditors",
-    ledgerName: "Sundry Creditors",
+    ledgerName: "Supplier",
+  },
+  {
+    value: "contact-type:vendor-customer",
+    label: "Vendor Customer",
+    ledgerId: "ledger:vendor-customer",
+    ledgerName: "Vendor Customer",
   },
   {
     value: "contact-type:staff",
@@ -186,6 +192,11 @@ export function ContactUpsertPage({
       return;
     }
 
+    if (!resolveContactTypeValue(form)) {
+      setMessage("Select contact type.");
+      return;
+    }
+
     const hideGlobalLoader = showGlobalLoader();
 
     try {
@@ -279,7 +290,7 @@ export function ContactUpsertPage({
                             }
                           />
                         </ContactField>
-                        <ContactField label="Contact Type">
+                        <ContactField label="Contact Type *">
                           <ThemedSelect
                             value={resolveContactTypeValue(form)}
                             placeholder="Select contact type"
@@ -825,12 +836,30 @@ function resolveContactTypeValue(form: ContactUpsertInput) {
   const directMatch = contactTypeOptions.find((option) => option.value === form.contactTypeId);
   if (directMatch) return directMatch.value;
 
+  const legacyContactTypeMatch = legacyContactTypeAliases.find(
+    (alias) => alias.value === form.contactTypeId,
+  );
+  if (legacyContactTypeMatch) return legacyContactTypeMatch.nextValue;
+
   const ledgerMatch = contactTypeOptions.find(
     (option) =>
-      normalizeLookupText(option.ledgerName) === normalizeLookupText(form.ledgerName ?? ""),
+      [option.ledgerName, ...legacyLedgerAliases(option.value)].some(
+        (ledgerName) =>
+          normalizeLookupText(ledgerName) === normalizeLookupText(form.ledgerName ?? ""),
+      ),
   );
 
   return ledgerMatch?.value ?? "";
+}
+
+const legacyContactTypeAliases = [
+  { value: "contact-type:partner", nextValue: "contact-type:vendor-customer" },
+] as const;
+
+function legacyLedgerAliases(contactTypeValue: string) {
+  if (contactTypeValue === "contact-type:customer") return ["Sundry Debtors"];
+  if (contactTypeValue === "contact-type:supplier") return ["Sundry Creditors"];
+  return [];
 }
 
 function ContactToggleCard({

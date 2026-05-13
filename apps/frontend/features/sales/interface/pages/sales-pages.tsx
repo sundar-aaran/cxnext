@@ -30,6 +30,10 @@ import { resolveSalesBillingLayout } from "../../application/sales-billing-layou
 import { getActiveCompany } from "../../../company/application/company-service";
 import type { CompanyRecord } from "../../../company/domain/company";
 import { getCoreEnvSettings } from "../../../settings/infrastructure/core-settings-api";
+import {
+  loadCompanySoftwareSettings,
+  loadCompanySoftwareSettingsFromServer,
+} from "../../../settings/application/software-settings-service";
 import { EntryCollaborationPanel } from "../../../entries/interface/components/entry-collaboration-panel";
 import {
   defaultSalesInput,
@@ -267,6 +271,10 @@ export function SalesShowPage({
   const [industryName, setIndustryName] = useState<string | null>(null);
   const [printCompany, setPrintCompany] = useState<CompanyRecord | null>(null);
   const [printCopies, setPrintCopies] = useState<readonly SalesPrintCopy[]>(["original"]);
+  const [printCustomTerms, setPrintCustomTerms] = useState("");
+  const [showPrintAccountNumber, setShowPrintAccountNumber] = useState(true);
+  const [showPrintLogo, setShowPrintLogo] = useState(true);
+  const [showPrintQrAccountDetails, setShowPrintQrAccountDetails] = useState(true);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -292,11 +300,24 @@ export function SalesShowPage({
       getActiveCompany({ signal: controller.signal }),
       getCoreEnvSettings({ signal: controller.signal }).catch(() => null),
     ])
-      .then(([company, settings]) => {
+      .then(async ([company, settings]) => {
         if (controller.signal.aborted) return;
         setPrintCompany(company);
         setIndustryCode(getAppTypeFromSettings(settings) ?? company?.industryCode ?? null);
         setIndustryName(company?.industryName ?? null);
+        const softwareSettings = await loadSalesPrintSoftwareSettings(
+          company?.id,
+          controller.signal,
+        );
+        if (controller.signal.aborted) return;
+        setPrintCustomTerms(softwareSettings.salesPrintingOptions.customTerms);
+        setShowPrintAccountNumber(
+          getSalesPrintToggleSetting(softwareSettings, "sales-print-account-no"),
+        );
+        setShowPrintLogo(getSalesPrintToggleSetting(softwareSettings, "sales-print-with-logo"));
+        setShowPrintQrAccountDetails(
+          getSalesPrintToggleSetting(softwareSettings, "sales-print-qr-account-details"),
+        );
       })
       .catch((error) => {
         if (isAbortError(error)) return;
@@ -415,9 +436,13 @@ export function SalesShowPage({
               <SalesInvoiceDocument
                 company={printCompany}
                 copy={copy}
+                customTerms={printCustomTerms}
                 industryName={industryValue}
                 record={record}
                 salesLayout={salesLayout}
+                showBankAccountNumber={showPrintAccountNumber}
+                showQrAccountDetails={showPrintQrAccountDetails}
+                showLogo={showPrintLogo}
               />
             </div>
           ))}
@@ -466,6 +491,30 @@ function getAppTypeFromSettings(
     .flatMap((group) => group.settings)
     .find((setting) => setting.key === "APP_TYPE")
     ?.value.trim() || null;
+}
+
+function getSalesPrintToggleSetting(
+  settings: ReturnType<typeof loadCompanySoftwareSettings>,
+  settingId: string,
+) {
+  return (
+    settings.salesPrintingSettings.find((setting) => setting.id === settingId)?.enabled ?? true
+  );
+}
+
+async function loadSalesPrintSoftwareSettings(
+  companyId: number | string | null | undefined,
+  signal: AbortSignal,
+) {
+  const normalizedCompanyId = companyId ? String(companyId) : null;
+  const localSettings = loadCompanySoftwareSettings(normalizedCompanyId);
+  if (!normalizedCompanyId) return localSettings;
+
+  try {
+    return await loadCompanySoftwareSettingsFromServer(normalizedCompanyId, { signal });
+  } catch {
+    return localSettings;
+  }
 }
 
 function getErrorMessage(error: unknown) {

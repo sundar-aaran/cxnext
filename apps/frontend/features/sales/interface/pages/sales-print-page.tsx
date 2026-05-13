@@ -41,8 +41,12 @@ export function SalesInvoiceDocument({
   record,
   rightDetailLines,
   salesLayout: providedSalesLayout,
+  customTerms,
   showEInvoiceDetails = true,
   showFooterDetails = true,
+  showBankAccountNumber = true,
+  showLogo = true,
+  showQrAccountDetails = true,
 }: {
   readonly company?: CompanyRecord | null;
   readonly copy?: SalesPrintCopy;
@@ -53,8 +57,12 @@ export function SalesInvoiceDocument({
   readonly record: SalesRecord;
   readonly rightDetailLines?: readonly SalesPrintDetailLine[];
   readonly salesLayout?: SalesBillingLayout;
+  readonly customTerms?: string | null;
   readonly showEInvoiceDetails?: boolean;
   readonly showFooterDetails?: boolean;
+  readonly showBankAccountNumber?: boolean;
+  readonly showLogo?: boolean;
+  readonly showQrAccountDetails?: boolean;
 }) {
   const totals = useMemo(
     () => calculateSalesTotals(record.items, Number(record.roundOff ?? 0)),
@@ -78,7 +86,7 @@ export function SalesInvoiceDocument({
   );
   const signatureLeftColSpan = Math.max(1, Math.floor(itemColumns.length / 2));
   const signatureRightColSpan = Math.max(1, itemColumns.length - signatureLeftColSpan);
-  const termsLines = salesPrintTerms(record.terms);
+  const termsLines = salesPrintTerms(customTerms || record.terms);
   const hasEInvoiceBarcode = Boolean(
     printableText(record.eInvoiceIrn) && printableText(record.eInvoiceSignedQr),
   );
@@ -94,7 +102,9 @@ export function SalesInvoiceDocument({
         <tbody>
           <tr>
             <td className={`${baseCell} h-[160px] w-[145px] border-r-0 text-center align-middle`}>
-              <CompanyLogo company={company ?? null} companyName={companyName} />
+              {showLogo ? (
+                <CompanyLogo company={company ?? null} companyName={companyName} />
+              ) : null}
             </td>
             <td
               className={`${baseCell} ${hasEInvoiceBarcode ? "" : "border-r-0"} text-center leading-[1.6]`}
@@ -258,7 +268,11 @@ export function SalesInvoiceDocument({
                   colSpan={summaryLeftColSpan}
                   className={`${baseCell} p-[3px] text-[9px] font-bold leading-tight`}
                 >
-                  <BankDetailsBlock bank={companyBank} />
+                  <BankDetailsBlock
+                    bank={companyBank}
+                    showAccountNumber={showBankAccountNumber}
+                    showQrAccountDetails={showQrAccountDetails}
+                  />
                 </td>
                 <SummaryLabel colSpan={summaryLabelColSpan}>&nbsp;</SummaryLabel>
                 <SummaryValue colSpan={summaryValueColSpan}>&nbsp;</SummaryValue>
@@ -592,8 +606,9 @@ function CompanyLogo({
   readonly company: CompanyRecord | null;
   readonly companyName: string;
 }) {
-  const logoUrl =
-    company?.logos.find((logo) => logo.isActive)?.logoUrl.trim() || "/storage/logo/logo.svg";
+  const logoUrl = company?.logos.find((logo) => logo.isActive)?.logoUrl.trim() ?? "";
+  if (!logoUrl) return null;
+
   return (
     <img src={logoUrl} alt={companyName || "cxnext"} className="mx-auto max-h-[105px] max-w-[120px] object-contain" />
   );
@@ -619,26 +634,40 @@ function EInvoiceQrData({
 
 function BankDetailsBlock({
   bank,
+  showAccountNumber,
+  showQrAccountDetails,
 }: {
   readonly bank: CompanyRecord["bankAccounts"][number] | null;
+  readonly showAccountNumber: boolean;
+  readonly showQrAccountDetails: boolean;
 }) {
   const rows = [
-    ["ACCOUNT NO", bank?.accountNumber],
+    showAccountNumber ? (["ACCOUNT NO", bank?.accountNumber] as const) : null,
     ["IFSC CODE", bank?.ifsc],
     ["BANK NAME", bank?.bankName],
     ["BRANCH", bank?.branch],
-  ] as const;
+  ].filter(Boolean) as readonly (readonly [string, string | null | undefined])[];
+  const qrImageUrl = showQrAccountDetails ? printableText(bank?.qrImageUrl) : "";
 
   return (
-    <>
-      {rows.map(([label, value]) => (
-        <div key={label} className="grid grid-cols-[94px_8px_1fr]">
-          <span>{label}</span>
-          <span>:</span>
-          <span>{printableText(value)}</span>
-        </div>
-      ))}
-    </>
+    <div className={qrImageUrl ? "grid grid-cols-[1fr_58px] gap-2" : ""}>
+      <div>
+        {rows.map(([label, value]) => (
+          <div key={label} className="grid grid-cols-[94px_8px_1fr]">
+            <span>{label}</span>
+            <span>:</span>
+            <span>{printableText(value)}</span>
+          </div>
+        ))}
+      </div>
+      {qrImageUrl ? (
+        <img
+          src={qrImageUrl}
+          alt="Account QR"
+          className="size-[56px] border border-gray-500 bg-white object-contain p-[2px]"
+        />
+      ) : null}
+    </div>
   );
 }
 

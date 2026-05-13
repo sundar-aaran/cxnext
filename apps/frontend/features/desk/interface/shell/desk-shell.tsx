@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { DashboardShell } from "@cxnext/ui";
+import { DashboardShell, useGlobalLoader } from "@cxnext/ui";
 import {
   Building2,
   CalendarDays,
@@ -18,6 +18,8 @@ import {
   Landmark,
   LibraryBig,
   LineChart,
+  LayoutDashboard,
+  Inbox,
   Package,
   ReceiptText,
   RefreshCcw,
@@ -198,10 +200,22 @@ const settingsNavItems = [
     icon: <Grid3X3 className="h-4 w-4" />,
   },
   {
+    id: "settings-dashboard",
+    label: "Dashboard",
+    href: "/desk/settings/dashboard",
+    icon: <LayoutDashboard className="h-4 w-4" />,
+  },
+  {
     id: "settings-media",
     label: "Media Manager",
     href: "/desk/settings/media",
     icon: <LibraryBig className="h-4 w-4" />,
+  },
+  {
+    id: "settings-queue",
+    label: "Queue Manager",
+    href: "/desk/settings/queue",
+    icon: <Inbox className="h-4 w-4" />,
   },
   {
     id: "settings-core",
@@ -237,7 +251,9 @@ const settingsNavItems = [
 
 const settingsMenuLabels: Record<string, string> = {
   apps: "Apps",
+  dashboard: "Dashboard",
   media: "Media Manager",
+  queue: "Queue Manager",
   core: "Core Settings",
   "billing-layout": "Sales Settings",
   "document-settings": "Document Settings",
@@ -343,6 +359,7 @@ function getWorkspaceLabel(pathname: string, isDeskRoot: boolean, fallbackLabel:
 export function DeskShell({ children }: { readonly children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { show: showGlobalLoader } = useGlobalLoader();
   const [session, setSession] = useState<AuthSession | null>(null);
   const [companies, setCompanies] = useState<readonly CompanyRecord[]>([]);
   const [isContextLoading, setIsContextLoading] = useState(true);
@@ -389,8 +406,6 @@ export function DeskShell({ children }: { readonly children: ReactNode }) {
   const applicationNavItems = [
     ...(canSeeSystemMenus ? navItems : []),
     ...masterItems,
-    ...entriesItems,
-    ...reportItems,
     ...(canSeeSystemMenus ? settingsItems : []),
     ...(canSeeAdminMenus ? adminItems : []),
   ];
@@ -410,18 +425,6 @@ export function DeskShell({ children }: { readonly children: ReactNode }) {
       label: "Master",
       icon: <Contact className="size-4" />,
       items: masterItems,
-    },
-    {
-      id: "entries",
-      label: "Entries",
-      icon: <ReceiptText className="size-4" />,
-      items: entriesItems,
-    },
-    {
-      id: "reports",
-      label: "Reports",
-      icon: <LineChart className="size-4" />,
-      items: reportItems,
     },
     ...(canSeeSystemMenus
       ? [
@@ -443,12 +446,6 @@ export function DeskShell({ children }: { readonly children: ReactNode }) {
           },
         ]
       : []),
-    {
-      id: "common",
-      label: "Common",
-      icon: <Flag className="size-4" />,
-      subGroups: commonGroups,
-    },
   ];
   const billingNavItems = [...entriesItems, ...reportItems, ...masterItems];
   const billingNavGroups = [
@@ -479,6 +476,15 @@ export function DeskShell({ children }: { readonly children: ReactNode }) {
   ];
   const visibleNavItems = isBillingWorkspace ? billingNavItems : applicationNavItems;
   const visibleNavGroups = isBillingWorkspace ? billingNavGroups : applicationNavGroups;
+
+  useEffect(() => {
+    if (!isContextLoading) {
+      return;
+    }
+
+    const hideLoader = showGlobalLoader();
+    return hideLoader;
+  }, [isContextLoading, showGlobalLoader]);
 
   useEffect(() => {
     const storedSession = readStoredAuthSession();
@@ -602,9 +608,7 @@ export function DeskShell({ children }: { readonly children: ReactNode }) {
           id: String(company.id),
           name: company.name,
           code: company.code,
-          subtitle: company.code
-            ? `${company.code} / ${company.industryName}`
-            : company.industryName,
+          subtitle: session?.context?.accountingYear.name ?? null,
           isActive: company.isActive,
         })),
         label: "Companies",

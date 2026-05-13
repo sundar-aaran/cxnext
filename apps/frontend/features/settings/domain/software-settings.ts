@@ -19,8 +19,11 @@ export interface SoftwareSettingsState {
   readonly customiseGroups: readonly SoftwareCustomiseGroup[];
   readonly dutiesTaxSettings: DutiesTaxSettings;
   readonly features: readonly SoftwareToggleSetting[];
+  readonly favoriteDashboardApp: string;
   readonly salesBillingLayout: readonly SoftwareToggleSetting[];
   readonly salesDocumentSettings: SalesDocumentSettings;
+  readonly salesPrintingOptions: SalesPrintingOptions;
+  readonly salesPrintingSettings: readonly SoftwareToggleSetting[];
 }
 
 export interface DutiesTaxSettings {
@@ -35,7 +38,14 @@ export interface SalesDocumentSettings {
   readonly invoiceSerialStart: string;
 }
 
+export interface SalesPrintingOptions {
+  readonly customTerms: string;
+}
+
+export type FavoriteDashboardApp = "application" | "billing";
+
 export const defaultSoftwareSettingsState: SoftwareSettingsState = {
+  favoriteDashboardApp: "application",
   dutiesTaxSettings: {
     openingGstAsOnDate: "",
     openingGstCgst: "0",
@@ -45,6 +55,9 @@ export const defaultSoftwareSettingsState: SoftwareSettingsState = {
   salesDocumentSettings: {
     invoicePrefix: "SAL",
     invoiceSerialStart: "0001",
+  },
+  salesPrintingOptions: {
+    customTerms: "",
   },
   salesBillingLayout: [
     {
@@ -87,6 +100,30 @@ export const defaultSoftwareSettingsState: SoftwareSettingsState = {
       label: "Use E-way in sales",
       description: "Shows the E-way details tab on sales upsert.",
       scope: "industry",
+      enabled: true,
+    },
+  ],
+  salesPrintingSettings: [
+    {
+      id: "sales-print-with-logo",
+      label: "Print with logo",
+      description: "Shows the active company logo in the sales invoice print header.",
+      scope: "client",
+      enabled: true,
+    },
+    {
+      id: "sales-print-account-no",
+      label: "Print account no",
+      description:
+        "Shows or hides the company bank account number in sales invoice bank details when an account number is available.",
+      scope: "client",
+      enabled: true,
+    },
+    {
+      id: "sales-print-qr-account-details",
+      label: "Print QR account details",
+      description: "Controls whether QR account details are enabled for sales invoice printing.",
+      scope: "client",
       enabled: true,
     },
   ],

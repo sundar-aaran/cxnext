@@ -52,6 +52,7 @@ export interface CompanyBankAccountRecord {
   readonly accountHolderName: string;
   readonly ifsc: string;
   readonly branch: string | null;
+  readonly qrImageUrl: string | null;
   readonly isPrimary: boolean;
   readonly isActive: boolean;
 }

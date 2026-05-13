@@ -390,6 +390,7 @@ export class KyselyCompanyRepository implements CompanyRepository, OnModuleDestr
             account_holder_name: item.accountHolderName.trim(),
             ifsc: item.ifsc.trim().toUpperCase(),
             branch: toNullableString(item.branch),
+            qr_image_url: toNullableString(item.qrImageUrl),
             is_primary: Boolean(item.isPrimary),
             is_active: item.isActive !== false,
             created_at: timestamp,
@@ -508,6 +509,7 @@ export class KyselyCompanyRepository implements CompanyRepository, OnModuleDestr
       accountHolderName: row.account_holder_name,
       ifsc: row.ifsc,
       branch: row.branch,
+      qrImageUrl: row.qr_image_url,
       isPrimary: Boolean(row.is_primary),
       isActive: Boolean(row.is_active),
     }));

@@ -8,20 +8,21 @@ import { readStoredAuthSession } from "../../infrastructure/session-storage";
 export function AppAuthGate({ children }: { readonly children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [isAllowed, setIsAllowed] = useState(false);
+  const [status, setStatus] = useState<"checking" | "allowed" | "blocked">("checking");
 
   useEffect(() => {
     const session = readStoredAuthSession();
 
     if (!session) {
+      setStatus("blocked");
       router.replace(`/login?next=${encodeURIComponent(pathname)}`);
       return;
     }
 
-    setIsAllowed(true);
+    setStatus("allowed");
   }, [pathname, router]);
 
-  if (!isAllowed) {
+  if (status !== "allowed") {
     return null;
   }
 

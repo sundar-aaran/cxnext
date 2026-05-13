@@ -183,8 +183,11 @@ function resolveContactCode(
 }
 
 function getContactTypeCode(contactTypeId: string | null) {
-  if (contactTypeId === "contact-type:partner") {
-    return "P";
+  if (
+    contactTypeId === "contact-type:partner" ||
+    contactTypeId === "contact-type:vendor-customer"
+  ) {
+    return "VC";
   }
 
   if (contactTypeId === "contact-type:supplier") {

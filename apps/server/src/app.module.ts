@@ -17,6 +17,7 @@ import { DocumentSettingsModule } from "./modules/document-settings/document-set
 import { IndustriesModule } from "./modules/industries/industries.module";
 import { MediaModule } from "./modules/media/media.module";
 import { ProductsModule } from "./modules/products/products.module";
+import { QueueModule } from "./modules/queue/queue.module";
 import { TenantsModule } from "./modules/tenants/tenants.module";
 
 @Module({
@@ -43,6 +44,7 @@ import { TenantsModule } from "./modules/tenants/tenants.module";
     IndustriesModule,
     MediaModule,
     ProductsModule,
+    QueueModule,
     TenantsModule,
     GraphqlFoundationModule,
     HealthModule,

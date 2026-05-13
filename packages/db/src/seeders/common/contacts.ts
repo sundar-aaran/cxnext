@@ -1,9 +1,147 @@
+import type { Kysely } from "kysely";
+
 import {
   commonDefinition,
+  rowsWithDefault,
   simpleRows,
   simpleRowsWithDefault,
 } from "./common-master-definitions";
 import { createCommonMasterSeeder } from "./common-master-seeder";
+import { defineDatabaseSeeder } from "../../process/types";
+
+type DynamicDatabase = Record<string, Record<string, unknown>>;
+
+function asQueryDatabase(database: Kysely<unknown>) {
+  return database as unknown as Kysely<DynamicDatabase>;
+}
+
+const contactTypeSeedRows = [
+  { code: "SUPPLIER", name: "Supplier", description: "Supplier default" },
+  { code: "CUSTOMER", name: "Customer", description: "Customer default" },
+  {
+    code: "VENDOR-CUSTOMER",
+    name: "Vendor Customer",
+    description: "Vendor Customer default",
+  },
+  { code: "STAFF", name: "Staff", description: "Staff default" },
+] as const;
+
+async function upsertContactTypeByCode(
+  database: Kysely<DynamicDatabase>,
+  row: (typeof contactTypeSeedRows)[number],
+  timestamp: string,
+) {
+  const existing = await database
+    .selectFrom("common_contact_types")
+    .select("id")
+    .where("code", "=", row.code)
+    .executeTakeFirst();
+
+  if (existing) {
+    await database
+      .updateTable("common_contact_types")
+      .set({
+        name: row.name,
+        description: row.description,
+        is_active: true,
+        updated_at: timestamp,
+        deleted_at: null,
+      })
+      .where("id", "=", existing.id)
+      .execute();
+    return;
+  }
+
+  await database
+    .insertInto("common_contact_types")
+    .values({
+      code: row.code,
+      name: row.name,
+      description: row.description,
+      is_active: true,
+      created_at: timestamp,
+      updated_at: timestamp,
+      deleted_at: null,
+    })
+    .execute();
+}
+
+const normalizeContactTypesSeeder = defineDatabaseSeeder({
+  id: "common:contactTypes:002-normalize-contact-type-names",
+  appId: "common",
+  moduleKey: "contactTypes",
+  name: "Normalize contact type names",
+  order: 61.1,
+  run: async ({ database }) => {
+    const queryDatabase = asQueryDatabase(database);
+    const timestamp = "2026-05-13 09:00:00";
+    const defaultContactType =
+      (await queryDatabase
+        .selectFrom("common_contact_types")
+        .select("id")
+        .where("code", "=", "-")
+        .orderBy("id", "asc")
+        .executeTakeFirst()) ??
+      (await queryDatabase
+        .selectFrom("common_contact_types")
+        .select("id")
+        .where("name", "=", "-")
+        .orderBy("id", "asc")
+        .executeTakeFirst());
+
+    if (defaultContactType) {
+      await queryDatabase
+        .updateTable("common_contact_types")
+        .set({
+          code: "VC",
+          name: "Vendor Customer",
+          description: "Vendor Customer default",
+          is_active: true,
+          updated_at: timestamp,
+          deleted_at: null,
+        })
+        .where("id", "=", defaultContactType.id)
+        .execute();
+    } else {
+      const vendorCustomerDefault = await queryDatabase
+        .selectFrom("common_contact_types")
+        .select("id")
+        .where("code", "=", "VC")
+        .executeTakeFirst();
+
+      if (vendorCustomerDefault) {
+        await queryDatabase
+          .updateTable("common_contact_types")
+          .set({
+            name: "Vendor Customer",
+            description: "Vendor Customer default",
+            is_active: true,
+            updated_at: timestamp,
+            deleted_at: null,
+          })
+          .where("id", "=", vendorCustomerDefault.id)
+          .execute();
+      } else {
+        await queryDatabase
+          .insertInto("common_contact_types")
+          .values({
+            code: "VC",
+            name: "Vendor Customer",
+            description: "Vendor Customer default",
+            is_active: true,
+            created_at: timestamp,
+            updated_at: timestamp,
+            deleted_at: null,
+          })
+          .execute();
+      }
+    }
+
+    for (const row of contactTypeSeedRows) {
+      await upsertContactTypeByCode(queryDatabase, row, timestamp);
+    }
+  },
+});
 
 export const contactsCommonSeeders = [
   createCommonMasterSeeder(
@@ -18,6 +156,7 @@ export const contactsCommonSeeders = [
       ["LABOUR", "Labour"],
       ["MANAGER", "Manager"],
       ["SUPPLIER", "Supplier"],
+      ["VENDOR-CUSTOMER", "Vendor Customer"],
       ["AGENT", "Agent"],
       ["TRANSPORTER", "Transporter"],
     ]),
@@ -25,12 +164,21 @@ export const contactsCommonSeeders = [
   createCommonMasterSeeder(
     commonDefinition("contactTypes"),
     61,
-    simpleRowsWithDefault([
-      ["SUPPLIER", "Sundry Creditors"],
-      ["CUSTOMER", "Sundry Debtors"],
-      ["STAFF", "Staff"],
-    ]),
+    rowsWithDefault(
+      simpleRows([
+        ["SUPPLIER", "Supplier"],
+        ["CUSTOMER", "Customer"],
+        ["VENDOR-CUSTOMER", "Vendor Customer"],
+        ["STAFF", "Staff"],
+      ]),
+      {
+        code: "VC",
+        description: "Vendor Customer default",
+        name: "Vendor Customer",
+      },
+    ),
   ),
+  normalizeContactTypesSeeder,
   createCommonMasterSeeder(
     commonDefinition("addressTypes"),
     62,

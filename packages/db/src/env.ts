@@ -44,6 +44,20 @@ export function findNearestEnvFile(startDirectory = process.cwd()): string | nul
   }
 }
 
+function resolveConfiguredEnvFile(
+  cwd: string,
+  source: NodeJS.ProcessEnv,
+): string | null {
+  const configuredPath = source.DB_ENV_FILE ?? source.DATABASE_ENV_FILE;
+
+  if (!configuredPath) {
+    return null;
+  }
+
+  const envFilePath = path.resolve(cwd, configuredPath);
+  return existsSync(envFilePath) ? envFilePath : null;
+}
+
 function loadEnvFileValues(envFilePath: string): Record<string, string> {
   const parsedEnv = parseEnv(readFileSync(envFilePath, "utf8"));
 
@@ -58,7 +72,7 @@ export function loadDatabaseEnv(options?: {
 }): LoadedDatabaseEnv {
   const cwd = path.resolve(options?.cwd ?? process.cwd());
   const source = options?.source ?? process.env;
-  const envFilePath = findNearestEnvFile(cwd);
+  const envFilePath = resolveConfiguredEnvFile(cwd, source) ?? findNearestEnvFile(cwd);
   const envFileValues = envFilePath ? loadEnvFileValues(envFilePath) : {};
   const mergedSource = {
     ...envFileValues,

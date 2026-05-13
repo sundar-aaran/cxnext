@@ -104,6 +104,7 @@ const companyLogoVariants = [
 ] as const;
 
 const companyLogoBasePath = "/storage/logo";
+const companyBankQrBasePath = "/storage/bank-qr";
 const defaultCompanyLogoFileNames: Record<(typeof companyLogoVariants)[number]["type"], string> = {
   logo: "logo.svg",
   "logo-dark": "logo-dark.svg",
@@ -186,6 +187,7 @@ const companySchema = z.object({
       accountHolderName: z.string(),
       ifsc: z.string(),
       branch: z.string().nullable(),
+      qrImageUrl: z.string().nullable(),
       isPrimary: z.boolean(),
       isActive: z.boolean(),
     }),
@@ -588,7 +590,7 @@ export function CompanyShowPage({ companyId }: { readonly companyId: number }) {
             <SimpleRows
               rows={currentCompany.bankAccounts.map((bank) => [
                 bank.bankName,
-                `${bank.accountHolderName} / ${bank.ifsc}`,
+                <CompanyBankAccountShowValue bank={bank} key={bank.id} />,
               ])}
             />
           </MasterListShowCard>,
@@ -619,6 +621,10 @@ export function CompanyUpsertPage({
   const [logoUploadDialog, setLogoUploadDialog] = useState<{
     readonly currentFileName: string;
     readonly variantType: (typeof companyLogoVariants)[number]["type"];
+  } | null>(null);
+  const [bankQrUploadDialog, setBankQrUploadDialog] = useState<{
+    readonly currentFileName: string;
+    readonly onUploaded: (record: MediaItemRecord) => void;
   } | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const form = useForm({
@@ -1260,6 +1266,7 @@ export function CompanyUpsertPage({
                             accountHolderName: form.getFieldValue("legalName") || form.getFieldValue("name"),
                             ifsc: "",
                             branch: null,
+                            qrImageUrl: null,
                             isPrimary: form.getFieldValue("bankAccounts").length === 0,
                             isActive: true,
                           },
@@ -1341,6 +1348,42 @@ export function CompanyUpsertPage({
                                     }
                                   />
                                 </FieldShell>
+                                <div className="md:col-span-2">
+                                  <FieldShell label="QR image" error={null}>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <Input
+                                        className="h-11 min-w-[240px] flex-1 rounded-xl"
+                                        value={bankAccount.qrImageUrl ?? ""}
+                                        placeholder="/storage/bank-qr/account-qr.png"
+                                        onChange={(event) =>
+                                          updateCollectionItem(field, index, {
+                                            qrImageUrl: event.target.value || null,
+                                          })
+                                        }
+                                      />
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        className="h-11 rounded-xl px-3"
+                                        disabled={!companyId}
+                                        onClick={() =>
+                                          setBankQrUploadDialog({
+                                            currentFileName: bankAccount.qrImageUrl ?? "",
+                                            onUploaded: (record) =>
+                                              updateCollectionItem(field, index, {
+                                                qrImageUrl:
+                                                  record.publicUrl ??
+                                                  buildBankQrStoragePath(record.fileName),
+                                              }),
+                                          })
+                                        }
+                                      >
+                                        <ImagePlus className="size-4" />
+                                        Upload
+                                      </Button>
+                                    </div>
+                                  </FieldShell>
+                                </div>
                                 <label
                                   className={
                                     bankAccount.isPrimary
@@ -1597,6 +1640,17 @@ export function CompanyUpsertPage({
           }}
         />
       ) : null}
+      {bankQrUploadDialog ? (
+        <CompanyBankQrUploadDialog
+          companyId={companyId}
+          currentFileName={bankQrUploadDialog.currentFileName}
+          onClose={() => setBankQrUploadDialog(null)}
+          onUploaded={(record) => {
+            bankQrUploadDialog.onUploaded(record);
+            setBankQrUploadDialog(null);
+          }}
+        />
+      ) : null}
     </MasterListPageFrame>
   );
 }
@@ -1665,6 +1719,36 @@ function CompanyTaxDetailsTable({ company }: { readonly company: CompanyRecord }
     ],
   ];
   return <SimpleRows rows={rows} />;
+}
+
+function CompanyBankAccountShowValue({
+  bank,
+}: {
+  readonly bank: CompanyRecord["bankAccounts"][number];
+}) {
+  return (
+    <div className="flex flex-wrap items-start gap-4">
+      <div className="min-w-0 space-y-1">
+        <div>{bank.accountHolderName}</div>
+        <div className="text-muted-foreground">
+          {[
+            bank.accountNumber ? `A/c ${bank.accountNumber}` : "",
+            bank.ifsc ? `IFSC ${bank.ifsc}` : "",
+            bank.branch,
+          ]
+            .filter(Boolean)
+            .join(" / ")}
+        </div>
+      </div>
+      {bank.qrImageUrl ? (
+        <img
+          src={bank.qrImageUrl}
+          alt={`${bank.bankName} QR`}
+          className="size-20 rounded-md border border-border object-contain p-1"
+        />
+      ) : null}
+    </div>
+  );
 }
 
 function SimpleRows({ rows }: { readonly rows: readonly (readonly [ReactNode, ReactNode])[] }) {
@@ -2283,6 +2367,129 @@ function CompanyLogoUploadDialog({
   );
 }
 
+function CompanyBankQrUploadDialog({
+  companyId,
+  currentFileName,
+  onClose,
+  onUploaded,
+}: {
+  readonly companyId: number | undefined;
+  readonly currentFileName: string;
+  readonly onClose: () => void;
+  readonly onUploaded: (record: MediaItemRecord) => void;
+}) {
+  const [targetFileName, setTargetFileName] = useState(trimBankQrStoragePath(currentFileName));
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  async function submit() {
+    if (!companyId) {
+      setError("Save the company before uploading account QR images.");
+      return;
+    }
+
+    if (!selectedFile) {
+      setError("Choose a QR image to upload.");
+      return;
+    }
+
+    if (!isSupportedImageFile(selectedFile)) {
+      setError("Choose an image file such as PNG, JPG, WEBP, SVG, or AVIF.");
+      return;
+    }
+
+    setIsUploading(true);
+    setError(null);
+
+    try {
+      const fileName = trimBankQrStoragePath(targetFileName) || selectedFile.name;
+      const renamedFile = new File([selectedFile], fileName, { type: selectedFile.type });
+      const uploaded = await uploadMediaFile({
+        companyId: String(companyId),
+        file: renamedFile,
+        folder: "bank-qr",
+        overwrite: true,
+        visibility: "public",
+      });
+      toast.success("QR image uploaded", {
+        description: uploaded.publicUrl ?? buildBankQrStoragePath(uploaded.fileName),
+      });
+      onUploaded(uploaded);
+    } catch (uploadError) {
+      setError(getErrorMessage(uploadError));
+    } finally {
+      setIsUploading(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-background/55 p-2 backdrop-blur-sm sm:p-4">
+      <div className="w-[min(560px,calc(100vw-1rem))] rounded-2xl border border-border/70 bg-card p-5 shadow-2xl">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">Upload account QR</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Files are stored in `{companyBankQrBasePath}` and linked to this bank account.
+            </p>
+          </div>
+          <Button type="button" variant="ghost" size="icon" className="size-8 rounded-full" onClick={onClose}>
+            <X className="size-4" />
+          </Button>
+        </div>
+        <div className="mt-5 grid gap-4">
+          <FieldShell label="Stored file name" error={null}>
+            <Input
+              className="h-11 rounded-xl"
+              value={targetFileName}
+              placeholder="account-qr.png"
+              onChange={(event) => setTargetFileName(trimBankQrStoragePath(event.target.value))}
+            />
+          </FieldShell>
+          <FieldShell label="Choose QR image" error={null}>
+            <Input
+              className="h-11 rounded-xl px-3 py-2"
+              accept="image/*,.svg,.ico,.avif,.bmp,.tif,.tiff"
+              type="file"
+              onChange={(event) => {
+                const nextFile = event.target.files?.[0] ?? null;
+                setSelectedFile(nextFile);
+                if (nextFile && !targetFileName) setTargetFileName(nextFile.name);
+                setError(null);
+              }}
+            />
+          </FieldShell>
+          <div className="rounded-xl border border-border/70 bg-muted/15 px-4 py-3 text-sm text-muted-foreground">
+            Final path:{" "}
+            <span className="font-medium text-foreground">
+              {buildBankQrStoragePath(targetFileName || selectedFile?.name || "account-qr.png")}
+            </span>
+          </div>
+          {error ? (
+            <div className="rounded-xl border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+              {error}
+            </div>
+          ) : null}
+        </div>
+        <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-border/70 pt-4">
+          <Button
+            type="button"
+            className="rounded-xl"
+            disabled={!selectedFile || isUploading || !companyId}
+            onClick={() => void submit()}
+          >
+            <ImagePlus className="size-4" />
+            Upload QR
+          </Button>
+          <Button type="button" variant="outline" className="rounded-xl" onClick={onClose}>
+            Cancel
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function getLogoVariantUrl(
   logos: readonly CompanyUpsertInput["logos"][number][],
   logoType: string,
@@ -2334,6 +2541,19 @@ function canonicalLogoUrl(fileName: string, logoType: string) {
 
 function buildLogoStoragePath(fileName: string) {
   return `${companyLogoBasePath}/${trimLogoStoragePath(fileName)}`;
+}
+
+function buildBankQrStoragePath(fileName: string) {
+  return `${companyBankQrBasePath}/${trimBankQrStoragePath(fileName)}`;
+}
+
+function trimBankQrStoragePath(value: string | null | undefined) {
+  const trimmedValue = value?.trim() ?? "";
+  if (!trimmedValue) return "";
+  return trimmedValue
+    .replace(/^https?:\/\/[^/]+/i, "")
+    .replace(/^\/?storage\/bank-qr\//i, "")
+    .replace(/^\/+/, "");
 }
 
 function trimLogoStoragePath(value: string | null | undefined) {
@@ -2620,6 +2840,7 @@ function defaultCompanyFormValues(
         accountHolderName: bankAccount.accountHolderName,
         ifsc: bankAccount.ifsc,
         branch: bankAccount.branch,
+        qrImageUrl: bankAccount.qrImageUrl,
         isPrimary: bankAccount.isPrimary,
         isActive: bankAccount.isActive,
       })) ?? [],

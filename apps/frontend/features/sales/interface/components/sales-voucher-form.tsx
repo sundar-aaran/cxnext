@@ -272,7 +272,7 @@ function DetailsTab({
       <div className="grid gap-5 lg:grid-cols-2">
         <div className="space-y-5">
           <ContactAutocompleteField
-            label="Contact name"
+            label="Customer name"
             options={contacts}
             placeholder=""
             selectedId={form.partyId}

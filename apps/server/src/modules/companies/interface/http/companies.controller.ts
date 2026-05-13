@@ -237,6 +237,7 @@ function parseBankAccounts(value: unknown) {
         typeof record.accountHolderName === "string" ? record.accountHolderName : "",
       ifsc: typeof record.ifsc === "string" ? record.ifsc : "",
       branch: typeof record.branch === "string" ? record.branch : null,
+      qrImageUrl: typeof record.qrImageUrl === "string" ? record.qrImageUrl : null,
       isPrimary: record.isPrimary === true,
       isActive: record.isActive !== false,
     };

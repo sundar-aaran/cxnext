@@ -6,8 +6,12 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   CheckCircle2,
+  Circle,
+  Dot,
   FileKey2,
   Grid3X3,
+  Inbox,
+  LayoutDashboard,
   Landmark,
   LibraryBig,
   ReceiptText,
@@ -37,12 +41,16 @@ import {
   updateCustomiseSetting,
   updateDutiesTaxSetting,
   updateFeatureSetting,
+  updateFavoriteDashboardApp,
   updateSalesBillingLayoutSetting,
+  updateSalesPrintingOption,
+  updateSalesPrintingSetting,
 } from "../../application/software-settings-service";
 import { useCompanySoftwareSettingsState } from "../../application/use-company-software-settings-state";
 import {
   defaultSoftwareSettingsState,
   type DutiesTaxSettings,
+  type FavoriteDashboardApp,
   type SoftwareSettingsState,
   type SoftwareToggleSetting,
 } from "../../domain/software-settings";
@@ -65,10 +73,22 @@ export function SettingsIndexPage() {
           title="Apps"
         />
         <SettingsLinkCard
+          description="Choose the default favorite app shown first in the application dashboard workspace."
+          href="/desk/settings/dashboard"
+          icon={<LayoutDashboard className="size-5" />}
+          title="Dashboard"
+        />
+        <SettingsLinkCard
           description="Upload and manage public or private storage assets, including logo files."
           href="/desk/settings/media"
           icon={<LibraryBig className="size-5" />}
           title="Media Manager"
+        />
+        <SettingsLinkCard
+          description="Operate persisted local queue jobs now, with a path to BullMQ and Redis later."
+          href="/desk/settings/queue"
+          icon={<Inbox className="size-5" />}
+          title="Queue Manager"
         />
         <SettingsLinkCard
           description="Edit grouped runtime .env values for application, frontend, backend, database, and security."
@@ -254,6 +274,46 @@ export function SalesBillingLayoutSettingsPage() {
             ),
           },
           {
+            value: "printing",
+            label: "Printing",
+            content: (
+              <Card className="rounded-md border-border/70">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Sales Printing</CardTitle>
+                  <CardDescription>
+                    Control presentation options used when printing sales invoices.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-3">
+                  {draftState.salesPrintingSettings.map((setting) => (
+                    <SettingSwitchRow
+                      key={setting.id}
+                      setting={setting}
+                      onToggle={(enabled) =>
+                        setDraftState((current) =>
+                          updateSalesPrintingSetting(current, setting.id, enabled),
+                        )
+                      }
+                    />
+                  ))}
+                  <label className="grid gap-2 rounded-md border border-border/70 bg-background px-4 py-3">
+                    <span className="text-sm font-medium text-foreground">Custom terms</span>
+                    <textarea
+                      className="min-h-24 resize-y rounded-md border border-input bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-foreground/40"
+                      placeholder="Enter one term per line"
+                      value={draftState.salesPrintingOptions.customTerms}
+                      onChange={(event) =>
+                        setDraftState((current) =>
+                          updateSalesPrintingOption(current, "customTerms", event.target.value),
+                        )
+                      }
+                    />
+                  </label>
+                </CardContent>
+              </Card>
+            ),
+          },
+          {
             value: "customise",
             label: "Customise",
             content: (
@@ -319,6 +379,8 @@ function areSettingsEqual(
 function areSoftwareSettingsEqual(left: SoftwareSettingsState, right: SoftwareSettingsState) {
   return (
     areSettingsEqual(left.salesBillingLayout, right.salesBillingLayout) &&
+    areSettingsEqual(left.salesPrintingSettings, right.salesPrintingSettings) &&
+    left.salesPrintingOptions.customTerms === right.salesPrintingOptions.customTerms &&
     areDutiesTaxSettingsEqual(left.dutiesTaxSettings, right.dutiesTaxSettings) &&
     areSettingsEqual(left.features, right.features) &&
     left.customiseGroups.length === right.customiseGroups.length &&
@@ -457,6 +519,89 @@ export function DutiesTaxesSettingsPage() {
           </div>
         </CardContent>
       </Card>
+    </CommonListPageFrame>
+  );
+}
+
+const dashboardFavoriteApps = [
+  {
+    id: "application",
+    label: "Application",
+    description: "Open the main application dashboard first at /desk.",
+  },
+  {
+    id: "billing",
+    label: "Billing",
+    description: "Open the billing workspace first at /desk/billing.",
+  },
+] as const satisfies readonly {
+  readonly id: FavoriteDashboardApp;
+  readonly label: string;
+  readonly description: string;
+}[];
+
+export function DashboardSettingsPage() {
+  const [state, setState, context, actions] = useCompanySoftwareSettingsState();
+
+  return (
+    <CommonListPageFrame
+      action={
+        <Button
+          className="rounded-xl"
+          disabled={!context.companyId}
+          onClick={() => void actions.saveNow()}
+        >
+          <Save className="size-4" />
+          Save
+        </Button>
+      }
+      description={`Choose which app card should be treated as the favorite dashboard app for ${context.companyName}.`}
+      technicalName="page.settings.dashboard"
+      title="Dashboard"
+    >
+      <div className="grid gap-3">
+        {dashboardFavoriteApps.map((app) => {
+          const isSelected = state.favoriteDashboardApp === app.id;
+          return (
+            <label
+              key={app.id}
+              className={cn(
+                "flex cursor-pointer items-start justify-between gap-4 rounded-md border px-4 py-4 shadow-sm transition-colors",
+                isSelected
+                  ? "border-foreground/30 bg-card ring-1 ring-foreground/10"
+                  : "border-border/70 bg-card hover:border-foreground/20",
+              )}
+            >
+              <div className="min-w-0 space-y-1">
+                <div className="flex items-center gap-3">
+                  <span
+                    className={cn(
+                      "flex size-5 items-center justify-center rounded-full border transition-colors",
+                      isSelected
+                        ? "border-foreground bg-foreground text-background"
+                        : "border-muted-foreground/40 bg-background text-transparent",
+                    )}
+                  >
+                    {isSelected ? <Dot className="size-4" /> : <Circle className="size-3" />}
+                  </span>
+                  <span className="font-medium text-foreground">{app.label}</span>
+                </div>
+                <p className="pl-8 text-sm text-muted-foreground">{app.description}</p>
+              </div>
+              <input
+                checked={isSelected}
+                className="sr-only"
+                name="favorite-dashboard-app"
+                type="radio"
+                value={app.id}
+                onChange={() =>
+                  setState((current) => updateFavoriteDashboardApp(current, app.id))
+                }
+              />
+            </label>
+          );
+        })}
+      </div>
     </CommonListPageFrame>
   );
 }
