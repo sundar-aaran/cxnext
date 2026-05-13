@@ -16,6 +16,7 @@ import { EntriesModule } from "./modules/entries/entries.module";
 import { DocumentSettingsModule } from "./modules/document-settings/document-settings.module";
 import { IndustriesModule } from "./modules/industries/industries.module";
 import { MediaModule } from "./modules/media/media.module";
+import { MailModule } from "./modules/mail/mail.module";
 import { ProductsModule } from "./modules/products/products.module";
 import { QueueModule } from "./modules/queue/queue.module";
 import { TenantsModule } from "./modules/tenants/tenants.module";
@@ -42,6 +43,7 @@ import { TenantsModule } from "./modules/tenants/tenants.module";
     EntriesModule,
     EventsModule,
     IndustriesModule,
+    MailModule,
     MediaModule,
     ProductsModule,
     QueueModule,

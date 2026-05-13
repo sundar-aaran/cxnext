@@ -1,7 +1,7 @@
 import { getRequiredApiUrl } from "@/lib/runtime-env";
 import { authFetch } from "../../auth/infrastructure/auth-api";
 
-export type CompanySettingKey = "apps" | "software";
+export type CompanySettingKey = "apps" | "software" | "mail";
 
 export interface CompanySettingRecord<TValues> {
   readonly companyId: string;

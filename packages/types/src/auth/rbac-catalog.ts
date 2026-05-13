@@ -4,6 +4,7 @@ export type AuthPolicyAction = (typeof authPolicyActions)[number];
 
 export type AuthPolicyModuleKey =
   | "auth"
+  | "mail"
   | "tenant"
   | "industry"
   | "company"
@@ -45,6 +46,13 @@ export const authPolicyModules = {
     boundedContext: "security",
     actions: ["read", "list", "create", "update", "delete", "report"],
     description: "Identity, session, user administration, and role assignment.",
+  },
+  mail: {
+    key: "mail",
+    name: "Mail",
+    boundedContext: "operations",
+    actions: ["read", "list", "create", "update", "delete", "report"],
+    description: "Outbound delivery, sender configuration, template preview, and operational logs.",
   },
   tenant: {
     key: "tenant",
@@ -193,6 +201,7 @@ export const authRoleBlueprints = [
     description: "Tenant administration, user management, and full business module access.",
     permissionKeys: [
       ...permissionsForModules(["auth"], ["read", "list", "create", "update", "delete", "report"]),
+      ...permissionsForModules(["mail"], ["read", "list", "create", "update", "delete", "report"]),
       ...permissionsForModules(["tenant"], ["read", "list", "report"]),
       ...permissionsForModules(
         ["industry", "company", "contact", "product", "sales", "purchase", "payment", "receipt", "common"],
@@ -206,7 +215,7 @@ export const authRoleBlueprints = [
     name: "Manager",
     description: "Operational ownership across business modules without auth administration.",
     permissionKeys: permissionsForModules(
-      ["industry", "company", "contact", "product", "sales", "purchase", "payment", "receipt", "common"],
+      ["industry", "company", "contact", "product", "sales", "purchase", "payment", "receipt", "common", "mail"],
       ["read", "list", "create", "update", "delete", "report"],
     ),
     isSystem: true,
@@ -216,7 +225,7 @@ export const authRoleBlueprints = [
     name: "Operator",
     description: "Day-to-day data entry with update access across enabled business modules.",
     permissionKeys: permissionsForModules(
-      ["industry", "company", "contact", "product", "sales", "purchase", "payment", "receipt", "common"],
+      ["industry", "company", "contact", "product", "sales", "purchase", "payment", "receipt", "common", "mail"],
       ["read", "list", "create", "update"],
     ),
     isSystem: true,
@@ -226,7 +235,7 @@ export const authRoleBlueprints = [
     name: "Viewer",
     description: "Read-only visibility across the workspace.",
     permissionKeys: permissionsForModules(
-      ["auth", "tenant", "industry", "company", "contact", "product", "sales", "purchase", "payment", "receipt", "common"],
+      ["auth", "tenant", "industry", "company", "contact", "product", "sales", "purchase", "payment", "receipt", "common", "mail"],
       ["read", "list", "report"],
     ),
     isSystem: true,

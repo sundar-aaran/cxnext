@@ -14,6 +14,7 @@ import {
   LayoutDashboard,
   Landmark,
   LibraryBig,
+  Mail,
   ReceiptText,
   RefreshCcw,
   Save,
@@ -77,6 +78,12 @@ export function SettingsIndexPage() {
           href="/desk/settings/dashboard"
           icon={<LayoutDashboard className="size-5" />}
           title="Dashboard"
+        />
+        <SettingsLinkCard
+          description="Configure SMTP sender overrides, queue-backed test mail, and template preview."
+          href="/desk/settings/mail"
+          icon={<Mail className="size-5" />}
+          title="Mail"
         />
         <SettingsLinkCard
           description="Upload and manage public or private storage assets, including logo files."

@@ -1,7 +1,9 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
+  ServiceUnavailableException,
   type OnModuleDestroy,
   type OnModuleInit,
 } from "@nestjs/common";
@@ -20,6 +22,10 @@ import type {
   QueueJobStatus,
   QueueStatsRecord,
 } from "../domain/queue-job-record";
+import type {
+  QueueJobExecutionContext,
+  QueueJobHandlerDefinition,
+} from "../domain/queue-job-handler";
 
 type DynamicDatabase = Record<string, Record<string, unknown>>;
 type QueueJobRow = Record<string, unknown>;
@@ -33,23 +39,7 @@ interface QueueListFilters {
   readonly status?: QueueJobStatus | null;
 }
 
-interface QueueJobHandlerDefinition {
-  readonly queueName: string;
-  readonly jobName: string;
-  readonly label: string;
-  readonly description: string;
-  readonly samplePayload: Record<string, unknown>;
-  readonly run: (
-    context: LocalJobExecutionContext,
-    payload: Record<string, unknown>,
-  ) => Promise<Record<string, unknown>>;
-}
-
-interface LocalJobExecutionContext {
-  setProgress(progressPercent: number): Promise<void>;
-}
-
-const queueJobCatalog: readonly QueueJobHandlerDefinition[] = [
+const defaultQueueJobCatalog: readonly QueueJobHandlerDefinition[] = [
   {
     queueName: "lazy-load",
     jobName: "warm-route-cache",
@@ -119,16 +109,20 @@ const queueJobCatalog: readonly QueueJobHandlerDefinition[] = [
 @Injectable()
 export class QueueService implements OnModuleInit, OnModuleDestroy {
   private readonly connection: DatabaseConnection;
+  private readonly handlerDefinitions = new Map<string, QueueJobHandlerDefinition>();
+  private readonly logger = new Logger(QueueService.name);
   private processing = false;
   private pollHandle: NodeJS.Timeout | null = null;
+  private queueUnavailableReason: string | null = null;
 
   public constructor() {
     this.connection = createDatabaseConnection(loadDatabaseEnv().env);
+    this.registerHandlers(defaultQueueJobCatalog);
   }
 
   public onModuleInit() {
     this.pollHandle = setInterval(() => {
-      void this.processAvailableJobs();
+      void this.processAvailableJobsSafely();
     }, 600);
   }
 
@@ -141,6 +135,7 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
   }
 
   public async list(filters: QueueListFilters): Promise<QueueJobListResult> {
+    this.assertQueueAvailable();
     const limit = normalizeLimit(filters.limit);
     const cursor = normalizeCursor(filters.cursor);
     let query = this.db().selectFrom("queue_jobs").selectAll().orderBy("id", "desc").limit(limit + 1);
@@ -178,6 +173,7 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
   }
 
   public async stats(companyId?: string | null): Promise<QueueStatsRecord> {
+    this.assertQueueAvailable();
     let query = this.db()
       .selectFrom("queue_jobs")
       .select(["status"])
@@ -225,7 +221,7 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
       }
     >();
 
-    for (const definition of queueJobCatalog) {
+    for (const definition of this.handlerDefinitions.values()) {
       const existing = grouped.get(definition.queueName);
       if (existing) {
         existing.jobs = [
@@ -258,7 +254,8 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
   }
 
   public async enqueue(input: QueueJobInput, auth: AuthRequestContext | null) {
-    const definition = findQueueDefinition(input.queueName, input.jobName);
+    this.assertQueueAvailable();
+    const definition = this.findQueueDefinition(input.queueName, input.jobName);
     const now = new Date();
 
     const inserted = await this.db()
@@ -292,6 +289,7 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
   }
 
   public async retry(jobId: string) {
+    this.assertQueueAvailable();
     const row = await this.getRequiredRow(jobId);
     if (row.status !== "failed" && row.status !== "cancelled") {
       throw new BadRequestException("Only failed or cancelled jobs can be retried.");
@@ -318,6 +316,7 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
   }
 
   public async cancel(jobId: string) {
+    this.assertQueueAvailable();
     const row = await this.getRequiredRow(jobId);
     if (row.status === "completed") {
       throw new BadRequestException("Completed jobs cannot be cancelled.");
@@ -337,6 +336,7 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
   }
 
   public async remove(jobId: string) {
+    this.assertQueueAvailable();
     const deleted = await this.db()
       .deleteFrom("queue_jobs")
       .where("id", "=", Number(jobId))
@@ -368,6 +368,31 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
 
   private db(): Kysely<DynamicDatabase> {
     return this.connection.db as unknown as Kysely<DynamicDatabase>;
+  }
+
+  public registerHandlers(definitions: readonly QueueJobHandlerDefinition[]) {
+    for (const definition of definitions) {
+      this.handlerDefinitions.set(this.handlerKey(definition.queueName, definition.jobName), definition);
+    }
+  }
+
+  private async processAvailableJobsSafely() {
+    if (this.queueUnavailableReason) {
+      return;
+    }
+
+    try {
+      await this.processAvailableJobs();
+    } catch (error) {
+      if (isMissingQueueJobsTableError(error)) {
+        this.disableQueue(
+          "Queue storage is unavailable because the `queue_jobs` table is missing. Run the latest database migrations to enable queue and mail jobs.",
+        );
+        return;
+      }
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Queue worker polling failed: ${message}`, error instanceof Error ? error.stack : undefined);
+    }
   }
 
   private async processAvailableJobs() {
@@ -421,7 +446,9 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async runJob(row: QueueJobRow) {
-    const definition = findQueueDefinition(stringValue(row.queue_name), stringValue(row.job_name));
+    const definition = this.findQueueDefinition(stringValue(row.queue_name), stringValue(row.job_name));
+    const attemptsMade = Number(row.attempts_made ?? 0);
+    const maxAttempts = Number(row.max_attempts ?? 1);
     try {
       const result = await definition.run(
         {
@@ -435,7 +462,7 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
               .where("id", "=", row.id)
               .executeTakeFirst();
           },
-        },
+        } satisfies QueueJobExecutionContext,
         parseJsonObject(row.payload_json),
       );
 
@@ -451,17 +478,64 @@ export class QueueService implements OnModuleInit, OnModuleDestroy {
         .where("id", "=", row.id)
         .executeTakeFirst();
     } catch (error) {
+      const message = error instanceof Error ? error.message : "Queue job failed.";
+      if (attemptsMade < maxAttempts) {
+        await this.db()
+          .updateTable("queue_jobs")
+          .set({
+            status: "waiting",
+            available_at: new Date(Date.now() + retryDelayMilliseconds(attemptsMade)),
+            locked_at: null,
+            last_error: message,
+            updated_at: new Date(),
+          })
+          .where("id", "=", row.id)
+          .executeTakeFirst();
+        return;
+      }
+
       await this.db()
         .updateTable("queue_jobs")
         .set({
           status: "failed",
           finished_at: new Date(),
-          last_error: error instanceof Error ? error.message : "Queue job failed.",
+          last_error: message,
           updated_at: new Date(),
         })
         .where("id", "=", row.id)
         .executeTakeFirst();
     }
+  }
+
+  private handlerKey(queueName: string, jobName: string) {
+    return `${queueName}::${jobName}`;
+  }
+
+  private findQueueDefinition(queueName: string, jobName: string) {
+    const definition = this.handlerDefinitions.get(this.handlerKey(queueName, jobName));
+    if (!definition) {
+      throw new BadRequestException(`Unsupported queue job "${queueName}/${jobName}".`);
+    }
+    return definition;
+  }
+
+  private assertQueueAvailable() {
+    if (!this.queueUnavailableReason) {
+      return;
+    }
+    throw new ServiceUnavailableException(this.queueUnavailableReason);
+  }
+
+  private disableQueue(reason: string) {
+    if (this.queueUnavailableReason) {
+      return;
+    }
+    this.queueUnavailableReason = reason;
+    if (this.pollHandle) {
+      clearInterval(this.pollHandle);
+      this.pollHandle = null;
+    }
+    this.logger.warn(reason);
   }
 }
 
@@ -578,16 +652,6 @@ function dateOrNull(value: unknown) {
   return value instanceof Date || typeof value === "string" ? value : null;
 }
 
-function findQueueDefinition(queueName: string, jobName: string) {
-  const definition = queueJobCatalog.find(
-    (item) => item.queueName === queueName && item.jobName === jobName,
-  );
-  if (!definition) {
-    throw new BadRequestException(`Unsupported queue job "${queueName}/${jobName}".`);
-  }
-  return definition;
-}
-
 function humanizeKey(value: string) {
   return value
     .split(/[-_]/g)
@@ -600,4 +664,28 @@ function sleep(milliseconds: number) {
   return new Promise<void>((resolve) => {
     setTimeout(resolve, milliseconds);
   });
+}
+
+function retryDelayMilliseconds(attemptsMade: number) {
+  return Math.min(30_000, Math.max(1, attemptsMade) * 1_500);
+}
+
+function isMissingQueueJobsTableError(error: unknown) {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const candidate = error as {
+    code?: unknown;
+    sqlMessage?: unknown;
+    message?: unknown;
+  };
+
+  if (candidate.code === "ER_NO_SUCH_TABLE") {
+    const sqlMessage = typeof candidate.sqlMessage === "string" ? candidate.sqlMessage : "";
+    const message = typeof candidate.message === "string" ? candidate.message : "";
+    return sqlMessage.includes("queue_jobs") || message.includes("queue_jobs");
+  }
+
+  return false;
 }

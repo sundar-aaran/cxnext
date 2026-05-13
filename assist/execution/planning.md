@@ -1,32 +1,28 @@
 # Planning
 
-Active reference: `#89`
+Active reference: `#91`
 
 ## Active
 
-- `#89` Add external env support for packaged Electron builds
+- `#91` Harden queue startup when queue tables are missing
   - Goal:
-    - Let packaged Electron builds read configuration from an external env file outside the bundle so runtime credentials and endpoints can be changed without rebuilding the desktop app.
+    - Keep cloud deployments online when the queue module is present in code but the target database has not yet run the queue migrations.
   - Scope:
-    - Desktop env resolution in `apps/desktop/src/main.ts`
-    - Build output support for an editable sidecar sample env file
+    - Backend queue worker bootstrap under `apps/server/src/modules/queue`
+    - Queue API error handling for unavailable storage
     - Execution tracking, changelog, and lockstep version update
   - Constraints:
-    - Preserve repo-root `.env` fallback for local development.
-    - Support explicit env-file overrides and packaged sidecar env discovery.
-    - Keep credentials outside the app bundle so they can be edited after install/build.
+    - Do not hide the migration gap; the app should log a clear warning and queue endpoints should fail explicitly once storage is unavailable.
+    - Do not require Redis or BullMQ for this fix; this is strictly about the existing local queue runner.
+    - Keep the server alive so non-queue application surfaces can still boot on cloud.
   - Planned validation:
-    - Run `pnpm --filter @cxnext/desktop typecheck`
-    - Run any additional touched workspace typecheck if needed
+    - Run `pnpm --filter @cxnext/server typecheck`
   - Implemented:
-    - Added layered env resolution in `apps/desktop/src/main.ts` so packaged Electron startup now looks for config in this order across file layers: repo root fallback, packaged sidecar env beside the executable or resources directory, and explicit env-file override via `CXNEXT_ENV_FILE` or `DESKTOP_ENV_FILE`.
-    - Preserved shell environment variable precedence by merging file-based env values first and only filling keys that are not already present in `process.env`.
-    - Added `CXNEXT_ENV_SOURCE` runtime metadata so the active env file source can be inspected if needed.
-    - Added `apps/desktop/env.desktop.sample` as an editable sidecar template containing endpoint, service-management, timeout, and DB credentials keys.
-    - Configured Electron Builder `extraFiles` to place `env.desktop.sample` outside the bundled app content so operators can copy and edit it after packaging.
-    - Synchronized workspace package versions to `1.0.89`.
+    - Wrapped the queue poller startup path so missing `queue_jobs` table errors disable the worker cleanly instead of escaping the timer callback and crashing Node.
+    - Added a one-time queue-unavailable state with a clear migration warning through the Nest logger.
+    - Guarded queue read/write entry points so they return a controlled `503 Service Unavailable` when queue storage has been disabled after bootstrap failure.
+    - Logged unexpected poller errors without rethrowing them from the interval callback.
   - Validation:
-    - `pnpm --filter @cxnext/desktop typecheck`
-    - `pnpm --filter @cxnext/frontend typecheck`
+    - `pnpm --filter @cxnext/server typecheck`
   - Residual risk:
-    - The packaged desktop app can now read external env files, but its service startup model still assumes access to the repo/workspace when `DESKTOP_START_SERVICES=true`; fully standalone embedded runtime packaging remains a separate step.
+    - The queue and mail features still require the latest database migrations on the target deployment to become operational; this change only prevents an app-wide crash before those migrations are applied.

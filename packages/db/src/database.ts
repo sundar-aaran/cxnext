@@ -528,6 +528,49 @@ export interface QueueJobsTable {
   readonly updated_at: TimestampColumn;
 }
 
+export interface MailMessagesTable {
+  readonly id: Generated<number>;
+  readonly tenant_id: number | null;
+  readonly company_id: number | null;
+  readonly queue_job_id: number | null;
+  readonly template_key: string;
+  readonly category: string;
+  readonly subject: string;
+  readonly preview_text: string | null;
+  readonly html_body: string;
+  readonly text_body: string;
+  readonly status: string;
+  readonly from_email: string;
+  readonly from_name: string | null;
+  readonly reply_to: string | null;
+  readonly to_json: JsonColumn<unknown>;
+  readonly cc_json: JsonColumn<unknown>;
+  readonly bcc_json: JsonColumn<unknown>;
+  readonly attachments_json: JsonColumn<unknown>;
+  readonly provider_kind: string;
+  readonly provider_message_id: string | null;
+  readonly requested_by_user_id: string | null;
+  readonly source_module: string | null;
+  readonly source_record_id: string | null;
+  readonly last_error: string | null;
+  readonly sent_at: NullableTimestampColumn;
+  readonly created_at: TimestampColumn;
+  readonly updated_at: TimestampColumn;
+}
+
+export interface MailDeliveryAttemptsTable {
+  readonly id: Generated<number>;
+  readonly mail_message_id: number;
+  readonly queue_job_id: number | null;
+  readonly attempt_no: ColumnType<number, number | string | undefined, number | string>;
+  readonly status: string;
+  readonly provider_response_json: JsonColumn<unknown>;
+  readonly error_message: string | null;
+  readonly started_at: TimestampColumn;
+  readonly finished_at: NullableTimestampColumn;
+  readonly created_at: TimestampColumn;
+}
+
 export interface CommonCountriesTable {
   readonly id: Generated<number>;
   readonly code: string;
@@ -610,6 +653,8 @@ export interface DatabaseSchema {
   readonly common_pincodes: CommonPincodesTable;
   readonly common_states: CommonStatesTable;
   readonly industries: IndustriesTable;
+  readonly mail_delivery_attempts: MailDeliveryAttemptsTable;
+  readonly mail_messages: MailMessagesTable;
   readonly payment_allocations: PaymentAllocationsTable;
   readonly payments: PaymentsTable;
   readonly products: ProductsTable;

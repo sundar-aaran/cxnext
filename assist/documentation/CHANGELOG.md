@@ -2,11 +2,32 @@
 
 ## Version State
 
-- Current package version: `1.0.89`
-- Current release tag: `v-1.0.89`
+- Current package version: `1.0.91`
+- Current release tag: `v-1.0.91`
 - Versioned changelog label format: `v 1.0.<reference>`
 - Version section format: `## v-1.0.<reference>`
 - Entry format: `### [v 1.0.<reference>] YYYY-MM-DD - Title`
+
+## v-1.0.91
+
+### [v 1.0.91] 2026-05-13 - Harden Queue Startup On Missing Tables
+
+- Prevented the local queue worker from crashing the server when deployed databases are missing the `queue_jobs` table.
+- Added a one-time queue disable path with a clear migration warning when queue storage is unavailable.
+- Made queue API entry points fail with a controlled unavailable response after queue storage is disabled, instead of surfacing timer-driven process crashes.
+- Logged unexpected queue poller errors without rethrowing them from the background interval.
+- Synchronized workspace package versions to `1.0.91`.
+
+## v-1.0.90
+
+### [v 1.0.90] 2026-05-13 - Add Queue-Backed Mail Operations
+
+- Added `mail_messages` and `mail_delivery_attempts` persistence with a central DB migration for queued outbound mail and delivery audit.
+- Added a backend Mail module with queue registration, SMTP or local stream transport, template preview, delivery logs, retries, cancel, and `/api/v1/mail` operator endpoints.
+- Refactored the local queue service so bounded contexts can register handlers dynamically and so failed jobs can retry with local backoff before final failure.
+- Added a follow-up auth catalog sync seeder so existing databases receive the new Mail permission module and role permissions without a full refresh.
+- Added Settings > Mail and Admin > Mail frontend pages for sender overrides, test send, template preview, lazy-loaded log history, retry, and cancel.
+- Synchronized workspace package versions to `1.0.90`.
 
 ## v-1.0.89
 

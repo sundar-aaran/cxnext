@@ -20,6 +20,7 @@ import {
   LineChart,
   LayoutDashboard,
   Inbox,
+  Mail,
   Package,
   ReceiptText,
   RefreshCcw,
@@ -78,6 +79,12 @@ const organisationNavItems = [
 
 const adminNavItems = [
   {
+    id: "admin-mail",
+    label: "Mail",
+    href: "/desk/admin/mail",
+    icon: <Mail className="h-4 w-4" />,
+  },
+  {
     id: "admin-users",
     label: "Users",
     href: "/desk/admin/users",
@@ -112,6 +119,7 @@ const adminNavItems = [
 const adminMenuLabels: Record<string, string> = {
   admin: "Admin",
   gate: "Gate",
+  mail: "Mail",
   permissions: "Permissions",
   policy: "Policy",
   roles: "Roles",
@@ -206,6 +214,12 @@ const settingsNavItems = [
     icon: <LayoutDashboard className="h-4 w-4" />,
   },
   {
+    id: "settings-mail",
+    label: "Mail",
+    href: "/desk/settings/mail",
+    icon: <Mail className="h-4 w-4" />,
+  },
+  {
     id: "settings-media",
     label: "Media Manager",
     href: "/desk/settings/media",
@@ -252,6 +266,7 @@ const settingsNavItems = [
 const settingsMenuLabels: Record<string, string> = {
   apps: "Apps",
   dashboard: "Dashboard",
+  mail: "Mail",
   media: "Media Manager",
   queue: "Queue Manager",
   core: "Core Settings",

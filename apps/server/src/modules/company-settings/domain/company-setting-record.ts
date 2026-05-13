@@ -1,4 +1,4 @@
-export type CompanySettingKey = "apps" | "software";
+export type CompanySettingKey = "apps" | "software" | "mail";
 
 export interface CompanySettingContext {
   readonly companyId: string;
@@ -15,4 +15,4 @@ export interface CompanySettingInput {
   readonly values?: Record<string, unknown>;
 }
 
-export const companySettingKeys = ["apps", "software"] as const;
+export const companySettingKeys = ["apps", "software", "mail"] as const;

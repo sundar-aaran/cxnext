@@ -6,6 +6,7 @@ import { normalizeDefaultContactSeeder, seedContactsSeeder } from "./005-seed-co
 import { seedProductsSeeder } from "./006-seed-products";
 import { seedEntriesSeeder } from "./007-seed-entries";
 import { seedAuthRbacSeeder } from "./008-seed-auth-rbac";
+import { syncAuthCatalogUpdatesSeeder } from "./009-sync-auth-catalog-updates";
 import {
   contactsCommonSeeders,
   locationCommonSeeders,
@@ -29,6 +30,7 @@ export const databaseSeeders = [
   seedProductsSeeder,
   seedEntriesSeeder,
   seedAuthRbacSeeder,
+  syncAuthCatalogUpdatesSeeder,
 ] as const;
 
 export { seedTenantsSeeder };
@@ -39,6 +41,7 @@ export { normalizeDefaultContactSeeder, seedContactsSeeder };
 export { seedProductsSeeder };
 export { seedEntriesSeeder };
 export { seedAuthRbacSeeder };
+export { syncAuthCatalogUpdatesSeeder };
 export {
   contactsCommonSeeders,
   locationCommonSeeders,
