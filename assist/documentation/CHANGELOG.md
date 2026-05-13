@@ -10,6 +10,21 @@
 
 ## v-1.0.91
 
+### [v 1.0.91] 2026-05-13 - Fix System Update Versioned Route
+
+- Accepted both `/api/v1` and `/v1` versioned API prefixes in the backend URL rewriter so deployed frontend calls to `/v1/system-update/deploy` reach the System Update controller.
+- Renamed the main System Update action button to `Pull GitHub, Build & Restart`.
+- Renamed the manual sync action to `Pull latest GitHub version` for clearer operator wording.
+- Revalidated focused server and frontend typechecks.
+
+### [v 1.0.91] 2026-05-13 - Allow Sales Invoice Numbers Without Prefix
+
+- Read the Sales invoice entry and document-numbering paths.
+- Added a visible `Use prefix` option in Document Settings so Sales invoice numbering can produce plain numbers such as `0001`.
+- Updated backend document settings so an intentionally blank prefix is preserved instead of being forced back to the default prefix.
+- Kept automatic backend numbering, company/accounting-year isolation, and manual voucher override behavior intact.
+- Revalidated focused frontend and server typechecks.
+
 ### [v 1.0.91] 2026-05-13 - Harden Queue Startup On Missing Tables
 
 - Prevented the local queue worker from crashing the server when deployed databases are missing the `queue_jobs` table.

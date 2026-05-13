@@ -1,8 +1,13 @@
-const apiPrefix = "/api/v1";
+const apiPrefixes = ["/api/v1", "/v1"] as const;
 
 export function rewriteVersionedApiUrl(request: { readonly url?: string }) {
   const originalUrl = request.url ?? "";
-  return rewriteVersionedUrl(originalUrl, apiPrefix) ?? originalUrl;
+  for (const prefix of apiPrefixes) {
+    const rewrittenUrl = rewriteVersionedUrl(originalUrl, prefix);
+    if (rewrittenUrl) return rewrittenUrl;
+  }
+
+  return originalUrl;
 }
 
 function rewriteVersionedUrl(originalUrl: string, prefix: string) {

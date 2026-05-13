@@ -87,7 +87,7 @@ export function SystemUpdateSettingsPage() {
             disabled={Boolean(runningAction)}
           >
             <RefreshCcw className="size-4" />
-            Sync, Build & Restart
+            Pull GitHub, Build & Restart
           </Button>
         </div>
       }
@@ -130,7 +130,7 @@ export function SystemUpdateSettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">
-          {(["sync", "build", "restart", "smoke"] as const).map((action) => (
+          {manualActions.map(({ action, label }) => (
             <Button
               key={action}
               className="rounded-xl capitalize"
@@ -139,7 +139,7 @@ export function SystemUpdateSettingsPage() {
               disabled={Boolean(runningAction)}
             >
               <Play className="size-4" />
-              {runningAction === action ? "Running..." : action}
+              {runningAction === action ? "Running..." : label}
             </Button>
           ))}
         </CardContent>
@@ -189,6 +189,16 @@ export function SystemUpdateSettingsPage() {
     </CommonListPageFrame>
   );
 }
+
+const manualActions: readonly {
+  readonly action: SystemUpdateAction;
+  readonly label: string;
+}[] = [
+  { action: "sync", label: "Pull latest GitHub version" },
+  { action: "build", label: "Build" },
+  { action: "restart", label: "Restart" },
+  { action: "smoke", label: "Smoke" },
+];
 
 function StatusCard({
   icon,

@@ -83,7 +83,7 @@ export class DocumentNumberService implements OnModuleDestroy {
   ) {
     const current = await this.getOrCreateSetting(kind, context);
     const next = {
-      prefix: cleanPrefix(input.prefix ?? current.prefix, defaultSetting(kind).prefix),
+      prefix: cleanPrefix(input.prefix ?? current.prefix),
       separator: cleanSeparator(input.separator ?? current.separator),
       next_number: clampInteger(input.nextNumber ?? current.nextNumber, 1, 999_999_999),
       padding: clampInteger(input.padding ?? current.padding, 1, 12),
@@ -203,9 +203,9 @@ function labelForKind(kind: DocumentEntryKind) {
   return kind.charAt(0).toUpperCase() + kind.slice(1);
 }
 
-function cleanPrefix(value: string | null | undefined, fallback: string) {
+function cleanPrefix(value: string | null | undefined) {
   const trimmed = value?.trim().toUpperCase() ?? "";
-  return trimmed || fallback;
+  return trimmed;
 }
 
 function cleanSeparator(value: string | null | undefined) {

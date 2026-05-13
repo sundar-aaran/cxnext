@@ -20,7 +20,7 @@ export function DocumentSettingsPage() {
   const { show } = useGlobalLoader();
   const [records, setRecords] = useState<readonly DocumentNumberSetting[]>([]);
   const [drafts, setDrafts] = useState<Record<string, DocumentNumberSettingInput>>({});
-  const context = readStoredApplicationContext();
+const context = readStoredApplicationContext();
 
   useEffect(() => {
     const controller = new AbortController();
@@ -106,9 +106,27 @@ export function DocumentSettingsPage() {
                 </div>
               </CardHeader>
               <CardContent className="grid gap-4 md:grid-cols-4">
+                <label className="flex items-center justify-between gap-3 rounded-md border border-border/70 bg-background px-3 py-3 md:col-span-4">
+                  <span className="grid gap-1">
+                    <span className="text-sm font-medium text-foreground">Use prefix</span>
+                    <span className="text-xs text-muted-foreground">
+                      Turn this off for plain numbers like {plainPreview(draft)}.
+                    </span>
+                  </span>
+                  <Switch
+                    checked={Boolean(draft.prefix.trim())}
+                    onCheckedChange={(checked) =>
+                      setDraft(kind, {
+                        ...draft,
+                        prefix: checked ? defaultPrefix(kind) : "",
+                      })
+                    }
+                  />
+                </label>
                 <DocField
                   label="Prefix"
                   value={draft.prefix}
+                  disabled={!draft.prefix.trim()}
                   onChange={(value) => setDraft(kind, { ...draft, prefix: value.toUpperCase() })}
                 />
                 <DocField
@@ -145,11 +163,13 @@ export function DocumentSettingsPage() {
 }
 
 function DocField({
+  disabled = false,
   label,
   onChange,
   type = "text",
   value,
 }: {
+  readonly disabled?: boolean;
   readonly label: string;
   readonly onChange: (value: string) => void;
   readonly type?: "number" | "text";
@@ -163,6 +183,7 @@ function DocField({
         min={type === "number" ? 1 : undefined}
         type={type}
         value={value}
+        disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
       />
     </label>
@@ -193,6 +214,19 @@ function sanitizeInput(input: DocumentNumberSettingInput): DocumentNumberSetting
 function preview(input: DocumentNumberSettingInput) {
   const serial = String(input.nextNumber).padStart(input.padding, "0");
   return [input.prefix.trim(), serial].filter(Boolean).join(input.separator || "-");
+}
+
+function plainPreview(input: DocumentNumberSettingInput) {
+  return String(input.nextNumber).padStart(input.padding, "0");
+}
+
+function defaultPrefix(kind: string) {
+  return {
+    payment: "PAY",
+    purchase: "PUR",
+    receipt: "REC",
+    sales: "SAL",
+  }[kind] ?? "";
 }
 
 function isAbortError(error: unknown) {

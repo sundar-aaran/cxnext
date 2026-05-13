@@ -4,25 +4,26 @@ Active reference: `#91`
 
 ## Active
 
-- `#91` Harden queue startup when queue tables are missing
+- `#91` Fix System Update versioned deploy route
   - Goal:
-    - Keep cloud deployments online when the queue module is present in code but the target database has not yet run the queue migrations.
+    - Fix `Cannot POST /v1/system-update/deploy` from the System Update page and make the update action wording clearer.
   - Scope:
-    - Backend queue worker bootstrap under `apps/server/src/modules/queue`
-    - Queue API error handling for unavailable storage
-    - Execution tracking, changelog, and lockstep version update
+    - Backend versioned API URL rewrite.
+    - Frontend System Update action labels.
+    - Execution log and changelog.
   - Constraints:
-    - Do not hide the migration gap; the app should log a clear warning and queue endpoints should fail explicitly once storage is unavailable.
-    - Do not require Redis or BullMQ for this fix; this is strictly about the existing local queue runner.
-    - Keep the server alive so non-queue application surfaces can still boot on cloud.
+    - Preserve the existing `/api/v1` API surface.
+    - Keep the existing System Update controller action names and service behavior.
   - Planned validation:
-    - Run `pnpm --filter @cxnext/server typecheck`
+    - Run focused server and frontend typechecks.
   - Implemented:
-    - Wrapped the queue poller startup path so missing `queue_jobs` table errors disable the worker cleanly instead of escaping the timer callback and crashing Node.
-    - Added a one-time queue-unavailable state with a clear migration warning through the Nest logger.
-    - Guarded queue read/write entry points so they return a controlled `503 Service Unavailable` when queue storage has been disabled after bootstrap failure.
-    - Logged unexpected poller errors without rethrowing them from the interval callback.
+    - Updated the Fastify rewrite helper to accept both `/api/v1` and `/v1`.
+    - Kept `/system-update/deploy` backend controller wiring unchanged.
+    - Renamed the deploy button to `Pull GitHub, Build & Restart`.
+    - Renamed manual sync to `Pull latest GitHub version`.
+    - Added the `v 1.0.91` changelog entry.
   - Validation:
     - `pnpm --filter @cxnext/server typecheck`
+    - `pnpm --filter @cxnext/frontend typecheck`
   - Residual risk:
-    - The queue and mail features still require the latest database migrations on the target deployment to become operational; this change only prevents an app-wide crash before those migrations are applied.
+    - Runtime browser/deployed server smoke was not run in this pass.
